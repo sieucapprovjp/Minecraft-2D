@@ -1,32 +1,28 @@
 package com.main.game;
 
-import com.badlogic.gdx.ApplicationAdapter;
-import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.Game;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.utils.ScreenUtils;
+import com.main.game.screens.BaseScreen;
 
-/** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
-public class MainGame extends ApplicationAdapter {
-    private SpriteBatch batch;
-    private Texture image;
+/**
+ * Entry point của game — thay thế file MainGame.java hiện tại.
+ * SpriteBatch được tạo một lần ở đây và share cho tất cả Screen
+ * để tránh tạo nhiều batch gây tốn bộ nhớ.
+ */
+public class MainGame extends Game {
+
+    public SpriteBatch batch;
 
     @Override
     public void create() {
         batch = new SpriteBatch();
-        image = new Texture("libgdx.png");
-    }
-
-    @Override
-    public void render() {
-        ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
-        batch.begin();
-        batch.draw(image, 140, 210);
-        batch.end();
+        // TODO: setScreen(new MenuScreen(this)); — khi có MenuScreen
+        // Tạm thời để trống, từng người tự setScreen khi test
     }
 
     @Override
     public void dispose() {
         batch.dispose();
-        image.dispose();
+        if (getScreen() != null) getScreen().dispose();
     }
 }
