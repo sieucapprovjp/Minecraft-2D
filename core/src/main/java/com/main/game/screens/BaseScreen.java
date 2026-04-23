@@ -16,6 +16,10 @@ import com.main.game.utils.Constants;
  *  - SpriteBatch dùng chung từ MainGame
  *  - OrthographicCamera với đơn vị tile
  *  - FitViewport giữ tỉ lệ màn hình
+ *
+ * TODO(HUY-LEAD):
+ *  - Quy định rõ thứ tự update/render chuẩn cho mọi screen.
+ *  - Bổ sung utility chung cho debug overlay hoặc UI layer nếu cần.
  */
 public abstract class BaseScreen implements Screen {
 

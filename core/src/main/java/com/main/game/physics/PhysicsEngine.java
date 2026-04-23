@@ -14,6 +14,11 @@ import com.main.game.utils.Constants;
  * Lâm Hùng cần implement thêm:
  *  - checkBlockCollision() — kiểm tra va chạm với block
  *  - resolveCollision()    — xử lý sau khi phát hiện va chạm
+ *
+ * TODO(LHUNG-PHYSICS):
+ *  - Tách resolve theo 2 trục X/Y để tránh kẹt góc.
+ *  - Chốt quy tắc onGround và reset velocity khi va chạm.
+ *  - Bổ sung collision với world qua API World.isSolid(x, y).
  */
 public class PhysicsEngine {
 
@@ -22,6 +27,7 @@ public class PhysicsEngine {
      * Gọi mỗi frame từ GameScreen.update()
      */
     public void update(Entity entity, float delta) {
+        // TODO(LHUNG-PHYSICS): gọi checkBlockCollision(entity, world) sau khi applyVelocity.
         applyGravity(entity, delta);
         applyVelocity(entity, delta);
     }

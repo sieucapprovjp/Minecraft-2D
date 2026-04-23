@@ -12,6 +12,11 @@ import com.badlogic.gdx.math.Vector2;
  *  - Bounding box dùng cho collision (Lâm Hùng dùng cái này)
  *  - Trạng thái onGround, isAlive
  *  - Vòng đời update() / render() / dispose()
+ *
+ * TODO(DUOC-ENTITY):
+ *  - Tạo Player và Mob kế thừa class này.
+ *  - Chuẩn hóa state machine cơ bản: idle/run/jump/fall/hurt.
+ *  - Đồng bộ hướng nhìn với input (facingRight) cho animation sau này.
  */
 public abstract class Entity {
 

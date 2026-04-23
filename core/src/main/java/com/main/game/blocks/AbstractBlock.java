@@ -10,6 +10,11 @@ import com.main.game.utils.Constants;
  *
  * Việt Hưng extend class này để tạo từng loại block cụ thể.
  * Mỗi block chiếm đúng 1 ô tile (TILE_SIZE x TILE_SIZE).
+ *
+ * TODO(VHUNG-BLOCKS):
+ *  - Tạo block concrete classes + metadata chuẩn (solid/breakable/hardness).
+ *  - Kết nối TextureAtlas thật (thay texture tạm).
+ *  - Thống nhất blockId để WorldGen và Inventory dùng chung.
  */
 public abstract class AbstractBlock {
 

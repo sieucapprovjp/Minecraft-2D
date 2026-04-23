@@ -2,6 +2,10 @@ package com.main.game.utils;
 
 public final class Constants {
 
+    // TODO(HUY-LEAD):
+    //  - Tách nhóm constant theo module nếu file này quá tải (WorldConstants, PhysicsConstants...).
+    //  - Đặt quy tắc khi nào được sửa giá trị gameplay để tránh conflict giữa các team.
+
     private Constants() {} // Không cho khởi tạo
 
     // ─── Màn hình ────────────────────────────────────────────────
