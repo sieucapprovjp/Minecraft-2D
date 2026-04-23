@@ -5,6 +5,8 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.Input;
 import com.main.game.MainGame;
 import com.main.game.physics.PhysicsEngine;
+import com.main.game.utils.Constants;
+import com.main.game.world.BlockPalette;
 import com.main.game.world.World;
 
 /**
@@ -34,6 +36,10 @@ public class GameScreen extends BaseScreen {
         world.generate(1337L);
         physics = new PhysicsEngine();
         // TODO(DUOC-ENTITY): khởi tạo Player + MobManager tại đây.
+
+        // Spawn camera gần mặt đất để test terrain dễ hơn.
+        camera.position.set(world.width * 0.25f, world.height * 0.58f, 0f);
+        camera.update();
     }
 
     @Override
@@ -70,11 +76,19 @@ public class GameScreen extends BaseScreen {
         // TODO(DUOC-ENTITY): render player.
         // TODO(DUOC-ENTITY): render mob manager.
         batch.end();
+
+        batch.setProjectionMatrix(viewport.getCamera().combined);
+        batch.begin();
+        batch.draw(BlockPalette.GRASS, 0.25f, Constants.VIEWPORT_HEIGHT_TILES - 1.25f, 1f, 1f);
+        batch.draw(BlockPalette.STONE, 1.35f, Constants.VIEWPORT_HEIGHT_TILES - 1.25f, 1f, 1f);
+        batch.draw(BlockPalette.BEDROCK, 2.45f, Constants.VIEWPORT_HEIGHT_TILES - 1.25f, 1f, 1f);
+        batch.end();
     }
 
     @Override
     public void dispose() {
         super.dispose();
+        BlockPalette.dispose();
         // player.dispose();
         // mobManager.dispose();
     }

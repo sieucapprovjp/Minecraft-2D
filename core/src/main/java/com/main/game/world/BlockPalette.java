@@ -1,8 +1,10 @@
 package com.main.game.world;
 
-import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public final class BlockPalette {
 
@@ -10,35 +12,50 @@ public final class BlockPalette {
     public static final TextureRegion DIRT;
     public static final TextureRegion STONE;
     public static final TextureRegion BEDROCK;
+    public static final TextureRegion SAND;
+    public static final TextureRegion WOOD;
+    public static final TextureRegion LEAVES;
+    public static final TextureRegion PLANKS;
 
-    private static final Texture texture;
+    private static final List<Texture> textures = new ArrayList<>();
+    private static TextureRegion fallbackRegion;
 
     static {
-        Pixmap pixmap = new Pixmap(4, 1, Pixmap.Format.RGBA8888);
-        pixmap.drawPixel(0, 0, rgba(95, 159, 53));
-        pixmap.drawPixel(1, 0, rgba(122, 85, 49));
-        pixmap.drawPixel(2, 0, rgba(116, 116, 116));
-        pixmap.drawPixel(3, 0, rgba(61, 61, 61));
+        STONE   = loadRegion("mvp/tiles/stone.png");
+        fallbackRegion = STONE;
+        GRASS   = loadRegionOrFallback("mvp/tiles/grass.png");
+        BEDROCK = loadRegionOrFallback("mvp/tiles/bedrock.png");
+        SAND    = loadRegionOrFallback("mvp/tiles/sand.png");
+        WOOD    = loadRegionOrFallback("mvp/tiles/wood.png");
+        LEAVES  = loadRegionOrFallback("mvp/tiles/leaves.png");
+        PLANKS  = loadRegionOrFallback("mvp/tiles/planks.png");
 
-        texture = new Texture(pixmap);
-        texture.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
-
-        GRASS = new TextureRegion(texture, 0, 0, 1, 1);
-        DIRT = new TextureRegion(texture, 1, 0, 1, 1);
-        STONE = new TextureRegion(texture, 2, 0, 1, 1);
-        BEDROCK = new TextureRegion(texture, 3, 0, 1, 1);
-
-        pixmap.dispose();
+        // TODO(VHUNG-BLOCKS): thay bằng dirt texture thật khi team chốt asset.
+        DIRT = STONE;
     }
 
     private BlockPalette() {
     }
 
-    private static int rgba(int r, int g, int b) {
-        return (r << 24) | (g << 16) | (b << 8) | 255;
+    private static TextureRegion loadRegion(String path) {
+        Texture texture = new Texture(path);
+        texture.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+        textures.add(texture);
+        return new TextureRegion(texture);
+    }
+
+    private static TextureRegion loadRegionOrFallback(String path) {
+        try {
+            return loadRegion(path);
+        } catch (Exception ignored) {
+            return fallbackRegion;
+        }
     }
 
     public static void dispose() {
-        texture.dispose();
+        for (Texture texture : textures) {
+            texture.dispose();
+        }
+        textures.clear();
     }
 }

@@ -79,13 +79,38 @@ public class World {
                 if (y == 0) {
                     block = new SimpleBlock(x, y, "bedrock", true, false, 999f, BlockPalette.BEDROCK);
                 } else if (y == surface) {
-                    block = new SimpleBlock(x, y, "grass", true, true, 0.6f, BlockPalette.GRASS);
+                    boolean isSandPatch = x % 37 < 5;
+                    if (isSandPatch) {
+                        block = new SimpleBlock(x, y, "sand", true, true, 0.5f, BlockPalette.SAND);
+                    } else {
+                        block = new SimpleBlock(x, y, "grass", true, true, 0.6f, BlockPalette.GRASS);
+                    }
                 } else if (y >= surface - 3) {
                     block = new SimpleBlock(x, y, "dirt", true, true, 0.7f, BlockPalette.DIRT);
                 } else {
                     block = new SimpleBlock(x, y, "stone", true, true, 1.2f, BlockPalette.STONE);
                 }
                 setBlock(x, y, block);
+            }
+
+            if (x > 2 && x < width - 2 && x % 29 == 0 && random.nextFloat() < 0.65f) {
+                int trunkBaseY = surface + 1;
+                int trunkHeight = 3 + random.nextInt(2);
+
+                for (int ty = 0; ty < trunkHeight && trunkBaseY + ty < height; ty++) {
+                    setBlock(x, trunkBaseY + ty,
+                        new SimpleBlock(x, trunkBaseY + ty, "wood", true, true, 0.9f, BlockPalette.WOOD));
+                }
+
+                int leafY = trunkBaseY + trunkHeight;
+                for (int lx = x - 1; lx <= x + 1; lx++) {
+                    for (int ly = leafY - 1; ly <= leafY; ly++) {
+                        if (isInBounds(lx, ly) && getBlock(lx, ly) == null) {
+                            setBlock(lx, ly,
+                                new SimpleBlock(lx, ly, "leaves", false, true, 0.2f, BlockPalette.LEAVES));
+                        }
+                    }
+                }
             }
         }
     }
