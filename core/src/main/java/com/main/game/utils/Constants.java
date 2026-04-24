@@ -11,7 +11,7 @@ public final class Constants {
     // ─── Màn hình ────────────────────────────────────────────────
     public static final int    SCREEN_WIDTH         = 1280;
     public static final int    SCREEN_HEIGHT        = 720;
-    public static final String GAME_TITLE           = "Paper Minecraft";
+    public static final String GAME_TITLE           = "Minecraft";
 
     // ─── Tile / World ────────────────────────────────────────────
     public static final int   TILE_SIZE             = 32;       // pixel

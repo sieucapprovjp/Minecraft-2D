@@ -30,7 +30,7 @@ public abstract class BaseScreen implements Screen {
 
     public BaseScreen(MainGame game) {
         this.game     = game;
-        this.batch    = game.batch;
+        this.batch    = game.getBatch();
         this.camera   = new OrthographicCamera();
         this.viewport = new FitViewport(
             Constants.VIEWPORT_WIDTH_TILES,
@@ -55,6 +55,12 @@ public abstract class BaseScreen implements Screen {
     public abstract void draw();
 
     // ─── Screen lifecycle ─────────────────────────────────────────
+
+    /** Hook khi screen vừa được kích hoạt */
+    public void onEnter() {}
+
+    /** Hook khi screen chuẩn bị rời khỏi stack */
+    public void onExit() {}
 
     @Override
     public final void render(float delta) {

@@ -1,9 +1,14 @@
 package com.main.game;
 
 import com.badlogic.gdx.Game;
+import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.main.game.navigation.ScreenId;
+import com.main.game.navigation.ScreenRouter;
 import com.main.game.screens.BaseScreen;
 import com.main.game.screens.GameScreen;
+import com.main.game.screens.StateScreen;
 
 /**
  * Entry point của game — thay thế file MainGame.java hiện tại.
@@ -13,20 +18,63 @@ import com.main.game.screens.GameScreen;
  * TODO(HUY-LEAD):
  *  - Chuẩn hóa lifecycle tài nguyên dùng chung (SpriteBatch, AssetManager).
  *  - Bổ sung cơ chế chuyển screen an toàn khi có Menu/Pause/GameOver.
+ *  done
  */
 public class MainGame extends Game {
 
-    public SpriteBatch batch;
+    private SpriteBatch batch;
+    private AssetManager assetManager;
+    private ScreenRouter screenRouter;
 
     @Override
     public void create() {
         batch = new SpriteBatch();
-        setScreen(new GameScreen(this));
+        assetManager = new AssetManager();
+        screenRouter = new ScreenRouter(this);
+        screenRouter.request(ScreenId.GAME);
+    }
+
+    @Override
+    public void render() {
+        screenRouter.flush();
+        super.render();
+    }
+
+    public Screen createScreen(ScreenId id) {
+        switch (id) {
+            case GAME:
+                return new GameScreen(this);
+            case MENU:
+            case PAUSE:
+            case GAME_OVER:
+                return new StateScreen(this, id);
+            default:
+                throw new IllegalArgumentException("Unsupported screen id: " + id);
+        }
+    }
+
+    public SpriteBatch getBatch() {
+        return batch;
+    }
+
+    public AssetManager getAssetManager() {
+        return assetManager;
+    }
+
+    public ScreenRouter getScreenRouter() {
+        return screenRouter;
     }
 
     @Override
     public void dispose() {
+        Screen current = getScreen();
+        if (current instanceof BaseScreen) {
+            ((BaseScreen) current).onExit();
+        }
+        if (current != null) {
+            current.dispose();
+        }
+        assetManager.dispose();
         batch.dispose();
-        if (getScreen() != null) getScreen().dispose();
     }
 }
