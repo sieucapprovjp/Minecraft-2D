@@ -18,7 +18,6 @@ import com.main.game.screens.StateScreen;
  * TODO(HUY-LEAD):
  *  - Chuẩn hóa lifecycle tài nguyên dùng chung (SpriteBatch, AssetManager).
  *  - Bổ sung cơ chế chuyển screen an toàn khi có Menu/Pause/GameOver.
- *  done
  */
 public class MainGame extends Game {
 

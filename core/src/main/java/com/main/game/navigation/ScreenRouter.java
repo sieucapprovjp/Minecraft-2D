@@ -14,6 +14,16 @@ public class ScreenRouter {
     }
 
     public void request(ScreenId next) {
+        if (next == null) {
+            return;
+        }
+
+        Screen current = game.getScreen();
+        if (pending == null && current instanceof BaseScreen) {
+            if (((BaseScreen) current).getScreenId() == next) {
+                return;
+            }
+        }
         this.pending = next;
     }
 

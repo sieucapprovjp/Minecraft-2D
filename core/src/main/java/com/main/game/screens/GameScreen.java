@@ -3,7 +3,14 @@ package com.main.game.screens;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
+import com.badlogic.gdx.math.Matrix4;
 import com.main.game.MainGame;
+import com.main.game.navigation.ScreenId;
 import com.main.game.physics.PhysicsEngine;
 import com.main.game.utils.Constants;
 import com.main.game.world.BlockPalette;
@@ -24,6 +31,11 @@ public class GameScreen extends BaseScreen {
     private PhysicsEngine physics;       // TODO(LHUNG-PHYSICS): collision + resolve
     // private Player     player;        // TODO(DUOC-ENTITY): player input/state
     // private MobManager mobManager;    // TODO(DUOC-ENTITY): AI mob update/render
+    private boolean paused;
+    private Texture overlayTexture;
+    private BitmapFont overlayFont;
+    private GlyphLayout overlayLayout;
+    private Matrix4 uiProjection;
 
     public GameScreen(MainGame game) {
         super(game);
@@ -36,6 +48,18 @@ public class GameScreen extends BaseScreen {
         world.generate(1337L);
         physics = new PhysicsEngine();
         // TODO(DUOC-ENTITY): khởi tạo Player + MobManager tại đây.
+        paused = false;
+
+        Pixmap overlayPixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+        overlayPixmap.setColor(Color.WHITE);
+        overlayPixmap.fill();
+        overlayTexture = new Texture(overlayPixmap);
+        overlayPixmap.dispose();
+
+        overlayFont = new BitmapFont();
+        overlayFont.setColor(Color.WHITE);
+        overlayLayout = new GlyphLayout();
+        uiProjection = new Matrix4();
 
         // Spawn camera gần mặt đất để test terrain dễ hơn.
         camera.position.set(world.width * 0.25f, world.height * 0.58f, 0f);
@@ -44,6 +68,23 @@ public class GameScreen extends BaseScreen {
 
     @Override
     public void update(float delta) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.P)) {
+            paused = !paused;
+        }
+        if (paused && (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || Gdx.input.isKeyJustPressed(Input.Keys.G))) {
+            paused = false;
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.M)) {
+            game.getScreenRouter().request(ScreenId.MENU);
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.K)) {
+            game.getScreenRouter().request(ScreenId.GAME_OVER);
+        }
+
+        if (paused) {
+            return;
+        }
+
         // TODO(KIEN-WORLD): camera test WASD chỉ dùng tạm; thay bằng camera follow player.
         float cameraSpeed = 16f; // tile/s
 
@@ -83,13 +124,45 @@ public class GameScreen extends BaseScreen {
         batch.draw(BlockPalette.STONE, 1.35f, Constants.VIEWPORT_HEIGHT_TILES - 1.25f, 1f, 1f);
         batch.draw(BlockPalette.BEDROCK, 2.45f, Constants.VIEWPORT_HEIGHT_TILES - 1.25f, 1f, 1f);
         batch.end();
+
+        if (paused) {
+            drawPauseOverlay();
+        }
+    }
+
+    private void drawPauseOverlay() {
+        uiProjection.setToOrtho2D(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        batch.setProjectionMatrix(uiProjection);
+
+        batch.begin();
+        Color prevColor = new Color(batch.getColor());
+        batch.setColor(0f, 0f, 0f, 0.35f);
+        batch.draw(overlayTexture, 0f, 0f, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        batch.setColor(prevColor);
+
+        drawCentered("PAUSED", Gdx.graphics.getHeight() * 0.62f);
+        drawCentered("P / ESC / G: Resume", Gdx.graphics.getHeight() * 0.48f);
+        drawCentered("M: Menu   K: Game Over", Gdx.graphics.getHeight() * 0.40f);
+        batch.end();
+    }
+
+    private void drawCentered(String text, float y) {
+        overlayLayout.setText(overlayFont, text);
+        float x = (Gdx.graphics.getWidth() - overlayLayout.width) * 0.5f;
+        overlayFont.draw(batch, overlayLayout, x, y);
     }
 
     @Override
     public void dispose() {
         super.dispose();
-        BlockPalette.dispose();
+        overlayTexture.dispose();
+        overlayFont.dispose();
         // player.dispose();
         // mobManager.dispose();
+    }
+
+    @Override
+    public ScreenId getScreenId() {
+        return ScreenId.GAME;
     }
 }

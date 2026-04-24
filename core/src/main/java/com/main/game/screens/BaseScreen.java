@@ -54,6 +54,9 @@ public abstract class BaseScreen implements Screen {
     /** Vẽ toàn bộ nội dung screen */
     public abstract void draw();
 
+    /** Định danh screen cho ScreenRouter */
+    public abstract com.main.game.navigation.ScreenId getScreenId();
+
     // ─── Screen lifecycle ─────────────────────────────────────────
 
     /** Hook khi screen vừa được kích hoạt */
