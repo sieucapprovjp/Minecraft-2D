@@ -29,9 +29,7 @@ public final class BlockPalette {
         WOOD    = loadRegionOrFallback("mvp/tiles/wood.png");
         LEAVES  = loadRegionOrFallback("mvp/tiles/leaves.png");
         PLANKS  = loadRegionOrFallback("mvp/tiles/planks.png");
-
-        // TODO(VHUNG-BLOCKS): thay bằng dirt texture thật khi team chốt asset.
-        DIRT = STONE;
+        DIRT    = loadRegionOrFallback("mvp/tiles/dirt.jpg");
     }
 
     private BlockPalette() {

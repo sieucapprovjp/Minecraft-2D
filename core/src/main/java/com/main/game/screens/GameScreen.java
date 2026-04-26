@@ -11,6 +11,7 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.math.Matrix4;
 import com.main.game.MainGame;
 import com.main.game.navigation.ScreenId;
+import com.main.game.entities.Player;
 import com.main.game.physics.PhysicsEngine;
 import com.main.game.utils.Constants;
 import com.main.game.world.BlockPalette;
@@ -27,9 +28,11 @@ import com.main.game.world.World;
  */
 public class GameScreen extends BaseScreen {
 
+    private static final float CAMERA_ZOOM = 0.65f;
+
     private World         world;         // TODO(KIEN-WORLD): quản lý world/chunk/camera follow
     private PhysicsEngine physics;       // TODO(LHUNG-PHYSICS): collision + resolve
-    // private Player     player;        // TODO(DUOC-ENTITY): player input/state
+    private Player        player;        // TODO(DUOC-ENTITY): player input/state
     // private MobManager mobManager;    // TODO(DUOC-ENTITY): AI mob update/render
     private boolean paused;
     private Texture overlayTexture;
@@ -47,8 +50,11 @@ public class GameScreen extends BaseScreen {
         // TODO(KIEN-WORLD): seed nên lấy từ save/game config thay vì hardcode.
         world.generate(1337L);
         physics = new PhysicsEngine();
-        // TODO(DUOC-ENTITY): khởi tạo Player + MobManager tại đây.
+        player = new Player(world.width * 0.25f, world.height * 0.66f);
+        // TODO(DUOC-ENTITY): khởi tạo MobManager tại đây.
         paused = false;
+
+        camera.zoom = CAMERA_ZOOM;
 
         Pixmap overlayPixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
         overlayPixmap.setColor(Color.WHITE);
@@ -61,8 +67,8 @@ public class GameScreen extends BaseScreen {
         overlayLayout = new GlyphLayout();
         uiProjection = new Matrix4();
 
-        // Spawn camera gần mặt đất để test terrain dễ hơn.
-        camera.position.set(world.width * 0.25f, world.height * 0.58f, 0f);
+        // Spawn camera theo player để gameplay dễ theo dõi.
+        camera.position.set(player.getX(), player.getY() + player.getHeight() * 0.5f, 0f);
         camera.update();
     }
 
@@ -85,16 +91,17 @@ public class GameScreen extends BaseScreen {
             return;
         }
 
-        // TODO(KIEN-WORLD): camera test WASD chỉ dùng tạm; thay bằng camera follow player.
-        float cameraSpeed = 16f; // tile/s
+        player.update(delta);
+        physics.update(player, world, delta);
 
-        if (Gdx.input.isKeyPressed(Input.Keys.A)) camera.position.x -= cameraSpeed * delta;
-        if (Gdx.input.isKeyPressed(Input.Keys.D)) camera.position.x += cameraSpeed * delta;
-        if (Gdx.input.isKeyPressed(Input.Keys.S)) camera.position.y -= cameraSpeed * delta;
-        if (Gdx.input.isKeyPressed(Input.Keys.W)) camera.position.y += cameraSpeed * delta;
+        float targetX = player.getX();
+        float targetY = player.getY() + player.getHeight() * 0.5f;
+        float followLerp = Math.min(1f, delta * 7f);
+        camera.position.x += (targetX - camera.position.x) * followLerp;
+        camera.position.y += (targetY - camera.position.y) * followLerp;
 
-        float halfW = camera.viewportWidth / 2f;
-        float halfH = camera.viewportHeight / 2f;
+        float halfW = camera.viewportWidth * camera.zoom / 2f;
+        float halfH = camera.viewportHeight * camera.zoom / 2f;
         camera.position.x = Math.max(halfW, Math.min(world.width - halfW, camera.position.x));
         camera.position.y = Math.max(halfH, Math.min(world.height - halfH, camera.position.y));
 
@@ -114,7 +121,7 @@ public class GameScreen extends BaseScreen {
 
         batch.begin();
         world.render(batch, camera);
-        // TODO(DUOC-ENTITY): render player.
+        player.render(batch);
         // TODO(DUOC-ENTITY): render mob manager.
         batch.end();
 
@@ -157,7 +164,7 @@ public class GameScreen extends BaseScreen {
         super.dispose();
         overlayTexture.dispose();
         overlayFont.dispose();
-        // player.dispose();
+        player.dispose();
         // mobManager.dispose();
     }
 
