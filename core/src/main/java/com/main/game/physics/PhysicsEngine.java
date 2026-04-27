@@ -49,6 +49,14 @@ public class PhysicsEngine {
     }
 
     // ─── TODO: Lâm Hùng implement tiếp ───────────────────────────
+    void applyGravity() {
+        applyGravity((Entity) null, 0.0F);
+    }
+
+    // ─── TODO: Lâm Hùng implement tiếp ───────────────────────────
+    void resolveCollision(Entity e, float delta){
+
+    }// phải set e.onGround
 
     // public void checkBlockCollision(Entity entity, World world) { ... }
     // public void resolveCollision(Entity entity, AbstractBlock block) { ... }
