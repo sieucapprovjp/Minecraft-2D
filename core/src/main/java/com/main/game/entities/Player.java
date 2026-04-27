@@ -165,7 +165,8 @@ public class Player extends Entity {
         // Layer order: [optional back limbs] -> body -> head -> front leg+boot -> front arm
         if (drawBackLimbs) {
             drawLegWithBoot(batch, legBackFrame, baseX, baseY, LEG_BACK_X, legBackAngle);
-            drawRigPart(batch, armBackFrame, baseX, baseY, ARM_BACK_X, ARM_Y, ARM_W, ARM_H, 0.10f, 0.11f, armBackAngle);
+            // SỬA LỖI PIVOT Y CÁNH TAY: Từ 0.11f thành ARM_H
+            drawRigPart(batch, armBackFrame, baseX, baseY, ARM_BACK_X, ARM_Y, ARM_W, ARM_H, 0.10f, ARM_H, armBackAngle);
         }
 
         drawStaticPartRotated(batch, bodyFrame, baseX, baseY, BODY_X, BODY_Y, BODY_W, BODY_H, 0.25f, 0.60f, bodyAngle);
@@ -173,7 +174,8 @@ public class Player extends Entity {
 
         drawLegWithBoot(batch, legFrontFrame, baseX, baseY, LEG_FRONT_X, legFrontAngle);
 
-        drawRigPart(batch, armFrontFrame, baseX, baseY, ARM_FRONT_X, ARM_Y, ARM_W, ARM_H, 0.10f, 0.11f, armFrontAngle);
+        // SỬA LỖI PIVOT Y CÁNH TAY: Từ 0.11f thành ARM_H
+        drawRigPart(batch, armFrontFrame, baseX, baseY, ARM_FRONT_X, ARM_Y, ARM_W, ARM_H, 0.10f, ARM_H, armFrontAngle);
     }
 
     private void drawLegWithBoot(SpriteBatch batch, TextureRegion legFrame,
@@ -201,22 +203,27 @@ public class Player extends Entity {
                              float partW, float partH,
                              float pivotX, float pivotY,
                              float angle) {
+        // drawX PHẢI ĐƯỢC LẬT để vị trí local là chính xác trên thân
         float drawX = facingRight
             ? baseX + localX
             : baseX + (width - localX - partW);
 
-        float originX = facingRight ? pivotX : (partW - pivotX);
-        float rotation = facingRight ? angle : -angle;
+        // Gốc xoay KHÔNG thay đổi, nó vẫn là pivotX trên texture
+        float originX = pivotX;
+        // Lật hình ảnh và origin quanh điểm origin bằng scale
+        float scaleX = facingRight ? 1f : -1f;
+        // Góc xoay KHÔNG thay đổi, chuyển động đối xứng
+        float rotation = angle;
 
         batch.draw(
             texture,
             snapPos(drawX),
             snapPos(baseY + localY),
-            originX,
-            pivotY,
+            originX,               // Sử dụng pivotX làm originX
+            pivotY,               // Gốc xoay không thay đổi
             partW,
             partH,
-            1f,
+            scaleX,               // Sử dụng scale để lật
             1f,
             rotation
         );
@@ -228,11 +235,14 @@ public class Player extends Entity {
                                        float partW, float partH,
                                        float pivotX, float pivotY,
                                        float angle) {
+        // Tương tự cho static part có rotation
         float drawX = facingRight
             ? baseX + localX
             : baseX + (width - localX - partW);
-        float originX = facingRight ? pivotX : (partW - pivotX);
-        float rotation = facingRight ? angle : -angle;
+
+        float originX = pivotX;
+        float scaleX = facingRight ? 1f : -1f;
+        float rotation = angle;
 
         batch.draw(
             texture,
@@ -242,7 +252,7 @@ public class Player extends Entity {
             pivotY,
             partW,
             partH,
-            1f,
+            scaleX,
             1f,
             rotation
         );
