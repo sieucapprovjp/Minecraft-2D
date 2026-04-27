@@ -48,7 +48,9 @@ public class Player extends Entity {
     public Player(float x, float y, PhysicsEngine physics) {
         super(x, y, PLAYER_W, PLAYER_H);
         this.physics = physics;
-        this.texture = new Texture(Gdx.files.internal("player_placeholder.png"));
+
+        // TODO(DUOC-ENTITY): thay bằng TextureAtlas + animation từ Việt Hùng khi có
+        this.texture = new Texture(Gdx.files.internal("mvp/player/body2.png"));
     }
 
     // ─── Vòng đời ──────────────────────────────────────────────

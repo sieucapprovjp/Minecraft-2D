@@ -8,12 +8,12 @@ import com.main.game.utils.Constants;
  * LÂM HÙNG sẽ implement chi tiết class này.
  *
  * Hiện tại có sẵn:
- *  - applyGravity()  — áp dụng trọng lực lên entity
- *  - applyVelocity() — di chuyển entity theo velocity
+ *  - applyGravity()  → áp dụng trọng lực lên entity
+ *  - applyVelocity() → di chuyển entity theo velocity
  *
  * Lâm Hùng cần implement thêm:
- *  - checkBlockCollision() — kiểm tra va chạm với block
- *  - resolveCollision()    — xử lý sau khi phát hiện va chạm
+ *  - checkBlockCollision() → kiểm tra va chạm với block
+ *  - resolveCollision()    → xử lý sau khi phát hiện va chạm
  *
  * TODO(LHUNG-PHYSICS):
  *  - Tách resolve theo 2 trục X/Y để tránh kẹt góc.
@@ -32,12 +32,33 @@ public class PhysicsEngine {
         applyVelocity(entity, delta);
     }
 
-    /** Kéo entity xuống theo gravity, giới hạn ở TERMINAL_VELOCITY */
-    private void applyGravity(Entity entity, float delta) {
+    /**
+     * Kéo entity xuống theo gravity, giới hạn ở TERMINAL_VELOCITY.
+     * Được gọi bởi Player.update() và Mob.update() (DUOC-ENTITY).
+     */
+    public void applyGravity(Entity entity, float delta) {
         if (!entity.isOnGround()) {
             float vy = entity.getVelocity().y + Constants.GRAVITY * delta;
             entity.getVelocity().y = Math.max(vy, Constants.TERMINAL_VELOCITY);
         }
+    }
+
+    /**
+     * Xử lý va chạm với block và cập nhật onGround.
+     * TODO(LHUNG-PHYSICS): implement AABB collision đầy đủ tại đây.
+     */
+    public void resolveCollision(Entity entity, float delta) {
+        // TODO(LHUNG-PHYSICS): implement chi tiết
+        // Tạm thời chặn entity không rơi xuống dưới y = 0
+        if (entity.getPosition().y <= 0) {
+            entity.getPosition().y = 0;
+            entity.getVelocity().y = 0;
+            entity.setOnGround(true);
+        } else {
+            entity.setOnGround(false);
+        }
+        applyVelocity(entity, delta);
+        // TODO: entity.getBounds().setPosition(entity.getPosition()); đã có trong applyVelocity
     }
 
     /** Di chuyển entity theo velocity hiện tại */
@@ -48,16 +69,5 @@ public class PhysicsEngine {
         entity.getBounds().setPosition(entity.getPosition());
     }
 
-    // ─── TODO: Lâm Hùng implement tiếp ───────────────────────────
-    void applyGravity() {
-        applyGravity((Entity) null, 0.0F);
-    }
-
-    // ─── TODO: Lâm Hùng implement tiếp ───────────────────────────
-    void resolveCollision(Entity e, float delta){
-
-    }// phải set e.onGround
-
     // public void checkBlockCollision(Entity entity, World world) { ... }
-    // public void resolveCollision(Entity entity, AbstractBlock block) { ... }
 }

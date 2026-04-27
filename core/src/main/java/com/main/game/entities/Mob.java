@@ -1,5 +1,6 @@
 package com.main.game.entities;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
@@ -98,6 +99,10 @@ public class Mob extends Entity {
                 health        = 20;
                 break;
         }
+
+        // TODO(DUOC-ENTITY): thay bằng TextureAtlas + animation từ Việt Hùng khi có
+        // Hiện chỉ có asset cow trong assets — dùng tạm cho mọi mob type
+        this.texture = new Texture(Gdx.files.internal("mvp/mob/cow/cow_look.png"));
     }
 
     // ─── Vòng đời ──────────────────────────────────────────────
