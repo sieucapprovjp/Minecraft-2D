@@ -72,6 +72,7 @@ public class Player extends Entity {
     private float bodyAngle;
     private float headOffsetY;
     private float groundedGrace;
+    private boolean isBanned = false;
 
     public Player(float x, float y) {
         super(x, y, Constants.PLAYER_WIDTH, Constants.PLAYER_HEIGHT);
@@ -102,6 +103,8 @@ public class Player extends Entity {
 
     @Override
     public void update(float delta) {
+        if (isBanned) return;
+
         float horizontal = 0f;
         if (Gdx.input.isKeyPressed(Input.Keys.LEFT) || Gdx.input.isKeyPressed(Input.Keys.A)) {
             horizontal -= 1f;
@@ -314,6 +317,14 @@ public class Player extends Entity {
 
     public PlayerState getState() {
         return state;
+    }
+
+    public void ban() {
+        isBanned = true;
+    }
+
+    public boolean isBanned() {
+        return isBanned;
     }
 
     @Override

@@ -11,6 +11,7 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.math.Matrix4;
 import com.main.game.MainGame;
 import com.main.game.navigation.ScreenId;
+import com.main.game.world.DemoBlockViewer;
 import com.main.game.entities.Player;
 import com.main.game.physics.PhysicsEngine;
 import com.main.game.utils.Constants;
@@ -83,8 +84,17 @@ public class GameScreen extends BaseScreen {
         if (Gdx.input.isKeyJustPressed(Input.Keys.M)) {
             game.getScreenRouter().request(ScreenId.MENU);
         }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.O)) {
+            // Populate a demo grid of available blocks near the player foothold.
+            int sx = Math.max(2, (int) player.getX());
+            int sy = Math.max(2, (int) player.getY());
+            DemoBlockViewer.populateDemo(world, sx, sy);
+        }
         if (Gdx.input.isKeyJustPressed(Input.Keys.K)) {
             game.getScreenRouter().request(ScreenId.GAME_OVER);
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.B)) {
+            player.ban();
         }
 
         if (paused) {
@@ -127,9 +137,15 @@ public class GameScreen extends BaseScreen {
 
         batch.setProjectionMatrix(viewport.getCamera().combined);
         batch.begin();
-        batch.draw(BlockPalette.GRASS, 0.25f, Constants.VIEWPORT_HEIGHT_TILES - 1.25f, 1f, 1f);
-        batch.draw(BlockPalette.STONE, 1.35f, Constants.VIEWPORT_HEIGHT_TILES - 1.25f, 1f, 1f);
-        batch.draw(BlockPalette.BEDROCK, 2.45f, Constants.VIEWPORT_HEIGHT_TILES - 1.25f, 1f, 1f);
+        if (BlockPalette.GRASS != null) {
+            batch.draw(BlockPalette.GRASS, 0.25f, Constants.VIEWPORT_HEIGHT_TILES - 1.25f, 1f, 1f);
+        }
+        if (BlockPalette.STONE != null) {
+            batch.draw(BlockPalette.STONE, 1.35f, Constants.VIEWPORT_HEIGHT_TILES - 1.25f, 1f, 1f);
+        }
+        if (BlockPalette.BEDROCK != null) {
+            batch.draw(BlockPalette.BEDROCK, 2.45f, Constants.VIEWPORT_HEIGHT_TILES - 1.25f, 1f, 1f);
+        }
         batch.end();
 
         if (paused) {
