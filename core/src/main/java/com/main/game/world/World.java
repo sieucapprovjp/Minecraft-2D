@@ -8,61 +8,55 @@ import com.main.game.utils.Constants;
 
 import java.util.Random;
 
-/**
- * Quản lý toàn bộ map game: lưu trữ và truy xuất block.
- * KIÊN sẽ implement terrain generation và camera control.
- *
- * Hiện tại có sẵn:
- *  - Mảng 2D lưu block
- *  - getBlock() / setBlock() để truy xuất
- *  - isInBounds() kiểm tra tọa độ hợp lệ
- *
- * Kiên cần implement thêm:
- *  - generate() — sinh địa hình
- *  - render()   — vẽ các tile nhìn thấy trong camera
- *
- * TODO(KIEN-WORLD):
- *  - Terrain hiện tại là bản nền (noise-lite), cần nâng cấp perlin/simplex + cave.
- *  - Tích hợp chunk data để tối ưu streaming world lớn.
- *  - Thêm API lấy spawn point cho player.
- */
 public class World {
 
     private final AbstractBlock[][] blocks;
-    public  final int width;
-    public  final int height;
+    public final int width;
+    public final int height;
 
     public World() {
-        this.width  = Constants.WORLD_WIDTH;
+        this.width = Constants.WORLD_WIDTH;
         this.height = Constants.WORLD_HEIGHT;
         this.blocks = new AbstractBlock[width][height];
     }
 
-    /** Lấy block tại tọa độ tile (x, y) */
     public AbstractBlock getBlock(int x, int y) {
-        if (!isInBounds(x, y)) return null;
+        if (!isInBounds(x, y)) {
+            return null;
+        }
         return blocks[x][y];
     }
 
-    /** Đặt block tại tọa độ tile (x, y) */
     public void setBlock(int x, int y, AbstractBlock block) {
-        if (!isInBounds(x, y)) return;
+        if (!isInBounds(x, y)) {
+            return;
+        }
         blocks[x][y] = block;
     }
 
-    /** Kiểm tra tọa độ có nằm trong world không */
     public boolean isInBounds(int x, int y) {
         return x >= 0 && x < width && y >= 0 && y < height;
     }
 
-    /** Block có solid không — Lâm Hùng dùng cho collision */
     public boolean isSolid(int x, int y) {
         AbstractBlock block = getBlock(x, y);
         return block != null && block.isSolid();
     }
 
+    public int getSurfaceY(int x) {
+        if (x < 0 || x >= width) {
+            return 0;
+        }
+
+        for (int y = height - 1; y >= 0; y--) {
+            if (isSolid(x, y)) {
+                return y;
+            }
+        }
+        return 0;
+    }
+
     public void generate(long seed) {
-        // TODO(KIEN-WORLD): thay Random + sin bằng noise map có seed ổn định theo chunk.
         Random random = new Random(seed);
         int baseGround = height / 2;
 
@@ -116,7 +110,6 @@ public class World {
     }
 
     public void render(SpriteBatch batch, OrthographicCamera camera) {
-        // TODO(KIEN-WORLD): mở rộng culling theo chunk để giảm loop khi world lớn.
         int minX = Math.max(0, (int) Math.floor(camera.position.x - camera.viewportWidth / 2f) - 1);
         int maxX = Math.min(width - 1, (int) Math.ceil(camera.position.x + camera.viewportWidth / 2f) + 1);
         int minY = Math.max(0, (int) Math.floor(camera.position.y - camera.viewportHeight / 2f) - 1);

@@ -21,17 +21,17 @@ public final class BlockPalette {
     private static TextureRegion fallbackRegion;
 
     static {
-        STONE   = loadRegion("mvp/tiles/stone.png");
+        STONE   = loadRegion("organized_assets_en/images/tiles/smooth-stone.png");
         fallbackRegion = STONE;
-        GRASS   = loadRegionOrFallback("mvp/tiles/grass.png");
-        BEDROCK = loadRegionOrFallback("mvp/tiles/bedrock.png");
-        SAND    = loadRegionOrFallback("mvp/tiles/sand.png");
-        WOOD    = loadRegionOrFallback("mvp/tiles/wood.png");
-        LEAVES  = loadRegionOrFallback("mvp/tiles/leaves.png");
-        PLANKS  = loadRegionOrFallback("mvp/tiles/planks.png");
+        GRASS   = loadRegionOrFallback("organized_assets_en/images/tiles/grass.png");
+        BEDROCK = loadRegionOrFallback("organized_assets_en/images/tiles/bedrock.png");
+        SAND    = loadRegionOrFallback("organized_assets_en/images/tiles/sand.png");
+        WOOD    = loadRegionOrFallback("organized_assets_en/images/tiles/wood.png");
+        LEAVES  = loadRegionOrFallback("organized_assets_en/images/tiles/leaves.png");
+        PLANKS  = loadRegionOrFallback("organized_assets_en/images/tiles/woodenplanks.png");
 
         // TODO(VHUNG-BLOCKS): thay bằng dirt texture thật khi team chốt asset.
-        DIRT = STONE;
+        DIRT    = loadRegionOrFallback("organized_assets_en/images/tiles/coarse_dirt.png");
     }
 
     private BlockPalette() {

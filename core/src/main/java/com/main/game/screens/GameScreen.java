@@ -1,29 +1,23 @@
 package com.main.game.screens;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.graphics.GL20;
 import com.main.game.MainGame;
+import com.main.game.entities.player.Player;
+import com.main.game.entities.player.Player.Appearance;
+import com.main.game.mob.cow.Cow;
 import com.main.game.physics.PhysicsEngine;
 import com.main.game.utils.Constants;
 import com.main.game.world.BlockPalette;
 import com.main.game.world.World;
 
-/**
- * Screen chính của game — nơi mọi module hội tụ.
- *
- * Mỗi thành viên chỉ cần quan tâm đến object của mình,
- * GameScreen lo việc gọi update/render theo đúng thứ tự.
- *
- * TODO(HUY-LEAD):
- *  - Đây là điểm integration chính, chỉ merge khi module giao diện giữa các team ổn định.
- */
 public class GameScreen extends BaseScreen {
 
-    private World         world;         // TODO(KIEN-WORLD): quản lý world/chunk/camera follow
-    private PhysicsEngine physics;       // TODO(LHUNG-PHYSICS): collision + resolve
-    // private Player     player;        // TODO(DUOC-ENTITY): player input/state
-    // private MobManager mobManager;    // TODO(DUOC-ENTITY): AI mob update/render
+    private World world;
+    private PhysicsEngine physics;
+    private Player player;
+    private Cow cow;
 
     public GameScreen(MainGame game) {
         super(game);
@@ -31,36 +25,48 @@ public class GameScreen extends BaseScreen {
 
     @Override
     public void show() {
-        world   = new World();
-        // TODO(KIEN-WORLD): seed nên lấy từ save/game config thay vì hardcode.
+        disposeEntities();
+
+        world = new World();
         world.generate(1337L);
         physics = new PhysicsEngine();
-        // TODO(DUOC-ENTITY): khởi tạo Player + MobManager tại đây.
 
-        // Spawn camera gần mặt đất để test terrain dễ hơn.
-        camera.position.set(world.width * 0.25f, world.height * 0.58f, 0f);
+        int playerSpawnX = 16;
+        int cowSpawnX = 22;
+
+        player = new Player(playerSpawnX, world.getSurfaceY(playerSpawnX) + 1f);
+        cow = new Cow(cowSpawnX, world.getSurfaceY(cowSpawnX) + 1f, cowSpawnX - 4f, cowSpawnX + 4f);
+
+        camera.position.set(player.getX(), player.getY() + 5f, 0f);
         camera.update();
     }
 
     @Override
     public void update(float delta) {
-        // TODO(KIEN-WORLD): camera test WASD chỉ dùng tạm; thay bằng camera follow player.
-        float cameraSpeed = 16f; // tile/s
+        if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+            show();
+            return;
+        }
 
-        if (Gdx.input.isKeyPressed(Input.Keys.A)) camera.position.x -= cameraSpeed * delta;
-        if (Gdx.input.isKeyPressed(Input.Keys.D)) camera.position.x += cameraSpeed * delta;
-        if (Gdx.input.isKeyPressed(Input.Keys.S)) camera.position.y -= cameraSpeed * delta;
-        if (Gdx.input.isKeyPressed(Input.Keys.W)) camera.position.y += cameraSpeed * delta;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1)) {
+            player.setAppearance(Appearance.BODY_2);
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_2)) {
+            player.setAppearance(Appearance.BODY_4);
+        }
+
+        player.update(delta);
+        physics.update(player, world, delta);
+
+        cow.update(delta);
+
+        camera.position.x = player.getX();
+        camera.position.y = player.getY() + 5f;
 
         float halfW = camera.viewportWidth / 2f;
         float halfH = camera.viewportHeight / 2f;
         camera.position.x = Math.max(halfW, Math.min(world.width - halfW, camera.position.x));
         camera.position.y = Math.max(halfH, Math.min(world.height - halfH, camera.position.y));
-
-        // TODO(LHUNG-PHYSICS + DUOC-ENTITY):
-        //  - physics.update(player, delta)
-        //  - collision world/entity
-        //  - mobManager.update(delta)
     }
 
     @Override
@@ -73,8 +79,8 @@ public class GameScreen extends BaseScreen {
 
         batch.begin();
         world.render(batch, camera);
-        // TODO(DUOC-ENTITY): render player.
-        // TODO(DUOC-ENTITY): render mob manager.
+        cow.render(batch);
+        player.render(batch);
         batch.end();
 
         batch.setProjectionMatrix(viewport.getCamera().combined);
@@ -88,8 +94,18 @@ public class GameScreen extends BaseScreen {
     @Override
     public void dispose() {
         super.dispose();
+        disposeEntities();
         BlockPalette.dispose();
-        // player.dispose();
-        // mobManager.dispose();
+    }
+
+    private void disposeEntities() {
+        if (player != null) {
+            player.dispose();
+            player = null;
+        }
+        if (cow != null) {
+            cow.dispose();
+            cow = null;
+        }
     }
 }

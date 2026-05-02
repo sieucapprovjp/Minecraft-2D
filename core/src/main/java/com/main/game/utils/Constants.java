@@ -2,44 +2,61 @@ package com.main.game.utils;
 
 public final class Constants {
 
-    // TODO(HUY-LEAD):
-    //  - Tách nhóm constant theo module nếu file này quá tải (WorldConstants, PhysicsConstants...).
-    //  - Đặt quy tắc khi nào được sửa giá trị gameplay để tránh conflict giữa các team.
+    private Constants() {}
 
-    private Constants() {} // Không cho khởi tạo
+    public static final int SCREEN_WIDTH = 1280;
+    public static final int SCREEN_HEIGHT = 720;
+    public static final String GAME_TITLE = "Paper Minecraft";
 
-    // ─── Màn hình ────────────────────────────────────────────────
-    public static final int    SCREEN_WIDTH         = 1280;
-    public static final int    SCREEN_HEIGHT        = 720;
-    public static final String GAME_TITLE           = "Paper Minecraft";
+    public static final int TILE_SIZE = 32;
+    public static final int WORLD_WIDTH = 400;
+    public static final int WORLD_HEIGHT = 128;
+    public static final int CHUNK_SIZE = 16;
 
-    // ─── Tile / World ────────────────────────────────────────────
-    public static final int   TILE_SIZE             = 32;       // pixel
-    public static final int   WORLD_WIDTH           = 400;      // số tile ngang (team chốt)
-    public static final int   WORLD_HEIGHT          = 128;      // số tile dọc
-    public static final int   CHUNK_SIZE            = 16;       // tile mỗi chunk
+    public static final float VIEWPORT_WIDTH_TILES = (float) SCREEN_WIDTH / TILE_SIZE;
+    public static final float VIEWPORT_HEIGHT_TILES = (float) SCREEN_HEIGHT / TILE_SIZE;
 
-    // ─── Camera / Viewport ───────────────────────────────────────
-    // Dùng đơn vị tile cho camera (1 unit = 1 tile) để tránh làm việc với pixel
-    public static final float VIEWPORT_WIDTH_TILES  = (float) SCREEN_WIDTH  / TILE_SIZE; // 40f
-    public static final float VIEWPORT_HEIGHT_TILES = (float) SCREEN_HEIGHT / TILE_SIZE; // 22.5f
+    public static final float GRAVITY = -25f;
+    public static final float TERMINAL_VELOCITY = -20f;
 
-    // ─── Physics ─────────────────────────────────────────────────
-    public static final float GRAVITY               = -25f;     // tile/s²
-    public static final float TERMINAL_VELOCITY     = -20f;     // tile/s
+    public static final float PLAYER_SPEED = 8f;
+    public static final float PLAYER_JUMP_FORCE = 12f;
+    public static final float PLAYER_WIDTH = 0.9f;
+    public static final float PLAYER_HEIGHT = 1.9f;
 
-    // ─── Player ──────────────────────────────────────────────────
-    public static final float PLAYER_SPEED          = 8f;       // tile/s
-    public static final float PLAYER_JUMP_FORCE     = 12f;      // tile/s
-    public static final float PLAYER_WIDTH          = 0.9f;     // tile
-    public static final float PLAYER_HEIGHT         = 1.9f;     // tile
+    public static final float COW_SPEED = 1.4f;
+    public static final float COW_WIDTH = 1.6f;
+    public static final float COW_HEIGHT = 1.2f;
 
-    // ─── Assets paths ────────────────────────────────────────────
-    public static final String TEXTURE_ATLAS_PATH   = "atlas/tiles.atlas";
+    public static final String TEXTURE_ATLAS_PATH = "atlas/tiles.atlas";
+    public static final String PLAYER_BODY_1_PATH = "organized_assets_en/images/steve/body2.png";
+    public static final String PLAYER_BODY_2_PATH = "organized_assets_en/images/steve/body4.png";
+    public static final String[] PLAYER_WALK_PATHS = {
+        "organized_assets_en/images/steve/body_cp_2.png",
+        "organized_assets_en/images/steve/body_cp_3.png",
+        "organized_assets_en/images/steve/body_cp_5.png",
+        "organized_assets_en/images/steve/body_cp_7.png",
+        "organized_assets_en/images/steve/body_cp_8.png",
+        "organized_assets_en/images/steve/body_cp_9.png",
+        "organized_assets_en/images/steve/body_cp_10.png",
+        "organized_assets_en/images/steve/body_cp_11.png",
+        "organized_assets_en/images/steve/body_cp_12.png",
+        "organized_assets_en/images/steve/body_cp_13.png",
+        "organized_assets_en/images/steve/body_cp_14.png"
+    };
+    public static final String COW_IDLE_PATH = "organized_assets_en/images/mobs/cowlook.png";
+    public static final String COW_HURT_PATH = "organized_assets_en/images/mobs/cow-hurt.png";
+    public static final String[] COW_WALK_PATHS = {
+        "organized_assets_en/images/mobs/cow1.png",
+        "organized_assets_en/images/mobs/cow2.png",
+        "organized_assets_en/images/mobs/cow3.png",
+        "organized_assets_en/images/mobs/cow4.png",
+        "organized_assets_en/images/mobs/cow5.png",
+        "organized_assets_en/images/mobs/cow6.png"
+    };
 
-    // ─── Render layer ────────────────────────────────────────────
-    public static final int LAYER_BACKGROUND        = 0;
-    public static final int LAYER_WORLD             = 1;
-    public static final int LAYER_ENTITY            = 2;
-    public static final int LAYER_UI                = 3;
+    public static final int LAYER_BACKGROUND = 0;
+    public static final int LAYER_WORLD = 1;
+    public static final int LAYER_ENTITY = 2;
+    public static final int LAYER_UI = 3;
 }
