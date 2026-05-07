@@ -10,8 +10,10 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.math.Matrix4;
 import com.main.game.MainGame;
-import com.main.game.navigation.ScreenId;
+import com.main.game.entities.EntityManager;
+import com.main.game.entities.Mob;
 import com.main.game.entities.Player;
+import com.main.game.navigation.ScreenId;
 import com.main.game.physics.PhysicsEngine;
 import com.main.game.utils.Constants;
 import com.main.game.world.BlockPalette;
@@ -30,10 +32,10 @@ public class GameScreen extends BaseScreen {
 
     private static final float CAMERA_ZOOM = 0.65f;
 
-    private World         world;         // TODO(KIEN-WORLD): quản lý world/chunk/camera follow
-    private PhysicsEngine physics;       // TODO(LHUNG-PHYSICS): collision + resolve
-    private Player        player;        // TODO(DUOC-ENTITY): player input/state
-    // private MobManager mobManager;    // TODO(DUOC-ENTITY): AI mob update/render
+    private World         world;          // TODO(KIEN-WORLD): quản lý world/chunk/camera follow
+    private PhysicsEngine physics;        // TODO(LHUNG-PHYSICS): collision + resolve
+    private Player        player;         // DUOC-ENTITY: player input/state machine
+    private EntityManager entityManager;  // DUOC-ENTITY: quản lý update/render entity
     private boolean paused;
     private Texture overlayTexture;
     private BitmapFont overlayFont;
@@ -46,14 +48,26 @@ public class GameScreen extends BaseScreen {
 
     @Override
     public void show() {
-        world   = new World();
+        world = new World();
         // TODO(KIEN-WORLD): seed nên lấy từ save/game config thay vì hardcode.
         world.generate(1337L);
-        physics = new PhysicsEngine();
-        player = new Player(world.width * 0.25f, world.height * 0.66f);
-        // TODO(DUOC-ENTITY): khởi tạo MobManager tại đây.
-        paused = false;
 
+        physics = new PhysicsEngine();
+
+        // ── Khởi tạo Player ─────────────────────────── DUOC-ENTITY ──
+        float spawnX = world.width * 0.25f;
+        float spawnY = world.height * 0.58f;
+        player = new Player(spawnX, spawnY, physics);
+
+        // ── Khởi tạo EntityManager ───────────────────── DUOC-ENTITY ──
+        entityManager = new EntityManager();
+        entityManager.setPlayer(player);
+
+        // ── Spawn mob mẫu để test ────────────────────── DUOC-ENTITY ──
+        entityManager.addMob(new Mob(spawnX + 10f, spawnY, Mob.MobType.ZOMBIE,    player, physics));
+        entityManager.addMob(new Mob(spawnX + 20f, spawnY, Mob.MobType.SKELETON,  player, physics));
+
+        paused = false;
         camera.zoom = CAMERA_ZOOM;
 
         Pixmap overlayPixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
@@ -67,8 +81,8 @@ public class GameScreen extends BaseScreen {
         overlayLayout = new GlyphLayout();
         uiProjection = new Matrix4();
 
-        // Spawn camera theo player để gameplay dễ theo dõi.
-        camera.position.set(player.getX(), player.getY() + player.getHeight() * 0.5f, 0f);
+        // Spawn camera gần mặt đất để test terrain dễ hơn.
+        camera.position.set(spawnX, spawnY, 0f);
         camera.update();
     }
 
@@ -91,24 +105,32 @@ public class GameScreen extends BaseScreen {
             return;
         }
 
-        player.update(delta);
-        physics.update(player, world, delta);
+        // DUOC-ENTITY: update toàn bộ entity (Player input + Mob AI + sync physics)
+        entityManager.update(delta);
 
-        float targetX = player.getX();
-        float targetY = player.getY() + player.getHeight() * 0.5f;
-        float followLerp = Math.min(1f, delta * 7f);
-        camera.position.x += (targetX - camera.position.x) * followLerp;
-        camera.position.y += (targetY - camera.position.y) * followLerp;
-
-        float halfW = camera.viewportWidth * camera.zoom / 2f;
+        float halfW = camera.viewportWidth  * camera.zoom / 2f;
         float halfH = camera.viewportHeight * camera.zoom / 2f;
-        camera.position.x = Math.max(halfW, Math.min(world.width - halfW, camera.position.x));
-        camera.position.y = Math.max(halfH, Math.min(world.height - halfH, camera.position.y));
 
-        // TODO(LHUNG-PHYSICS + DUOC-ENTITY):
-        //  - physics.update(player, delta)
-        //  - collision world/entity
-        //  - mobManager.update(delta)
+        if (player != null && player.isAlive()) {
+            // DUOC-ENTITY: camera follow player — clamp trong biên world
+            // TODO(KIEN-WORLD): chuyển logic này sang CameraController khi có chunk system
+            float targetX = player.getX() + Player.PLAYER_W / 2f;
+            float targetY = player.getY() + Player.PLAYER_H / 2f;
+            float followLerp = Math.min(1f, delta * 7f);
+            camera.position.x += (targetX - camera.position.x) * followLerp;
+            camera.position.y += (targetY - camera.position.y) * followLerp;
+            camera.position.x = Math.max(halfW, Math.min(world.width  - halfW, camera.position.x));
+            camera.position.y = Math.max(halfH, Math.min(world.height - halfH, camera.position.y));
+        } else {
+            // Fallback WASD khi player chết hoặc chưa có
+            float cameraSpeed = 16f;
+            if (Gdx.input.isKeyPressed(Input.Keys.A)) camera.position.x -= cameraSpeed * delta;
+            if (Gdx.input.isKeyPressed(Input.Keys.D)) camera.position.x += cameraSpeed * delta;
+            if (Gdx.input.isKeyPressed(Input.Keys.S)) camera.position.y -= cameraSpeed * delta;
+            if (Gdx.input.isKeyPressed(Input.Keys.W)) camera.position.y += cameraSpeed * delta;
+            camera.position.x = Math.max(halfW, Math.min(world.width  - halfW, camera.position.x));
+            camera.position.y = Math.max(halfH, Math.min(world.height - halfH, camera.position.y));
+        }
     }
 
     @Override
@@ -121,14 +143,14 @@ public class GameScreen extends BaseScreen {
 
         batch.begin();
         world.render(batch, camera);
-        player.render(batch);
-        // TODO(DUOC-ENTITY): render mob manager.
+        entityManager.render(batch); // DUOC-ENTITY: mob trước, player sau (render order)
         batch.end();
 
+        // ── HUD / debug block palette ────────────────────────────
         batch.setProjectionMatrix(viewport.getCamera().combined);
         batch.begin();
-        batch.draw(BlockPalette.GRASS, 0.25f, Constants.VIEWPORT_HEIGHT_TILES - 1.25f, 1f, 1f);
-        batch.draw(BlockPalette.STONE, 1.35f, Constants.VIEWPORT_HEIGHT_TILES - 1.25f, 1f, 1f);
+        batch.draw(BlockPalette.GRASS,   0.25f, Constants.VIEWPORT_HEIGHT_TILES - 1.25f, 1f, 1f);
+        batch.draw(BlockPalette.STONE,   1.35f, Constants.VIEWPORT_HEIGHT_TILES - 1.25f, 1f, 1f);
         batch.draw(BlockPalette.BEDROCK, 2.45f, Constants.VIEWPORT_HEIGHT_TILES - 1.25f, 1f, 1f);
         batch.end();
 
@@ -162,10 +184,10 @@ public class GameScreen extends BaseScreen {
     @Override
     public void dispose() {
         super.dispose();
+        BlockPalette.dispose();
         overlayTexture.dispose();
         overlayFont.dispose();
-        player.dispose();
-        // mobManager.dispose();
+        entityManager.dispose(); // DUOC-ENTITY: giải phóng tài nguyên player + mob
     }
 
     @Override
