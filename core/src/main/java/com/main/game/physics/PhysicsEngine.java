@@ -2,6 +2,7 @@ package com.main.game.physics;
 
 import com.main.game.entities.Entity;
 import com.main.game.utils.Constants;
+import com.main.game.world.World;
 
 /**
  * Xử lý toàn bộ vật lý trong game.
@@ -26,10 +27,10 @@ public class PhysicsEngine {
      * Áp dụng trọng lực và di chuyển entity.
      * Gọi mỗi frame từ GameScreen.update()
      */
-    public void update(Entity entity, float delta) {
-        // TODO(LHUNG-PHYSICS): gọi checkBlockCollision(entity, world) sau khi applyVelocity.
+    public void update(Entity entity, World world, float delta) {
         applyGravity(entity, delta);
         applyVelocity(entity, delta);
+        resolveWorldCollision(entity, world);
     }
 
     /**
@@ -68,6 +69,39 @@ public class PhysicsEngine {
         // Sau khi di chuyển phải sync lại bounds để collision đúng
         entity.getBounds().setPosition(entity.getPosition());
     }
+
+    private void resolveWorldCollision(Entity entity, World world) {
+        float epsilon = 0.001f;
+
+        int minX = (int) Math.floor(entity.getX());
+        int maxX = (int) Math.floor(entity.getX() + entity.getWidth() - epsilon);
+        int minY = (int) Math.floor(entity.getY());
+        int maxY = (int) Math.floor(entity.getY() + entity.getHeight() - epsilon);
+
+        entity.setOnGround(false);
+
+        for (int x = minX; x <= maxX; x++) {
+            if (!world.isSolid(x, minY)) {
+                continue;
+            }
+
+            float correctedY = minY + 1f;
+            entity.getPosition().y = correctedY;
+            entity.getVelocity().y = 0f;
+            entity.setOnGround(true);
+            entity.getBounds().setPosition(entity.getPosition());
+            return;
+        }
+
+        if (entity.getY() < 0f) {
+            entity.getPosition().y = 0f;
+            entity.getVelocity().y = 0f;
+            entity.setOnGround(true);
+            entity.getBounds().setPosition(entity.getPosition());
+        }
+    }
+
+    // ─── TODO: Lâm Hùng implement tiếp ───────────────────────────
 
     // public void checkBlockCollision(Entity entity, World world) { ... }
 }
