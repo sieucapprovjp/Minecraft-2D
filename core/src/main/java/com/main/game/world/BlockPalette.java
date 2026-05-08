@@ -21,15 +21,15 @@ public final class BlockPalette {
     private static TextureRegion fallbackRegion;
 
     static {
-        STONE   = loadRegion("images/tiles/cobblestone.png");
+        STONE   = loadRegion("mvp/tiles/stone.png");
         fallbackRegion = STONE;
-        GRASS   = loadRegionOrFallback("images/tiles/grass.png");
-        BEDROCK = loadRegionOrFallback("images/tiles/bedrock.png");
-        SAND    = loadRegionOrFallback("images/tiles/sand.png");
-        WOOD    = loadRegionOrFallback("images/tiles/wood.png");
-        LEAVES  = loadRegionOrFallback("images/tiles/leaves.png");
-        PLANKS  = loadRegionOrFallback("images/tiles/woodenplanks.png");
-        DIRT    = loadRegionOrFallback("images/tiles/coarse_dirt.png");
+        GRASS   = loadRegionOrFallback("mvp/tiles/grass.png");
+        BEDROCK = loadRegionOrFallback("mvp/tiles/bedrock.png");
+        SAND    = loadRegionOrFallback("mvp/tiles/sand.png");
+        WOOD    = loadRegionOrFallback("mvp/tiles/wood.png");
+        LEAVES  = loadRegionOrFallback("mvp/tiles/leaves.png");
+        PLANKS  = loadRegionOrFallback("mvp/tiles/planks.png");
+        DIRT    = loadRegionOrFallback("mvp/tiles/dirt.jpg");
     }
 
     private BlockPalette() {
