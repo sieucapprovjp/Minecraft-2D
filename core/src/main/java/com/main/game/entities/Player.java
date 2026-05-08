@@ -58,6 +58,7 @@ public class Player extends Entity {
     private float       hurtTimer = 0f;
     private int         health    = 20;
     private int         maxHealth = 20;
+    private boolean     isBanned  = false;
 
     // ─── Dependency ────────────────────────────────────────────
     private final PhysicsEngine physics;
@@ -110,7 +111,7 @@ public class Player extends Entity {
 
     @Override
     public void update(float delta) {
-        if (!isAlive) return;
+        if (!isAlive || isBanned) return;
 
         stateTime += delta;
         handleInput(delta);
@@ -136,6 +137,66 @@ public class Player extends Entity {
             position.x, position.y,
             width, height);
     }
+
+    public void ban() {
+        isBanned = true;
+    }
+
+    public boolean isBanned() {
+        return isBanned;
+    }
+
+    @Override
+    public void dispose() {
+        texIdle.dispose();
+        texWalk1.dispose();
+        texWalk2.dispose();
+        texJump0.dispose();
+        texJump1.dispose();
+        texHurt.dispose();
+    }
+
+    // ─── Animation helper ──────────────────────────────────────
+
+    private TextureRegion getCurrentFrame() {
+        switch (state) {
+            case RUN:  return animRun.getKeyFrame(stateTime);
+            case JUMP: return animJump.getKeyFrame(stateTime);
+            case FALL: return animFall.getKeyFrame(stateTime);
+            case HURT: return animHurt.getKeyFrame(stateTime);
+            case IDLE:
+            default:   return animIdle.getKeyFrame(stateTime);
+        }
+    }
+
+    // ─── Input ─────────────────────────────────────────────────
+
+    private void handleInput(float delta) {
+        float moveX = 0;
+        if (Gdx.input.isKeyPressed(Keys.A) || Gdx.input.isKeyPressed(Keys.LEFT)) {
+            moveX       = -MOVE_SPEED;
+            facingRight = false;
+        }
+        if (Gdx.input.isKeyPressed(Keys.D) || Gdx.input.isKeyPressed(Keys.RIGHT)) {
+            moveX       = MOVE_SPEED;
+            facingRight = true;
+        }
+        velocity.x = moveX;
+
+        if (onGround &&
+            (Gdx.input.isKeyJustPressed(Keys.SPACE)
+                || Gdx.input.isKeyJustPressed(Keys.W)
+                || Gdx.input.isKeyJustPressed(Keys.UP))) {
+            velocity.y = JUMP_IMPULSE;
+            onGround   = false;
+            stateTime  = 0f; // reset để jump animation bắt đầu từ đầu
+        }
+    }
+
+    // ─── State machine ─────────────────────────────────────────
+
+    private void updateState(float delta) {
+        EntityState prev = state;
 
     @Override
     public void dispose() {

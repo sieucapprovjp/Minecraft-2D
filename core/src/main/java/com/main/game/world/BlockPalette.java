@@ -1,59 +1,44 @@
 package com.main.game.world;
 
-import com.badlogic.gdx.graphics.Texture;
+import com.main.game.blocks.AbstractBlock;
+import com.main.game.utils.TextureManager;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
-import java.util.ArrayList;
-import java.util.List;
+// IMPORT CỤ THỂ TỪNG CLASS CHA ĐỂ MÁY KHÔNG NHẦM LÀ PACKAGE
+import com.main.game.blocks.types.UtilityBlocks;
+import com.main.game.blocks.types.NatureBlocks;
+import com.main.game.blocks.types.StoneBlocks;
+import com.main.game.blocks.types.WoodBlocks;
 
 public final class BlockPalette {
 
-    public static final TextureRegion GRASS;
-    public static final TextureRegion DIRT;
-    public static final TextureRegion STONE;
-    public static final TextureRegion BEDROCK;
-    public static final TextureRegion SAND;
-    public static final TextureRegion WOOD;
-    public static final TextureRegion LEAVES;
-    public static final TextureRegion PLANKS;
+    // Giữ các biến này để GameScreen/World hết báo đỏ
+    public static final TextureRegion GRASS   = TextureManager.getInstance().getTexture("grass_block");
+    public static final TextureRegion DIRT    = TextureManager.getInstance().getTexture("dirt");
+    public static final TextureRegion STONE   = TextureManager.getInstance().getTexture("stone");
+    public static final TextureRegion BEDROCK = TextureManager.getInstance().getTexture("bedrock");
+    public static final TextureRegion SAND    = TextureManager.getInstance().getTexture("sand");
+    public static final TextureRegion WOOD    = TextureManager.getInstance().getTexture("oak_log");
+    public static final TextureRegion LEAVES  = TextureManager.getInstance().getTexture("oak_leaves");
+    public static final TextureRegion PLANKS  = TextureManager.getInstance().getTexture("oak_planks");
 
-    private static final List<Texture> textures = new ArrayList<>();
-    private static TextureRegion fallbackRegion;
+    private BlockPalette() {}
 
-    static {
-        STONE   = loadRegion("mvp/tiles/stone.png");
-        fallbackRegion = STONE;
-        GRASS   = loadRegionOrFallback("mvp/tiles/grass.png");
-        BEDROCK = loadRegionOrFallback("mvp/tiles/bedrock.png");
-        SAND    = loadRegionOrFallback("mvp/tiles/sand.png");
-        WOOD    = loadRegionOrFallback("mvp/tiles/wood.png");
-        LEAVES  = loadRegionOrFallback("mvp/tiles/leaves.png");
-        PLANKS  = loadRegionOrFallback("mvp/tiles/planks.png");
-        DIRT    = loadRegionOrFallback("mvp/tiles/dirt.jpg");
-    }
+    public static AbstractBlock getBlockByInt(int id, int x, int y) {
+        switch (id) {
+            // Dùng cấu trúc: TênClassCha.TênClassCon
+            case 0:  return new UtilityBlocks.AirBlock(x, y);
+            case 1:  return new NatureBlocks.GrassBlockBlock(x, y);
+            case 2:  return new NatureBlocks.DirtBlock(x, y);
+            case 3:  return new StoneBlocks.StoneBlock(x, y);
+            case 4:  return new WoodBlocks.OakLogBlock(x, y);
+            case 5:  return new WoodBlocks.OakPlanksBlock(x, y);
+            case 6:  return new WoodBlocks.OakLeavesBlock(x, y);
+            case 7:  return new StoneBlocks.BedrockBlock(x, y);
+            case 9:  return new NatureBlocks.SandBlock(x, y);
 
-    private BlockPalette() {
-    }
-
-    private static TextureRegion loadRegion(String path) {
-        Texture texture = new Texture(path);
-        texture.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
-        textures.add(texture);
-        return new TextureRegion(texture);
-    }
-
-    private static TextureRegion loadRegionOrFallback(String path) {
-        try {
-            return loadRegion(path);
-        } catch (Exception ignored) {
-            return fallbackRegion;
+            default: return new UtilityBlocks.AirBlock(x, y);
         }
     }
-
-    public static void dispose() {
-        for (Texture texture : textures) {
-            texture.dispose();
-        }
-        textures.clear();
-    }
+    public static void dispose() {}
 }

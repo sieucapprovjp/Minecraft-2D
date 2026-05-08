@@ -4,12 +4,23 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.main.game.MainGame;
 import com.main.game.utils.Constants;
+import java.io.File;
 
 /** Launches the desktop (LWJGL3) application. */
 public class Lwjgl3Launcher {
     public static void main(String[] args) {
-        if (StartupHelper.startNewJvmIfRequired()) return; // This handles macOS support and helps on Windows.
-        createApplication();
+        try {
+            if (StartupHelper.startNewJvmIfRequired()) return; // This handles macOS support and helps on Windows.
+            createApplication();
+        } catch (Throwable t) {
+            System.err.println("Uncaught exception in Lwjgl3Launcher:");
+            t.printStackTrace();
+            System.err.println("Working dir: " + new File(".").getAbsolutePath());
+            System.err.println("java.version: " + System.getProperty("java.version"));
+            System.err.println("java.home: " + System.getProperty("java.home"));
+            System.err.println("java.class.path: " + System.getProperty("java.class.path"));
+            System.exit(1);
+        }
     }
 
     private static Lwjgl3Application createApplication() {
