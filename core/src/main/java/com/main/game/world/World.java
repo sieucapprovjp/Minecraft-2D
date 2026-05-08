@@ -2,6 +2,7 @@ package com.main.game.world;
 
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Vector2;
 import com.main.game.blocks.AbstractBlock;
 import com.main.game.blocks.SimpleBlock;
 import com.main.game.utils.Constants;
@@ -29,11 +30,11 @@ import java.util.Random;
 public class World {
 
     private final AbstractBlock[][] blocks;
-    public  final int width;
-    public  final int height;
+    public final int width;
+    public final int height;
 
     public World() {
-        this.width  = Constants.WORLD_WIDTH;
+        this.width = Constants.WORLD_WIDTH;
         this.height = Constants.WORLD_HEIGHT;
         this.blocks = new AbstractBlock[width][height];
     }
@@ -55,31 +56,39 @@ public class World {
         return x >= 0 && x < width && y >= 0 && y < height;
     }
 
-    /** Block có solid không — Lâm Hùng dùng cho collision */
+    /** Block có solid không — Dùng cho vật lý/collision */
     public boolean isSolid(int x, int y) {
         AbstractBlock block = getBlock(x, y);
         return block != null && block.isSolid();
     }
 
+    /**
+     * Sinh địa hình ngẫu nhiên bằng Fractal/Value Noise 1D
+     */
     public void generate(long seed) {
-        // TODO(KIEN-WORLD): thay Random + sin bằng noise map có seed ổn định theo chunk.
         Random random = new Random(seed);
         int baseGround = height / 2;
 
+        // Thông số cấu hình đồi núi
+        float amplitude = 12f;
+        float frequency = 0.04f;
+
         for (int x = 0; x < width; x++) {
-            int surface = baseGround
-                + (int) (Math.sin(x * 0.10f) * 3f)
-                + (int) (Math.sin(x * 0.025f + 1.5f) * 8f)
-                + random.nextInt(3) - 1;
+            // Tính toán bề mặt bằng Noise Ổn định
+            float noiseVal = getSmoothNoise1D(x * frequency, seed);
+            float detailNoise = getSmoothNoise1D(x * frequency * 3f, seed + 1) * 0.2f;
 
-            surface = Math.max(8, Math.min(height - 4, surface));
+            int surface = baseGround + (int) ((noiseVal + detailNoise) * amplitude);
+            surface = Math.max(8, Math.min(height - 4, surface)); // Giới hạn an toàn
 
+            // Đắp block đất đá
             for (int y = 0; y <= surface; y++) {
                 AbstractBlock block;
                 if (y == 0) {
                     block = new SimpleBlock(x, y, "bedrock", true, false, 999f, BlockPalette.BEDROCK);
                 } else if (y == surface) {
-                    boolean isSandPatch = x % 37 < 5;
+                    // Dùng Noise để tạo bãi cát ngẫu nhiên tự nhiên
+                    boolean isSandPatch = getSmoothNoise1D(x * 0.1f, seed + 99) > 0.5f;
                     if (isSandPatch) {
                         block = new SimpleBlock(x, y, "sand", true, true, 0.5f, BlockPalette.SAND);
                     } else {
@@ -93,6 +102,7 @@ public class World {
                 setBlock(x, y, block);
             }
 
+            // Trồng cây ngẫu nhiên
             if (x > 2 && x < width - 2 && x % 29 == 0 && random.nextFloat() < 0.65f) {
                 int trunkBaseY = surface + 1;
                 int trunkHeight = 3 + random.nextInt(2);
@@ -115,8 +125,10 @@ public class World {
         }
     }
 
+    /**
+     * Chỉ vẽ các block nằm trong tầm nhìn của Camera (Culling)
+     */
     public void render(SpriteBatch batch, OrthographicCamera camera) {
-        // TODO(KIEN-WORLD): mở rộng culling theo chunk để giảm loop khi world lớn.
         int minX = Math.max(0, (int) Math.floor(camera.position.x - camera.viewportWidth / 2f) - 1);
         int maxX = Math.min(width - 1, (int) Math.ceil(camera.position.x + camera.viewportWidth / 2f) + 1);
         int minY = Math.max(0, (int) Math.floor(camera.position.y - camera.viewportHeight / 2f) - 1);
@@ -130,5 +142,44 @@ public class World {
                 }
             }
         }
+    }
+
+    /**
+     * TÌM VỊ TRÍ SPAWN CHO NHÂN VẬT
+     * Thả người chơi xuống mặt đất ở ngay giữa bản đồ.
+     */
+    public Vector2 getSpawnPoint() {
+        int spawnX = width / 2;
+
+        // Quét từ trên trời xuống dưới đất tại cột giữa map để tìm block cứng đầu tiên
+        for (int y = height - 1; y >= 0; y--) {
+            if (isSolid(spawnX, y)) {
+                // Trả về tọa độ ngay TRÊN block đó để nhân vật không bị kẹt vào đất
+                return new Vector2(spawnX, y + 1);
+            }
+        }
+
+        // Tọa độ dự phòng nếu lỗi map
+        return new Vector2(spawnX, height / 2f);
+    }
+
+    // CÁC HÀM HỖ TRỢ SINH NOISE ĐỊA HÌNH
+
+    private float getSmoothNoise1D(float x, long seed) {
+        int intX = (int) Math.floor(x);
+        float fracX = x - intX;
+
+        float v1 = getSeededRandom(intX, seed);
+        float v2 = getSeededRandom(intX + 1, seed);
+
+        // Cosine Interpolation
+        float f = (1f - (float)Math.cos(fracX * Math.PI)) * 0.5f;
+        return v1 * (1f - f) + v2 * f;
+    }
+
+    private float getSeededRandom(int x, long seed) {
+        long n = x * 374761393L + seed * 668265263L;
+        n = (n ^ (n >> 13)) * 1274126177L;
+        return (((n & 0x7FFFFFFF) / (float) 0x7FFFFFFF) * 2f) - 1f;
     }
 }
