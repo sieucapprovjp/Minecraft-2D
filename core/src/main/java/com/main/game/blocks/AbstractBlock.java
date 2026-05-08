@@ -19,8 +19,8 @@ import com.main.game.utils.Constants;
 public abstract class AbstractBlock {
 
     // ─── Vị trí trong world (đơn vị tile) ────────────────────────
-    protected int tileX;
-    protected int tileY;
+    protected int  tileX;
+    protected int  tileY;
 
     // ─── Thuộc tính block ─────────────────────────────────────────
     protected boolean isSolid;      // có collision không (Lâm Hùng dùng)
