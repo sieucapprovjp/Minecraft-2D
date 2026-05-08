@@ -9,6 +9,7 @@ import com.main.game.navigation.ScreenRouter;
 import com.main.game.screens.BaseScreen;
 import com.main.game.screens.GameScreen;
 import com.main.game.screens.StateScreen;
+import com.main.game.utils.TextureManager;
 
 /**
  * Entry point của game — thay thế file MainGame.java hiện tại.
@@ -73,6 +74,8 @@ public class MainGame extends Game {
         if (current != null) {
             current.dispose();
         }
+        // Dispose shared resources
+        TextureManager.getInstance().dispose();
         assetManager.dispose();
         batch.dispose();
     }

@@ -28,6 +28,13 @@ allprojects {
 configure(subprojects) {
   apply plugin: 'java-library'
   java.sourceCompatibility = 17
+  // Ensure Gradle uses a Java 17 toolchain for compilation when available.
+  // This makes builds more reproducible when the environment JDK differs.
+  java {
+    toolchain {
+      languageVersion = JavaLanguageVersion.of(17)
+    }
+  }
 
   // From https://lyze.dev/2021/04/29/libGDX-Internal-Assets-List/
   // The article can be helpful when using assets.txt in your project.
