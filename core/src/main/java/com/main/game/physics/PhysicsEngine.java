@@ -42,10 +42,8 @@ public class PhysicsEngine {
 
     /** Keo entity xuong theo gravity, gioi han o TERMINAL_VELOCITY. */
     public void applyGravity(Entity entity, float delta) {
-        if (!entity.isOnGround()) {
-            float vy = entity.getVelocity().y + Constants.GRAVITY * delta;
-            entity.getVelocity().y = Math.max(vy, Constants.TERMINAL_VELOCITY);
-        }
+        float vy = entity.getVelocity().y + Constants.GRAVITY * delta;
+        entity.getVelocity().y = Math.max(vy, Constants.TERMINAL_VELOCITY);
     }
 
     /**

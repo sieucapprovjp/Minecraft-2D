@@ -19,6 +19,8 @@ public class Player extends Entity {
 
     private final Texture body2Texture;
     private final Texture body4Texture;
+    private final TextureRegion body2Region;
+    private final TextureRegion body4Region;
     private Appearance appearance;
 
     // Animation
@@ -31,6 +33,8 @@ public class Player extends Entity {
         super(x, y, Constants.PLAYER_WIDTH, Constants.PLAYER_HEIGHT);
         this.body2Texture = new Texture(Constants.PLAYER_BODY_1_PATH);
         this.body4Texture = new Texture(Constants.PLAYER_BODY_2_PATH);
+        this.body2Region = new TextureRegion(body2Texture);
+        this.body4Region = new TextureRegion(body4Texture);
         this.appearance = Appearance.BODY_2;
 
         loadWalkAnimation();
@@ -95,8 +99,7 @@ public class Player extends Entity {
         if (isWalking) {
             return walkAnimation.getKeyFrame(stateTime);
         } else {
-            Texture idleTex = (appearance == Appearance.BODY_4) ? body4Texture : body2Texture;
-            return new TextureRegion(idleTex);
+            return appearance == Appearance.BODY_4 ? body4Region : body2Region;
         }
     }
 

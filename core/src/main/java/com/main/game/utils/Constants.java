@@ -29,30 +29,17 @@ public final class Constants {
     public static final float COW_HEIGHT = 1.2f;
 
     public static final String TEXTURE_ATLAS_PATH = "atlas/tiles.atlas";
-    public static final String PLAYER_BODY_1_PATH = "organized_assets_en/images/steve/body2.png";
-    public static final String PLAYER_BODY_2_PATH = "organized_assets_en/images/steve/body4.png";
+    public static final String PLAYER_BODY_1_PATH = "mvp/player/idle.png";
+    public static final String PLAYER_BODY_2_PATH = "mvp/player/jump.png";
     public static final String[] PLAYER_WALK_PATHS = {
-        "organized_assets_en/images/steve/body_cp_2.png",
-        "organized_assets_en/images/steve/body_cp_3.png",
-        "organized_assets_en/images/steve/body_cp_5.png",
-        "organized_assets_en/images/steve/body_cp_7.png",
-        "organized_assets_en/images/steve/body_cp_8.png",
-        "organized_assets_en/images/steve/body_cp_9.png",
-        "organized_assets_en/images/steve/body_cp_10.png",
-        "organized_assets_en/images/steve/body_cp_11.png",
-        "organized_assets_en/images/steve/body_cp_12.png",
-        "organized_assets_en/images/steve/body_cp_13.png",
-        "organized_assets_en/images/steve/body_cp_14.png"
+        "mvp/player/walk_1.png",
+        "mvp/player/walk_2.png"
     };
-    public static final String COW_IDLE_PATH = "organized_assets_en/images/mobs/cowlook.png";
-    public static final String COW_HURT_PATH = "organized_assets_en/images/mobs/cow-hurt.png";
+    public static final String COW_IDLE_PATH = "libgdx.png";
+    public static final String COW_HURT_PATH = "libgdx.png";
     public static final String[] COW_WALK_PATHS = {
-        "organized_assets_en/images/mobs/cow1.png",
-        "organized_assets_en/images/mobs/cow2.png",
-        "organized_assets_en/images/mobs/cow3.png",
-        "organized_assets_en/images/mobs/cow4.png",
-        "organized_assets_en/images/mobs/cow5.png",
-        "organized_assets_en/images/mobs/cow6.png"
+        "libgdx.png",
+        "libgdx.png"
     };
 
     public static final int LAYER_BACKGROUND = 0;

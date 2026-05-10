@@ -49,7 +49,16 @@ public class World {
         }
 
         for (int y = height - 1; y >= 0; y--) {
-            if (isSolid(x, y)) {
+            AbstractBlock block = getBlock(x, y);
+            if (block == null || !block.isSolid()) {
+                continue;
+            }
+            String blockId = block.getBlockId();
+            if ("wood".equals(blockId) || "leaves".equals(blockId)) {
+                continue;
+            }
+            boolean airAbove = y == height - 1 || !isSolid(x, y + 1);
+            if (airAbove) {
                 return y;
             }
         }
