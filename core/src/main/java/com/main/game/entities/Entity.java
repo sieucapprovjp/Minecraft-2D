@@ -74,6 +74,8 @@ public abstract class Entity {
     public boolean   isFacingRight() { return facingRight; }
     public float     getX()          { return position.x;  }
     public float     getY()          { return position.y;  }
+    public float     getWidth()      { return width;       }
+    public float     getHeight()     { return height;      }
 
     public void setOnGround(boolean v) { this.onGround = v; }
     public void setAlive(boolean v)    { this.isAlive  = v; }
