@@ -7,6 +7,7 @@ import com.main.game.MainGame;
 import com.main.game.entities.player.Player;
 import com.main.game.entities.player.Player.Appearance;
 import com.main.game.mob.cow.Cow;
+import com.main.game.navigation.ScreenId;
 import com.main.game.physics.PhysicsEngine;
 import com.main.game.utils.Constants;
 import com.main.game.world.BlockPalette;
@@ -107,5 +108,10 @@ public class GameScreen extends BaseScreen {
             cow.dispose();
             cow = null;
         }
+    }
+
+    @Override
+    public ScreenId getScreenId() {
+        return ScreenId.GAME;
     }
 }

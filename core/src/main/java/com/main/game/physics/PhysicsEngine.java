@@ -41,11 +41,27 @@ public class PhysicsEngine {
     }
 
     /** Keo entity xuong theo gravity, gioi han o TERMINAL_VELOCITY. */
-    private void applyGravity(Entity entity, float delta) {
+    public void applyGravity(Entity entity, float delta) {
         if (!entity.isOnGround()) {
             float vy = entity.getVelocity().y + Constants.GRAVITY * delta;
             entity.getVelocity().y = Math.max(vy, Constants.TERMINAL_VELOCITY);
         }
+    }
+
+    /**
+     * Legacy API cho code chua truyen world:
+     * di chuyen theo velocity va clamp san y = 0.
+     */
+    public void resolveCollision(Entity entity, float delta) {
+        entity.setOnGround(false);
+        entity.getPosition().x += entity.getVelocity().x * delta;
+        entity.getPosition().y += entity.getVelocity().y * delta;
+        if (entity.getPosition().y < 0f) {
+            entity.getPosition().y = 0f;
+            entity.getVelocity().y = 0f;
+            entity.setOnGround(true);
+        }
+        entity.getBounds().setPosition(entity.getPosition().x, entity.getPosition().y);
     }
 
     /** Kiểm tra và xử lý va chạm trên trục X (Tránh kẹt) */
