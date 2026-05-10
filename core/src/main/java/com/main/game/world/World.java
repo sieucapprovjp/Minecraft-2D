@@ -43,6 +43,14 @@ public class World {
         return block != null && block.isSolid();
     }
 
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
     public int getSurfaceY(int x) {
         if (x < 0 || x >= width) {
             return 0;

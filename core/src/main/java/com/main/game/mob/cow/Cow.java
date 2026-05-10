@@ -56,7 +56,7 @@ public class Cow extends Entity {
         }
 
         position.x += velocity.x * delta;
-        int surfaceX = Math.max(0, Math.min(world.width - 1, (int) Math.floor(position.x + width * 0.5f)));
+        int surfaceX = Math.max(0, Math.min(world.getWidth() - 1, (int) Math.floor(position.x + width * 0.5f)));
         position.y = world.getSurfaceY(surfaceX) + 1f;
         updateBounds();
 
