@@ -36,7 +36,7 @@ public class GameScreen extends BaseScreen {
         int cowSpawnX = 22;
 
         player = new Player(playerSpawnX, world.getSurfaceY(playerSpawnX) + 1f);
-        cow = new Cow(cowSpawnX, world.getSurfaceY(cowSpawnX) + 1f, cowSpawnX - 4f, cowSpawnX + 4f);
+        cow = new Cow(cowSpawnX, world.getSurfaceY(cowSpawnX) + 1f, cowSpawnX - 4f, cowSpawnX + 4f, world);
 
         camera.position.set(player.getX(), player.getY() + 5f, 0f);
         camera.update();

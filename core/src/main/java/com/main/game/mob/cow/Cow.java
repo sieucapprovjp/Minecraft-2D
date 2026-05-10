@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.main.game.entities.Entity;
 import com.main.game.utils.Constants;
+import com.main.game.world.World;
 
 public class Cow extends Entity {
 
@@ -12,12 +13,12 @@ public class Cow extends Entity {
     private final Texture[] walkTextures;
     private final float minX;
     private final float maxX;
-    private final float baseY;
+    private final World world;
     private float animationTime;
     private float behaviorTimer;
     private float pauseTimer;
 
-    public Cow(float x, float y, float minX, float maxX) {
+    public Cow(float x, float y, float minX, float maxX, World world) {
         super(x, y, Constants.COW_WIDTH, Constants.COW_HEIGHT);
         this.idleTexture = new Texture(Constants.COW_IDLE_PATH);
         this.hurtTexture = new Texture(Constants.COW_HURT_PATH);
@@ -27,7 +28,7 @@ public class Cow extends Entity {
         }
         this.minX = minX;
         this.maxX = maxX;
-        this.baseY = y;
+        this.world = world;
         this.velocity.x = Constants.COW_SPEED * 0.75f;
         this.facingRight = true;
     }
@@ -55,7 +56,8 @@ public class Cow extends Entity {
         }
 
         position.x += velocity.x * delta;
-        position.y = baseY;
+        int surfaceX = Math.max(0, Math.min(world.width - 1, (int) Math.floor(position.x + width * 0.5f)));
+        position.y = world.getSurfaceY(surfaceX) + 1f;
         updateBounds();
 
         if (position.x <= minX) {
