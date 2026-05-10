@@ -4,9 +4,12 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.math.Matrix4;
+import com.badlogic.gdx.math.Rectangle;
 import com.main.game.MainGame;
 import com.main.game.navigation.ScreenId;
 
@@ -17,31 +20,59 @@ public class StateScreen extends BaseScreen {
     private GlyphLayout layout;
     private Matrix4 uiProjection;
 
+    private Texture btnTex;
+    private Rectangle btn1Rect, btn2Rect;
+
     public StateScreen(MainGame game, ScreenId id) {
         super(game);
         this.id = id;
         this.font = new BitmapFont();
         this.font.setColor(Color.WHITE);
+        // Make font a bit bigger if possible, libgdx default font is small
+        this.font.getData().setScale(1.5f);
         this.layout = new GlyphLayout();
         this.uiProjection = new Matrix4();
+
+        Pixmap pix = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+        pix.setColor(Color.WHITE);
+        pix.fill();
+        this.btnTex = new Texture(pix);
+        pix.dispose();
+
+        btn1Rect = new Rectangle();
+        btn2Rect = new Rectangle();
     }
 
     @Override
     public void update(float delta) {
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
-            game.getScreenRouter().request(ScreenId.GAME);
+        // Mouse click logic
+        if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
+            float mx = Gdx.input.getX();
+            float my = Gdx.graphics.getHeight() - Gdx.input.getY(); // Unproject Y
+
+            if (btn1Rect.contains(mx, my)) {
+                if (id == ScreenId.MENU || id == ScreenId.PAUSE) {
+                    game.getScreenRouter().request(ScreenId.GAME);
+                } else if (id == ScreenId.GAME_OVER) {
+                    game.getScreenRouter().request(ScreenId.GAME);
+                }
+            } else if (btn2Rect.contains(mx, my)) {
+                if (id == ScreenId.MENU) {
+                    Gdx.app.exit();
+                } else if (id == ScreenId.PAUSE || id == ScreenId.GAME_OVER) {
+                    game.getScreenRouter().request(ScreenId.MENU);
+                }
+            }
         }
-        if (Gdx.input.isKeyJustPressed(Input.Keys.G)) {
-            game.getScreenRouter().request(ScreenId.GAME);
+
+        // Hotkeys
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || Gdx.input.isKeyJustPressed(Input.Keys.G)) {
+            if (id == ScreenId.MENU || id == ScreenId.PAUSE || id == ScreenId.GAME_OVER) {
+                game.getScreenRouter().request(ScreenId.GAME);
+            }
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.M)) {
             game.getScreenRouter().request(ScreenId.MENU);
-        }
-        if (Gdx.input.isKeyJustPressed(Input.Keys.K)) {
-            game.getScreenRouter().request(ScreenId.GAME_OVER);
-        }
-        if (Gdx.input.isKeyJustPressed(Input.Keys.P)) {
-            game.getScreenRouter().request(ScreenId.PAUSE);
         }
     }
 
@@ -57,30 +88,47 @@ public class StateScreen extends BaseScreen {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         String title;
-        String hint1;
-        String hint2;
+        if (id == ScreenId.PAUSE) title = "PAUSED";
+        else if (id == ScreenId.GAME_OVER) title = "GAME OVER";
+        else title = "MINECRAFT 2D";
 
-        if (id == ScreenId.PAUSE) {
-            title = "PAUSED";
-            hint1 = "ESC / G: Resume";
-            hint2 = "M: Menu   K: Game Over";
-        } else if (id == ScreenId.GAME_OVER) {
-            title = "GAME OVER";
-            hint1 = "G / ESC: Back To Game";
-            hint2 = "M: Menu";
-        } else {
-            title = "MENU";
-            hint1 = "G / ESC: Start Game";
-            hint2 = "P: Pause   K: Game Over";
-        }
+        float sw = Gdx.graphics.getWidth();
+        float sh = Gdx.graphics.getHeight();
+        float bw = 250f;
+        float bh = 50f;
 
-        uiProjection.setToOrtho2D(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        btn1Rect.set((sw - bw) / 2f, sh * 0.45f, bw, bh);
+        btn2Rect.set((sw - bw) / 2f, sh * 0.30f, bw, bh);
+
+        uiProjection.setToOrtho2D(0, 0, sw, sh);
         batch.setProjectionMatrix(uiProjection);
         batch.begin();
 
-        drawCentered(title, Gdx.graphics.getHeight() * 0.62f);
-        drawCentered(hint1, Gdx.graphics.getHeight() * 0.48f);
-        drawCentered(hint2, Gdx.graphics.getHeight() * 0.40f);
+        // Tựa game
+        font.getData().setScale(2.5f);
+        font.setColor(Color.YELLOW);
+        drawCentered(title, sh * 0.75f);
+
+        // Nút bấm
+        float mx = Gdx.input.getX();
+        float my = sh - Gdx.input.getY();
+
+        // Button 1
+        batch.setColor(btn1Rect.contains(mx, my) ? Color.GRAY : Color.DARK_GRAY);
+        batch.draw(btnTex, btn1Rect.x, btn1Rect.y, btn1Rect.width, btn1Rect.height);
+
+        // Button 2
+        batch.setColor(btn2Rect.contains(mx, my) ? Color.GRAY : Color.DARK_GRAY);
+        batch.draw(btnTex, btn2Rect.x, btn2Rect.y, btn2Rect.width, btn2Rect.height);
+
+        batch.setColor(Color.WHITE);
+        font.getData().setScale(1.5f);
+
+        String text1 = (id == ScreenId.MENU || id == ScreenId.PAUSE) ? "RESUME / PLAY" : "PLAY AGAIN";
+        String text2 = (id == ScreenId.MENU) ? "QUIT" : "MAIN MENU";
+
+        drawCentered(text1, btn1Rect.y + bh * 0.65f);
+        drawCentered(text2, btn2Rect.y + bh * 0.65f);
 
         batch.end();
     }
@@ -99,5 +147,6 @@ public class StateScreen extends BaseScreen {
     @Override
     public void dispose() {
         font.dispose();
+        btnTex.dispose();
     }
 }

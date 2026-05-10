@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.main.game.physics.PhysicsEngine;
+import com.main.game.world.World;
 
 /**
  * Class Player - điều khiển bởi người chơi.
@@ -38,18 +39,18 @@ public class Player extends Entity {
     private static final float WALK_FRAME_DUR  = 0.15f; // giây/frame
     private static final float HURT_FLASH_DUR  = 0.08f; // giây/frame blink
 
-    // ─── Textures ──────────────────────────────────────────────
-    private Texture texIdle;
-    private Texture texWalk1, texWalk2;
-    private Texture texJump0, texJump1;
-    private Texture texHurt;
+    // ─── Rig Textures ──────────────────────────────────────────
+    private Texture tBodyL, tBodyR;
+    private Texture tArmL, tArmR;
+    private Texture tLegL, tLegR;
+    private Texture tHeadR, tHeadL;
+    private Texture tBootL, tBootR;
 
-    // ─── Animations ────────────────────────────────────────────
-    private Animation<TextureRegion> animIdle;
-    private Animation<TextureRegion> animRun;
-    private Animation<TextureRegion> animJump;
-    private Animation<TextureRegion> animFall;
-    private Animation<TextureRegion> animHurt;
+    private TextureRegion regBodyL, regBodyR;
+    private TextureRegion regArmL, regArmR;
+    private TextureRegion regLegL, regLegR;
+    private TextureRegion regHeadR, regHeadL;
+    private TextureRegion regBootL, regBootR;
 
     private float stateTime = 0f;
 
@@ -62,52 +63,46 @@ public class Player extends Entity {
 
     // ─── Dependency ────────────────────────────────────────────
     private final PhysicsEngine physics;
+    private final World world;
 
     // ───────────────────────────────────────────────────────────
 
-    public Player(float x, float y, PhysicsEngine physics) {
+    public Player(float x, float y, PhysicsEngine physics, World world) {
         super(x, y, PLAYER_W, PLAYER_H);
         this.physics = physics;
+        this.world   = world;
         loadAssets();
     }
 
     // ─── Asset loading ─────────────────────────────────────────
 
     private void loadAssets() {
-        texIdle  = new Texture(Gdx.files.internal("mvp/player/idle.png"));
-        texWalk1 = new Texture(Gdx.files.internal("mvp/player/walk_1.png"));
-        texWalk2 = new Texture(Gdx.files.internal("mvp/player/walk_2.png"));
-        texJump0 = new Texture(Gdx.files.internal("mvp/player/jump_0.png"));
-        texJump1 = new Texture(Gdx.files.internal("mvp/player/jump_1.png"));
-        texHurt  = new Texture(Gdx.files.internal("mvp/player/body2.png"));
+        tBodyL = new Texture(Gdx.files.internal("mvp/player/body4.png"));
+        tBodyR = new Texture(Gdx.files.internal("mvp/player/body4_1.png"));
+        tArmL  = new Texture(Gdx.files.internal("mvp/player/arm4.png"));
+        tArmR  = new Texture(Gdx.files.internal("mvp/player/arm4_1.png"));
+        tLegL  = new Texture(Gdx.files.internal("mvp/player/leg.png"));
+        tLegR  = new Texture(Gdx.files.internal("mvp/player/leg_1.png"));
+        tHeadR = new Texture(Gdx.files.internal("mvp/player/right.png"));
+        tHeadL = new Texture(Gdx.files.internal("mvp/player/right_1.png"));
+        tBootL = new Texture(Gdx.files.internal("mvp/player/boot.png"));
+        tBootR = new Texture(Gdx.files.internal("mvp/player/boot1.png"));
 
-        animIdle = new Animation<>(0.5f,
-            new TextureRegion(texIdle));
-        animIdle.setPlayMode(Animation.PlayMode.LOOP);
-
-        animRun = new Animation<>(WALK_FRAME_DUR,
-            new TextureRegion(texWalk1),
-            new TextureRegion(texWalk2));
-        animRun.setPlayMode(Animation.PlayMode.LOOP);
-
-        // JUMP: apex frame (jump_0), rising
-        animJump = new Animation<>(0.1f,
-            new TextureRegion(texJump0));
-        animJump.setPlayMode(Animation.PlayMode.NORMAL);
-
-        // FALL: descending frame (jump_1)
-        animFall = new Animation<>(0.1f,
-            new TextureRegion(texJump1));
-        animFall.setPlayMode(Animation.PlayMode.NORMAL);
-
-        // HURT: flash blink using body2
-        animHurt = new Animation<>(HURT_FLASH_DUR,
-            new TextureRegion(texHurt),
-            new TextureRegion(texIdle));
-        animHurt.setPlayMode(Animation.PlayMode.LOOP);
+        regBodyL = new TextureRegion(tBodyL);
+        regBodyR = new TextureRegion(tBodyR);
+        regArmL  = new TextureRegion(tArmL);
+        regArmR  = new TextureRegion(tArmR);
+        regLegL  = new TextureRegion(tLegL);
+        regLegR  = new TextureRegion(tLegR);
+        regHeadR = new TextureRegion(tHeadR);
+        regHeadL = new TextureRegion(tHeadL);
+        regBootL = new TextureRegion(tBootL);
+        regBootR = new TextureRegion(tBootR);
     }
 
     // ─── Vòng đời ──────────────────────────────────────────────
+    private float lastVy = 0f;
+    private boolean wasOnGround = true;
 
     @Override
     public void update(float delta) {
@@ -115,8 +110,18 @@ public class Player extends Entity {
 
         stateTime += delta;
         handleInput(delta);
-        physics.applyGravity(this, delta);
-        physics.resolveCollision(this, delta);
+
+        lastVy = velocity.y;
+        wasOnGround = onGround;
+
+        physics.update(this, world, delta);
+
+        if (!wasOnGround && onGround && lastVy < -14f) {
+            // Rơi quá nhanh -> mất máu
+            int fallDamage = (int) (-lastVy - 13f);
+            if (fallDamage > 0) takeDamage(fallDamage);
+        }
+
         updateState(delta);
         updateBounds();
     }
@@ -125,17 +130,101 @@ public class Player extends Entity {
     public void render(SpriteBatch batch) {
         if (!isAlive) return;
 
-        TextureRegion frame = getCurrentFrame();
-        if (frame == null) return;
+        float armFrontAngle = 0f;
+        float armBackAngle = 0f;
+        float legFrontAngle = 0f;
+        float legBackAngle = 0f;
+        float headTilt = 0f;
 
-        // Flip theo hướng nhìn
-        boolean needFlip = (!facingRight && !frame.isFlipX())
-            || ( facingRight &&  frame.isFlipX());
-        if (needFlip) frame.flip(true, false);
+        if (state == EntityState.RUN) {
+            // Áp dụng logic đếm frame chính xác từ game gốc (Scratch)
+            // SteveNextWalkFrame = Math.abs(((Math.floor("walkFrame") % 12) - 5))
+            int walkFrame = (int) (stateTime * 15f);
+            int scratchWalkFrame = Math.abs((walkFrame % 12) - 5);
+            
+            // scratchWalkFrame chạy trong khoảng [0, 6] theo dạng sóng tam giác
+            // Ta map giá trị này sang góc xoay (bước nhảy 15 độ giống _WalkFrame * 15)
+            float mappedAngle = (scratchWalkFrame - 3) * 15f;
+            
+            armFrontAngle = mappedAngle;
+            armBackAngle = -mappedAngle;
+            legFrontAngle = -mappedAngle;
+            legBackAngle = mappedAngle;
+            
+            // Đầu ngẩng lên một chút khi chạy
+            headTilt = 5f * (facingRight ? 1f : -1f);
+        } else if (state == EntityState.JUMP) {
+            armFrontAngle = 160f;
+            armBackAngle = -20f;
+            legFrontAngle = -20f;
+            legBackAngle = 20f;
+        } else if (state == EntityState.FALL) {
+            armFrontAngle = 160f;
+            armBackAngle = 20f;
+            legFrontAngle = 10f;
+            legBackAngle = -10f;
+        } else if (state == EntityState.IDLE) {
+            // Đứng yên hoàn toàn 0 độ, tay chân trùng nhau (giống ảnh 1)
+            armFrontAngle = 0f;
+            armBackAngle = 0f;
+            legFrontAngle = 0f;
+            legBackAngle = 0f;
+            headTilt = 0f;
+        }
 
-        batch.draw(frame,
-            position.x, position.y,
-            width, height);
+        if (isHurt()) {
+            batch.setColor(1f, 0.5f, 0.5f, 1f);
+        }
+
+        TextureRegion head = facingRight ? regHeadR : regHeadL;
+        TextureRegion body = facingRight ? regBodyR : regBodyL;
+        TextureRegion armFront = facingRight ? regArmR : regArmL;
+        TextureRegion armBack = facingRight ? regArmL : regArmR;
+        TextureRegion legFront = facingRight ? regLegR : regLegL;
+        TextureRegion legBack = facingRight ? regLegL : regLegR;
+        TextureRegion bootFront = facingRight ? regBootR : regBootL;
+        TextureRegion bootBack = facingRight ? regBootL : regBootR;
+
+        float px = position.x;
+        float py = position.y;
+        float cx = px + width / 2f;
+
+        float headW = 0.5f, headH = 0.5f;
+        float bodyW = 0.4f, bodyH = 0.6f;
+        float armW  = 0.2f, armH  = 0.6f; // Sửa armH = 0.6 (ngang với thân) để đúng chuẩn Minecraft
+        float legW  = 0.2f, legH  = 0.5f;
+        float bootW = 0.22f, bootH = 0.2f;
+
+        // Tính độ nhún (bobbing) khi chân xoạc ra
+        float maxLegAngle = Math.max(Math.abs(legFrontAngle), Math.abs(legBackAngle));
+        float totalLegH = legH + bootH;
+        // hông (hip) hạ xuống theo hàm cos để bàn chân bám sát mặt đất
+        float hipY = py + totalLegH * (float) Math.cos(Math.toRadians(maxLegAngle));
+
+        float legY = hipY - totalLegH + bootH; 
+        float bodyY = hipY;
+        float headY = bodyY + bodyH;
+        float armY = bodyY + bodyH - 0.1f;
+
+        // Xếp theo order từ trong ra ngoài (back -> front)
+        // Draw Back Arm
+        batch.draw(armBack, cx - armW/2f, armY - armH, armW/2f, armH, armW, armH, 1f, 1f, armBackAngle);
+        // Draw Back Boot
+        batch.draw(bootBack, cx - bootW/2f, legY - bootH, bootW/2f, legH + bootH, bootW, bootH, 1f, 1f, legBackAngle);
+        // Draw Back Leg
+        batch.draw(legBack, cx - legW/2f, legY, legW/2f, legH, legW, legH, 1f, 1f, legBackAngle);
+        // Draw Body
+        batch.draw(body, cx - bodyW/2f, bodyY, bodyW, bodyH);
+        // Draw Head (thêm headTilt)
+        batch.draw(head, cx - headW/2f, headY, headW/2f, 0f, headW, headH, 1f, 1f, headTilt);
+        // Draw Front Boot
+        batch.draw(bootFront, cx - bootW/2f, legY - bootH, bootW/2f, legH + bootH, bootW, bootH, 1f, 1f, legFrontAngle);
+        // Draw Front Leg
+        batch.draw(legFront, cx - legW/2f, legY, legW/2f, legH, legW, legH, 1f, 1f, legFrontAngle);
+        // Draw Front Arm
+        batch.draw(armFront, cx - armW/2f, armY - armH, armW/2f, armH, armW, armH, 1f, 1f, armFrontAngle);
+
+        batch.setColor(1f, 1f, 1f, 1f); // reset
     }
 
     public void ban() {
@@ -148,77 +237,11 @@ public class Player extends Entity {
 
     @Override
     public void dispose() {
-        texIdle.dispose();
-        texWalk1.dispose();
-        texWalk2.dispose();
-        texJump0.dispose();
-        texJump1.dispose();
-        texHurt.dispose();
-    }
-
-    // ─── Animation helper ──────────────────────────────────────
-
-    private TextureRegion getCurrentFrame() {
-        switch (state) {
-            case RUN:  return animRun.getKeyFrame(stateTime);
-            case JUMP: return animJump.getKeyFrame(stateTime);
-            case FALL: return animFall.getKeyFrame(stateTime);
-            case HURT: return animHurt.getKeyFrame(stateTime);
-            case IDLE:
-            default:   return animIdle.getKeyFrame(stateTime);
-        }
-    }
-
-    // ─── Input ─────────────────────────────────────────────────
-
-    private void handleInput(float delta) {
-        float moveX = 0;
-        if (Gdx.input.isKeyPressed(Keys.A) || Gdx.input.isKeyPressed(Keys.LEFT)) {
-            moveX       = -MOVE_SPEED;
-            facingRight = false;
-        }
-        if (Gdx.input.isKeyPressed(Keys.D) || Gdx.input.isKeyPressed(Keys.RIGHT)) {
-            moveX       = MOVE_SPEED;
-            facingRight = true;
-        }
-        velocity.x = moveX;
-
-        if (onGround &&
-            (Gdx.input.isKeyJustPressed(Keys.SPACE)
-                || Gdx.input.isKeyJustPressed(Keys.W)
-                || Gdx.input.isKeyJustPressed(Keys.UP))) {
-            velocity.y = JUMP_IMPULSE;
-            onGround   = false;
-            stateTime  = 0f; // reset để jump animation bắt đầu từ đầu
-        }
-    }
-
-    // ─── State machine ─────────────────────────────────────────
-
-    private void updateState(float delta) {
-        EntityState prev = state;
-
-    @Override
-    public void dispose() {
-        texIdle.dispose();
-        texWalk1.dispose();
-        texWalk2.dispose();
-        texJump0.dispose();
-        texJump1.dispose();
-        texHurt.dispose();
-    }
-
-    // ─── Animation helper ──────────────────────────────────────
-
-    private TextureRegion getCurrentFrame() {
-        switch (state) {
-            case RUN:  return animRun.getKeyFrame(stateTime);
-            case JUMP: return animJump.getKeyFrame(stateTime);
-            case FALL: return animFall.getKeyFrame(stateTime);
-            case HURT: return animHurt.getKeyFrame(stateTime);
-            case IDLE:
-            default:   return animIdle.getKeyFrame(stateTime);
-        }
+        tBodyL.dispose(); tBodyR.dispose();
+        tArmL.dispose(); tArmR.dispose();
+        tLegL.dispose(); tLegR.dispose();
+        tHeadR.dispose(); tHeadL.dispose();
+        tBootL.dispose(); tBootR.dispose();
     }
 
     // ─── Input ─────────────────────────────────────────────────

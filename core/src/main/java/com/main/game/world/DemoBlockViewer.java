@@ -43,9 +43,9 @@ public final class DemoBlockViewer {
         f.add((x,y) -> new WoodBlocks.OakLeavesBlock(x,y));
 
         // Add a few placeholder variations using SimpleBlock with BlockPalette textures - if available
-        f.add((x,y) -> new SimpleBlock(x,y, "placeholder_stone", true, true, 1.0f, BlockPalette.STONE));
-        f.add((x,y) -> new SimpleBlock(x,y, "placeholder_dirt", true, true, 0.6f, BlockPalette.DIRT));
-        f.add((x,y) -> new SimpleBlock(x,y, "placeholder_grass", true, true, 0.6f, BlockPalette.GRASS));
+        f.add((x,y) -> new SimpleBlock(x,y, "placeholder_stone", true, true, 1.0f, BlockPalette.getStone()));
+        f.add((x,y) -> new SimpleBlock(x,y, "placeholder_dirt", true, true, 0.6f, BlockPalette.getDirt()));
+        f.add((x,y) -> new SimpleBlock(x,y, "placeholder_grass", true, true, 0.6f, BlockPalette.getGrass()));
 
         return f;
     }

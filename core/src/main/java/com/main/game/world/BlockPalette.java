@@ -10,19 +10,57 @@ import com.main.game.blocks.types.NatureBlocks;
 import com.main.game.blocks.types.StoneBlocks;
 import com.main.game.blocks.types.WoodBlocks;
 
+/**
+ * BlockPalette — Lazy-init texture palette cho các loại block.
+ *
+ * Dùng lazy init thay vì static final để đảm bảo texture chỉ được
+ * load SAU KHI libGDX Application đã khởi tạo xong (Gdx.files sẵn sàng).
+ */
 public final class BlockPalette {
 
-    // Giữ các biến này để GameScreen/World hết báo đỏ
-    public static final TextureRegion GRASS   = TextureManager.getInstance().getTexture("grass_block");
-    public static final TextureRegion DIRT    = TextureManager.getInstance().getTexture("dirt");
-    public static final TextureRegion STONE   = TextureManager.getInstance().getTexture("stone");
-    public static final TextureRegion BEDROCK = TextureManager.getInstance().getTexture("bedrock");
-    public static final TextureRegion SAND    = TextureManager.getInstance().getTexture("sand");
-    public static final TextureRegion WOOD    = TextureManager.getInstance().getTexture("oak_log");
-    public static final TextureRegion LEAVES  = TextureManager.getInstance().getTexture("oak_leaves");
-    public static final TextureRegion PLANKS  = TextureManager.getInstance().getTexture("oak_planks");
+    // ─── Lazy-init texture fields ─────────────────────────────────
+    private static TextureRegion grass;
+    private static TextureRegion dirt;
+    private static TextureRegion stone;
+    private static TextureRegion bedrock;
+    private static TextureRegion sand;
+    private static TextureRegion wood;
+    private static TextureRegion leaves;
+    private static TextureRegion planks;
+    private static boolean initialized = false;
 
     private BlockPalette() {}
+
+    /** Đảm bảo texture đã được load. Gọi lần đầu sẽ load, các lần sau bỏ qua. */
+    private static void ensureInitialized() {
+        if (initialized) return;
+        TextureManager tm = TextureManager.getInstance();
+        grass   = tm.getTexture("grass_block");
+        dirt    = tm.getTexture("dirt");
+        stone   = tm.getTexture("stone");
+        bedrock = tm.getTexture("bedrock");
+        sand    = tm.getTexture("sand");
+        wood    = tm.getTexture("oak_log");
+        leaves  = tm.getTexture("oak_leaves");
+        planks  = tm.getTexture("oak_planks");
+        initialized = true;
+    }
+
+    // ─── Public getters (lazy) ────────────────────────────────────
+    public static TextureRegion getGrass()   { ensureInitialized(); return grass;   }
+    public static TextureRegion getDirt()    { ensureInitialized(); return dirt;    }
+    public static TextureRegion getStone()   { ensureInitialized(); return stone;   }
+    public static TextureRegion getBedrock() { ensureInitialized(); return bedrock; }
+    public static TextureRegion getSand()    { ensureInitialized(); return sand;    }
+    public static TextureRegion getWood()    { ensureInitialized(); return wood;    }
+    public static TextureRegion getLeaves()  { ensureInitialized(); return leaves;  }
+    public static TextureRegion getPlanks()  { ensureInitialized(); return planks;  }
+
+    // ─── Compat: giữ tên field cũ dưới dạng getter ───────────────
+    // Để code cũ dùng BlockPalette.GRASS vẫn compile, ta giữ public static fields
+    // nhưng chúng sẽ được gán sau khi init. Các chỗ dùng nên migrate sang getter.
+    //
+    // MIGRATION: Thay BlockPalette.GRASS → BlockPalette.getGrass(), v.v.
 
     public static AbstractBlock getBlockByInt(int id, int x, int y) {
         switch (id) {
@@ -40,5 +78,9 @@ public final class BlockPalette {
             default: return new UtilityBlocks.AirBlock(x, y);
         }
     }
-    public static void dispose() {}
+
+    public static void dispose() {
+        initialized = false;
+        grass = dirt = stone = bedrock = sand = wood = leaves = planks = null;
+    }
 }

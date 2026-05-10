@@ -135,9 +135,10 @@ public class EntityManager {
         toAdd.clear();
     }
 
-    /** Xoá entity chết khỏi allEntities */
+    /** Xoá entity chết khỏi allEntities và mobs */
     private void cleanDead() {
         allEntities.removeAll(toRemove);
+        mobs.removeAll(toRemove);
         toRemove.clear();
     }
 
