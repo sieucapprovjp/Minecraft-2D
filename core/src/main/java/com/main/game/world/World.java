@@ -85,19 +85,19 @@ public class World {
             for (int y = 0; y <= surface; y++) {
                 AbstractBlock block;
                 if (y == 0) {
-                    block = new SimpleBlock(x, y, "bedrock", true, false, 999f, BlockPalette.BEDROCK);
+                    block = new SimpleBlock(x, y, "bedrock", true, false, 999f, BlockPalette.getBedrock());
                 } else if (y == surface) {
                     // Dùng Noise để tạo bãi cát ngẫu nhiên tự nhiên
                     boolean isSandPatch = getSmoothNoise1D(x * 0.1f, seed + 99) > 0.5f;
                     if (isSandPatch) {
-                        block = new SimpleBlock(x, y, "sand", true, true, 0.5f, BlockPalette.SAND);
+                        block = new SimpleBlock(x, y, "sand", true, true, 0.5f, BlockPalette.getSand());
                     } else {
-                        block = new SimpleBlock(x, y, "grass", true, true, 0.6f, BlockPalette.GRASS);
+                        block = new SimpleBlock(x, y, "grass", true, true, 0.6f, BlockPalette.getGrass());
                     }
                 } else if (y >= surface - 3) {
-                    block = new SimpleBlock(x, y, "dirt", true, true, 0.7f, BlockPalette.DIRT);
+                    block = new SimpleBlock(x, y, "dirt", true, true, 0.7f, BlockPalette.getDirt());
                 } else {
-                    block = new SimpleBlock(x, y, "stone", true, true, 1.2f, BlockPalette.STONE);
+                    block = new SimpleBlock(x, y, "stone", true, true, 1.2f, BlockPalette.getStone());
                 }
                 setBlock(x, y, block);
             }
@@ -109,7 +109,7 @@ public class World {
 
                 for (int ty = 0; ty < trunkHeight && trunkBaseY + ty < height; ty++) {
                     setBlock(x, trunkBaseY + ty,
-                        new SimpleBlock(x, trunkBaseY + ty, "wood", true, true, 0.9f, BlockPalette.WOOD));
+                        new SimpleBlock(x, trunkBaseY + ty, "wood", true, true, 0.9f, BlockPalette.getWood()));
                 }
 
                 int leafY = trunkBaseY + trunkHeight;
@@ -117,7 +117,7 @@ public class World {
                     for (int ly = leafY - 1; ly <= leafY; ly++) {
                         if (isInBounds(lx, ly) && getBlock(lx, ly) == null) {
                             setBlock(lx, ly,
-                                new SimpleBlock(lx, ly, "leaves", false, true, 0.2f, BlockPalette.LEAVES));
+                                new SimpleBlock(lx, ly, "leaves", false, true, 0.2f, BlockPalette.getLeaves()));
                         }
                     }
                 }
@@ -129,10 +129,12 @@ public class World {
      * Chỉ vẽ các block nằm trong tầm nhìn của Camera (Culling)
      */
     public void render(SpriteBatch batch, OrthographicCamera camera) {
-        int minX = Math.max(0, (int) Math.floor(camera.position.x - camera.viewportWidth / 2f) - 1);
-        int maxX = Math.min(width - 1, (int) Math.ceil(camera.position.x + camera.viewportWidth / 2f) + 1);
-        int minY = Math.max(0, (int) Math.floor(camera.position.y - camera.viewportHeight / 2f) - 1);
-        int maxY = Math.min(height - 1, (int) Math.ceil(camera.position.y + camera.viewportHeight / 2f) + 1);
+        float halfW = camera.viewportWidth  * camera.zoom / 2f;
+        float halfH = camera.viewportHeight * camera.zoom / 2f;
+        int minX = Math.max(0, (int) Math.floor(camera.position.x - halfW) - 1);
+        int maxX = Math.min(width - 1, (int) Math.ceil(camera.position.x + halfW) + 1);
+        int minY = Math.max(0, (int) Math.floor(camera.position.y - halfH) - 1);
+        int maxY = Math.min(height - 1, (int) Math.ceil(camera.position.y + halfH) + 1);
 
         for (int x = minX; x <= maxX; x++) {
             for (int y = minY; y <= maxY; y++) {

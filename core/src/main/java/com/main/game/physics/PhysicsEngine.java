@@ -5,52 +5,149 @@ import com.main.game.utils.Constants;
 import com.main.game.world.World;
 
 /**
- * Xử lý toàn bộ vật lý trong game.
- * LÂM HÙNG sẽ implement chi tiết class này.
+ * PhysicsEngine — Xử lý toàn bộ vật lý trong game.
  *
- * Hiện tại có sẵn:
- *  - applyGravity()  → áp dụng trọng lực lên entity
- *  - applyVelocity() → di chuyển entity theo velocity
+ * Thuật toán: Separated Axis AABB Collision
+ *  1. Áp dụng gravity lên velocity.y
+ *  2. Di chuyển theo trục X → resolve collision X (đẩy ra khỏi block ngang)
+ *  3. Di chuyển theo trục Y → resolve collision Y (đẩy ra khỏi block dọc)
  *
- * Lâm Hùng cần implement thêm:
- *  - checkBlockCollision() → kiểm tra va chạm với block
- *  - resolveCollision()    → xử lý sau khi phát hiện va chạm
- *
- * TODO(LHUNG-PHYSICS):
- *  - Tách resolve theo 2 trục X/Y để tránh kẹt góc.
- *  - Chốt quy tắc onGround và reset velocity khi va chạm.
- *  - Bổ sung collision với world qua API World.isSolid(x, y).
+ * Tách X/Y riêng để tránh kẹt góc block — entity luôn trượt mượt
+ * dọc theo bề mặt thay vì bị "dính" vào góc.
  */
 public class PhysicsEngine {
 
+    // Epsilon nhỏ để tránh floating-point edge cases
+    private static final float EPSILON = 0.001f;
+
     /**
-     * Áp dụng trọng lực và di chuyển entity.
-     * Gọi mỗi frame từ GameScreen.update()
+     * Pipeline vật lý chính — gọi mỗi frame cho mỗi entity.
+     * Thứ tự: gravity → move X → resolve X → move Y → resolve Y → sync bounds
      */
     public void update(Entity entity, World world, float delta) {
         applyGravity(entity, delta);
-        applyVelocity(entity, delta);
-        resolveWorldCollision(entity, world);
+
+        // ── Resolve trục X trước ────────────────────────────────
+        float dx = entity.getVelocity().x * delta;
+        entity.getPosition().x += dx;
+        resolveCollisionX(entity, world);
+
+        // ── Resolve trục Y sau ──────────────────────────────────
+        float dy = entity.getVelocity().y * delta;
+        entity.getPosition().y += dy;
+        resolveCollisionY(entity, world);
+
+        // Fallback: không cho rơi khỏi world
+        if (entity.getPosition().y < 0f) {
+            entity.getPosition().y = 0f;
+            entity.getVelocity().y = 0f;
+            entity.setOnGround(true);
+        }
+
+        // Không cho đi ra ngoài biên trái/phải world
+        if (entity.getPosition().x < 0f) {
+            entity.getPosition().x = 0f;
+        }
+        if (entity.getPosition().x + entity.getWidth() > world.width) {
+            entity.getPosition().x = world.width - entity.getWidth();
+        }
+
+        // Sync bounds cho collision detection khác (entity vs entity)
+        entity.getBounds().setPosition(entity.getPosition());
     }
 
     /**
      * Kéo entity xuống theo gravity, giới hạn ở TERMINAL_VELOCITY.
-     * Được gọi bởi Player.update() và Mob.update() (DUOC-ENTITY).
      */
     public void applyGravity(Entity entity, float delta) {
-        if (!entity.isOnGround()) {
-            float vy = entity.getVelocity().y + Constants.GRAVITY * delta;
-            entity.getVelocity().y = Math.max(vy, Constants.TERMINAL_VELOCITY);
+        float vy = entity.getVelocity().y + Constants.GRAVITY * delta;
+        entity.getVelocity().y = Math.max(vy, Constants.TERMINAL_VELOCITY);
+    }
+
+    // ─── Resolve trục X ──────────────────────────────────────────
+
+    /**
+     * Sau khi di chuyển theo X, kiểm tra overlap với block solid.
+     * Nếu entity chồng lên block → đẩy ra ngoài theo hướng ngược lại.
+     */
+    private void resolveCollisionX(Entity entity, World world) {
+        float ex = entity.getPosition().x;
+        float ey = entity.getPosition().y;
+        float ew = entity.getWidth();
+        float eh = entity.getHeight();
+
+        // Tìm range tile mà entity đang overlap
+        int tileLeft   = (int) Math.floor(ex);
+        int tileRight  = (int) Math.floor(ex + ew - EPSILON);
+        int tileBottom = (int) Math.floor(ey + EPSILON);       // +epsilon: bỏ qua tile ngay dưới chân (ground)
+        int tileTop    = (int) Math.floor(ey + eh - EPSILON);
+
+        for (int tx = tileLeft; tx <= tileRight; tx++) {
+            for (int ty = tileBottom; ty <= tileTop; ty++) {
+                if (!world.isSolid(tx, ty)) continue;
+
+                // Block AABB: [tx, tx+1] x [ty, ty+1]
+                // Entity đang overlap block này theo X
+                if (entity.getVelocity().x > 0) {
+                    // Đi sang phải → đẩy entity sang trái (mép trái block)
+                    entity.getPosition().x = tx - ew;
+                } else if (entity.getVelocity().x < 0) {
+                    // Đi sang trái → đẩy entity sang phải (mép phải block)
+                    entity.getPosition().x = tx + 1f;
+                }
+                entity.getVelocity().x = 0f;
+                return; // Chỉ cần resolve 1 block, vì đã đẩy ra ngoài
+            }
         }
     }
 
+    // ─── Resolve trục Y ──────────────────────────────────────────
+
     /**
-     * Xử lý va chạm với block và cập nhật onGround.
-     * TODO(LHUNG-PHYSICS): implement AABB collision đầy đủ tại đây.
+     * Sau khi di chuyển theo Y, kiểm tra overlap với block solid.
+     * Nếu entity chồng lên block:
+     *  - Rơi xuống (vy < 0) → đặt lên trên block, set onGround = true
+     *  - Bay lên (vy > 0)   → đẩy xuống dưới block, reset vy = 0
      */
+    private void resolveCollisionY(Entity entity, World world) {
+        float ex = entity.getPosition().x;
+        float ey = entity.getPosition().y;
+        float ew = entity.getWidth();
+        float eh = entity.getHeight();
+
+        int tileLeft   = (int) Math.floor(ex + EPSILON);       // +epsilon: cho phép sát mép
+        int tileRight  = (int) Math.floor(ex + ew - EPSILON);
+        int tileBottom = (int) Math.floor(ey);
+        int tileTop    = (int) Math.floor(ey + eh - EPSILON);
+
+        entity.setOnGround(false);
+
+        for (int tx = tileLeft; tx <= tileRight; tx++) {
+            for (int ty = tileBottom; ty <= tileTop; ty++) {
+                if (!world.isSolid(tx, ty)) continue;
+
+                if (entity.getVelocity().y <= 0) {
+                    // Rơi xuống → đặt entity lên trên block
+                    entity.getPosition().y = ty + 1f;
+                    entity.getVelocity().y = 0f;
+                    entity.setOnGround(true);
+                } else {
+                    // Bay lên → đập đầu vào trần → đẩy xuống dưới block
+                    entity.getPosition().y = ty - eh;
+                    entity.getVelocity().y = 0f;
+                }
+                return;
+            }
+        }
+    }
+
+    // ─── Legacy methods (giữ cho backward compat) ────────────────
+
+    /**
+     * @deprecated Dùng {@link #update(Entity, World, float)} thay thế.
+     */
+    @Deprecated
     public void resolveCollision(Entity entity, float delta) {
-        // TODO(LHUNG-PHYSICS): implement chi tiết
-        // Tạm thời chặn entity không rơi xuống dưới y = 0
         if (entity.getPosition().y <= 0) {
             entity.getPosition().y = 0;
             entity.getVelocity().y = 0;
@@ -58,50 +155,5 @@ public class PhysicsEngine {
         } else {
             entity.setOnGround(false);
         }
-        applyVelocity(entity, delta);
-        // TODO: entity.getBounds().setPosition(entity.getPosition()); đã có trong applyVelocity
     }
-
-    /** Di chuyển entity theo velocity hiện tại */
-    private void applyVelocity(Entity entity, float delta) {
-        entity.getPosition().x += entity.getVelocity().x * delta;
-        entity.getPosition().y += entity.getVelocity().y * delta;
-        // Sau khi di chuyển phải sync lại bounds để collision đúng
-        entity.getBounds().setPosition(entity.getPosition());
-    }
-
-    private void resolveWorldCollision(Entity entity, World world) {
-        float epsilon = 0.001f;
-
-        int minX = (int) Math.floor(entity.getX());
-        int maxX = (int) Math.floor(entity.getX() + entity.getWidth() - epsilon);
-        int minY = (int) Math.floor(entity.getY());
-        int maxY = (int) Math.floor(entity.getY() + entity.getHeight() - epsilon);
-
-        entity.setOnGround(false);
-
-        for (int x = minX; x <= maxX; x++) {
-            if (!world.isSolid(x, minY)) {
-                continue;
-            }
-
-            float correctedY = minY + 1f;
-            entity.getPosition().y = correctedY;
-            entity.getVelocity().y = 0f;
-            entity.setOnGround(true);
-            entity.getBounds().setPosition(entity.getPosition());
-            return;
-        }
-
-        if (entity.getY() < 0f) {
-            entity.getPosition().y = 0f;
-            entity.getVelocity().y = 0f;
-            entity.setOnGround(true);
-            entity.getBounds().setPosition(entity.getPosition());
-        }
-    }
-
-    // ─── TODO: Lâm Hùng implement tiếp ───────────────────────────
-
-    // public void checkBlockCollision(Entity entity, World world) { ... }
 }

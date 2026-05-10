@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.main.game.physics.PhysicsEngine;
+import com.main.game.world.World;
 
 /**
  * Mob với AI đơn giản: PATROL <-> CHASE.
@@ -78,14 +79,16 @@ public class Mob extends Entity {
     // ─── Refs ─────────────────────────────────────────────────
     private Player          target;
     private final PhysicsEngine physics;
+    private final World         world;
 
     // ───────────────────────────────────────────────────────────
 
-    public Mob(float x, float y, MobType type, Player target, PhysicsEngine physics) {
+    public Mob(float x, float y, MobType type, Player target, PhysicsEngine physics, World world) {
         super(x, y, MOB_W, MOB_H);
         this.patrolOriginX = x;
         this.target        = target;
         this.physics       = physics;
+        this.world         = world;
 
         switch (type) {
             case SKELETON:
@@ -156,8 +159,7 @@ public class Mob extends Entity {
         stateTime += delta;
         tickTimers(delta);
         updateAI(delta);
-        physics.applyGravity(this, delta);
-        physics.resolveCollision(this, delta);
+        physics.update(this, world, delta);
         updateEntityState();
         updateBounds();
     }
