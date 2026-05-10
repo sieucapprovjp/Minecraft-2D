@@ -29,10 +29,10 @@ public final class Constants {
     public static final float TERMINAL_VELOCITY     = -20f;     // tile/s
 
     // ─── Player ──────────────────────────────────────────────────
-    public static final float PLAYER_SPEED          = 8f;       // tile/s
+    public static final float PLAYER_SPEED          = 5f;       // tile/s (synced with Player.MOVE_SPEED)
     public static final float PLAYER_JUMP_FORCE     = 12f;      // tile/s
-    public static final float PLAYER_WIDTH          = 0.9f;     // tile
-    public static final float PLAYER_HEIGHT         = 1.9f;     // tile
+    public static final float PLAYER_WIDTH          = 0.8f;     // tile (synced with Player.PLAYER_W)
+    public static final float PLAYER_HEIGHT         = 1.8f;     // tile (synced with Player.PLAYER_H)
 
     // ─── Assets paths ────────────────────────────────────────────
     public static final String TEXTURE_ATLAS_PATH   = "atlas/tiles.atlas";

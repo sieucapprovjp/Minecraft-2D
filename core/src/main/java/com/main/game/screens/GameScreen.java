@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.math.Matrix4;
+import com.badlogic.gdx.math.Vector2;
 import com.main.game.MainGame;
 import com.main.game.entities.EntityManager;
 import com.main.game.entities.Mob;
@@ -17,6 +18,7 @@ import com.main.game.navigation.ScreenId;
 import com.main.game.physics.PhysicsEngine;
 import com.main.game.utils.Constants;
 import com.main.game.world.BlockPalette;
+import com.main.game.world.DemoBlockViewer;
 import com.main.game.world.World;
 
 /**
@@ -41,6 +43,7 @@ public class GameScreen extends BaseScreen {
     private BitmapFont overlayFont;
     private GlyphLayout overlayLayout;
     private Matrix4 uiProjection;
+    private BitmapFont font;
 
     public GameScreen(MainGame game) {
         super(game);
@@ -55,17 +58,18 @@ public class GameScreen extends BaseScreen {
         physics = new PhysicsEngine();
 
         // ── Khởi tạo Player ─────────────────────────── DUOC-ENTITY ──
-        float spawnX = world.width * 0.25f;
-        float spawnY = world.height * 0.58f;
-        player = new Player(spawnX, spawnY, physics);
+        Vector2 spawn = world.getSpawnPoint();
+        float spawnX = spawn.x;
+        float spawnY = spawn.y;
+        player = new Player(spawnX, spawnY, physics, world);
 
         // ── Khởi tạo EntityManager ───────────────────── DUOC-ENTITY ──
         entityManager = new EntityManager();
         entityManager.setPlayer(player);
 
         // ── Spawn mob mẫu để test ────────────────────── DUOC-ENTITY ──
-        entityManager.addMob(new Mob(spawnX + 10f, spawnY, Mob.MobType.ZOMBIE,    player, physics));
-        entityManager.addMob(new Mob(spawnX + 20f, spawnY, Mob.MobType.SKELETON,  player, physics));
+        entityManager.addMob(new Mob(spawnX + 10f, spawnY + 5f, Mob.MobType.ZOMBIE,    player, physics, world));
+        entityManager.addMob(new Mob(spawnX + 20f, spawnY + 5f, Mob.MobType.SKELETON,  player, physics, world));
 
         paused = false;
         camera.zoom = CAMERA_ZOOM;
@@ -80,6 +84,8 @@ public class GameScreen extends BaseScreen {
         overlayFont.setColor(Color.WHITE);
         overlayLayout = new GlyphLayout();
         uiProjection = new Matrix4();
+        font = new BitmapFont();
+        font.setColor(Color.WHITE);
 
         // Spawn camera gần mặt đất để test terrain dễ hơn.
         camera.position.set(spawnX, spawnY, 0f);
@@ -97,8 +103,16 @@ public class GameScreen extends BaseScreen {
         if (Gdx.input.isKeyJustPressed(Input.Keys.M)) {
             game.getScreenRouter().request(ScreenId.MENU);
         }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.O)) {
+            int sx = Math.max(2, (int) player.getX());
+            int sy = Math.max(2, (int) player.getY());
+            DemoBlockViewer.populateDemo(world, sx, sy);
+        }
         if (Gdx.input.isKeyJustPressed(Input.Keys.K)) {
             game.getScreenRouter().request(ScreenId.GAME_OVER);
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.B)) {
+            player.ban();
         }
 
         if (paused) {
@@ -107,6 +121,11 @@ public class GameScreen extends BaseScreen {
 
         // DUOC-ENTITY: update toàn bộ entity (Player input + Mob AI + sync physics)
         entityManager.update(delta);
+
+        // Chết -> Game Over
+        if (player.getHealth() <= 0) {
+            game.getScreenRouter().request(ScreenId.GAME_OVER);
+        }
 
         float halfW = camera.viewportWidth  * camera.zoom / 2f;
         float halfH = camera.viewportHeight * camera.zoom / 2f;
@@ -149,9 +168,28 @@ public class GameScreen extends BaseScreen {
         // ── HUD / debug block palette ────────────────────────────
         batch.setProjectionMatrix(viewport.getCamera().combined);
         batch.begin();
-        batch.draw(BlockPalette.GRASS,   0.25f, Constants.VIEWPORT_HEIGHT_TILES - 1.25f, 1f, 1f);
-        batch.draw(BlockPalette.STONE,   1.35f, Constants.VIEWPORT_HEIGHT_TILES - 1.25f, 1f, 1f);
-        batch.draw(BlockPalette.BEDROCK, 2.45f, Constants.VIEWPORT_HEIGHT_TILES - 1.25f, 1f, 1f);
+        if (BlockPalette.getGrass() != null) {
+            batch.draw(BlockPalette.getGrass(), 0.25f, Constants.VIEWPORT_HEIGHT_TILES - 1.25f, 1f, 1f);
+        }
+        if (BlockPalette.getStone() != null) {
+            batch.draw(BlockPalette.getStone(), 1.35f, Constants.VIEWPORT_HEIGHT_TILES - 1.25f, 1f, 1f);
+        }
+        if (BlockPalette.getBedrock() != null) {
+            batch.draw(BlockPalette.getBedrock(), 2.45f, Constants.VIEWPORT_HEIGHT_TILES - 1.25f, 1f, 1f);
+        }
+
+        // ── Text HUD ─────────────────────────────────────────────────
+        uiProjection.setToOrtho2D(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        batch.setProjectionMatrix(uiProjection);
+        
+        // Vẽ tim (giả lập bằng text màu đỏ cho nhanh, sau này có thể đổi bằng sprite)
+        font.setColor(Color.RED);
+        font.draw(batch, "HP: " + player.getHealth() + " / " + player.getMaxHealth(), 20, Gdx.graphics.getHeight() - 20);
+        
+        font.setColor(Color.WHITE);
+        font.draw(batch, "FPS: " + Gdx.graphics.getFramesPerSecond(), 20, Gdx.graphics.getHeight() - 40);
+        font.draw(batch, "X: " + (int)player.getX() + "  Y: " + (int)player.getY(), 20, Gdx.graphics.getHeight() - 60);
+
         batch.end();
 
         if (paused) {
@@ -184,6 +222,7 @@ public class GameScreen extends BaseScreen {
     @Override
     public void dispose() {
         super.dispose();
+        font.dispose();
         BlockPalette.dispose();
         overlayTexture.dispose();
         overlayFont.dispose();
