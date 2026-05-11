@@ -10,8 +10,16 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.main.game.MainGame;
 import com.main.game.entities.EntityManager;
+import com.main.game.ui.UISkin;
 import com.main.game.entities.Mob;
 import com.main.game.entities.Player;
 import com.main.game.navigation.ScreenId;
@@ -44,6 +52,18 @@ public class GameScreen extends BaseScreen {
     private GlyphLayout overlayLayout;
     private Matrix4 uiProjection;
     private BitmapFont font;
+    
+    // Pause UI
+    private Stage pauseStage;
+    
+    // HUD Textures
+    private Texture[] healthTextures;
+    private Texture[] hungerTextures;
+    private Texture hotbarTex;
+    private Texture selectorTex;
+    private Texture xpBgTex;
+    private Texture xpFgTex;
+    private int selectedSlot = 0;
 
     public GameScreen(MainGame game) {
         super(game);
@@ -86,6 +106,47 @@ public class GameScreen extends BaseScreen {
         uiProjection = new Matrix4();
         font = new BitmapFont();
         font.setColor(Color.WHITE);
+        
+        // Load HUD textures
+        healthTextures = new Texture[21];
+        hungerTextures = new Texture[21];
+        for (int i = 0; i <= 20; i++) {
+            healthTextures[i] = new Texture(Gdx.files.internal("mvp/ui/health/health" + i + ".png"));
+            hungerTextures[i] = new Texture(Gdx.files.internal("mvp/ui/hunger/hunger_" + i + ".png"));
+        }
+        hotbarTex = new Texture(Gdx.files.internal("mvp/ui/hotbar.png"));
+        selectorTex = new Texture(Gdx.files.internal("mvp/ui/selector.png"));
+        xpBgTex = new Texture(Gdx.files.internal("mvp/ui/xp/xp_bg.png"));
+        xpFgTex = new Texture(Gdx.files.internal("mvp/ui/xp/xp_fg.png"));
+
+        // Setup Pause Menu
+        pauseStage = new Stage(new ScreenViewport(), game.getBatch());
+        Table table = new Table();
+        table.setFillParent(true);
+        pauseStage.addActor(table);
+        
+        Label pauseLabel = new Label("GAME PAUSED", UISkin.getSkin());
+        pauseLabel.setFontScale(2f);
+        TextButton resumeBtn = new TextButton("Resume Game", UISkin.getSkin());
+        TextButton menuBtn = new TextButton("Quit to Menu", UISkin.getSkin());
+        
+        resumeBtn.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                paused = false;
+                Gdx.input.setInputProcessor(null);
+            }
+        });
+        menuBtn.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                game.getScreenRouter().request(ScreenId.MENU);
+            }
+        });
+        
+        table.add(pauseLabel).padBottom(40).row();
+        table.add(resumeBtn).width(300).height(50).padBottom(20).row();
+        table.add(menuBtn).width(300).height(50).padBottom(20).row();
 
         // Spawn camera gần mặt đất để test terrain dễ hơn.
         camera.position.set(spawnX, spawnY, 0f);
@@ -94,11 +155,17 @@ public class GameScreen extends BaseScreen {
 
     @Override
     public void update(float delta) {
-        if (Gdx.input.isKeyJustPressed(Input.Keys.P)) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || Gdx.input.isKeyJustPressed(Input.Keys.P)) {
             paused = !paused;
+            if (paused) {
+                Gdx.input.setInputProcessor(pauseStage);
+            } else {
+                Gdx.input.setInputProcessor(null);
+            }
         }
-        if (paused && (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || Gdx.input.isKeyJustPressed(Input.Keys.G))) {
-            paused = false;
+        
+        if (paused) {
+            pauseStage.act(delta);
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.M)) {
             game.getScreenRouter().request(ScreenId.MENU);
@@ -114,6 +181,17 @@ public class GameScreen extends BaseScreen {
         if (Gdx.input.isKeyJustPressed(Input.Keys.B)) {
             player.ban();
         }
+        
+        // Chọn ô hotbar (phím 1-9)
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1)) selectedSlot = 0;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_2)) selectedSlot = 1;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_3)) selectedSlot = 2;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_4)) selectedSlot = 3;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_5)) selectedSlot = 4;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_6)) selectedSlot = 5;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_7)) selectedSlot = 6;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_8)) selectedSlot = 7;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_9)) selectedSlot = 8;
 
         if (paused) {
             return;
@@ -182,10 +260,70 @@ public class GameScreen extends BaseScreen {
         uiProjection.setToOrtho2D(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         batch.setProjectionMatrix(uiProjection);
         
-        // Vẽ tim (giả lập bằng text màu đỏ cho nhanh, sau này có thể đổi bằng sprite)
-        font.setColor(Color.RED);
-        font.draw(batch, "HP: " + player.getHealth() + " / " + player.getMaxHealth(), 20, Gdx.graphics.getHeight() - 20);
+        // ── Vẽ Minecraft HUD ─────────────────────────────────────────
+        float sw = Gdx.graphics.getWidth();
+        float sh = Gdx.graphics.getHeight();
         
+        // Vì ảnh hotbar đã được upscaled lên 728x88, ta sẽ dùng scale = 0.5f hoặc 0.75f tùy màn hình
+        float scale = 0.65f; 
+
+        float hbW = hotbarTex.getWidth() * scale;
+        float hbH = hotbarTex.getHeight() * scale;
+
+        // Vẽ Hotbar (căn giữa cạnh dưới)
+        float hbX = (sw - hbW) / 2f;
+        float hbY = 10f;
+        batch.draw(hotbarTex, hbX, hbY, hbW, hbH);
+
+        // Vẽ Selector
+        // Kích thước chuẩn: hotbar width 182, ô mỗi slot 20, viền slot lệch 1.
+        // Hotbar đã upscaled 4x -> khoảng cách mỗi ô là 80, lệch 4
+        float selW = selectorTex.getWidth() * scale;
+        float selH = selectorTex.getHeight() * scale;
+        float slotOffset = 80f * scale;
+        float selX = hbX - (4f * scale) + (selectedSlot * slotOffset);
+        float selY = hbY - (4f * scale);
+        batch.draw(selectorTex, selX, selY, selW, selH);
+
+        // Vẽ XP Bar (Ngay trên hotbar)
+        // Lưu ý: Ảnh XP Bar chỉ có kích thước ~357 (gần 2x), ta sẽ scale nó để bằng chiều rộng Hotbar
+        float xpScaleX = hbW / xpBgTex.getWidth(); 
+        float xpScaleY = xpScaleX; 
+        float xpBgW = xpBgTex.getWidth() * xpScaleX; 
+        float xpBgH = xpBgTex.getHeight() * xpScaleY;
+        
+        float xpX = hbX + (hbW - xpBgW) / 2f; // Sẽ bằng mép trái hotbar
+        float xpY = hbY + hbH + (5f * scale);
+        batch.draw(xpBgTex, xpX, xpY, xpBgW, xpBgH);
+        
+        // Giả lập XP đang được 50%
+        float xpProgress = 0.5f; 
+        batch.draw(xpFgTex, xpX, xpY, xpBgW * xpProgress, xpBgH, 0, 0, (int)(xpFgTex.getWidth() * xpProgress), xpFgTex.getHeight(), false, false);
+
+        // Vẽ Health Bar
+        int hp = player.getHealth();
+        hp = Math.max(0, Math.min(20, hp)); 
+        Texture hpTex = healthTextures[hp];
+        
+        // Ảnh Health là 324 (4x) -> scale bình thường
+        float hpScale = scale;
+        float hpW = hpTex.getWidth() * hpScale;
+        float hpH = hpTex.getHeight() * hpScale;
+        float hpX = hbX; // Canh trái bằng mép Hotbar
+        float hpY = xpY + xpBgH + (5f * scale);
+        batch.draw(hpTex, hpX, hpY, hpW, hpH);
+
+        // Vẽ Hunger Bar (Giả lập đầy 20)
+        int hunger = 20; 
+        Texture hungerTex = hungerTextures[hunger];
+        
+        // Ảnh Hunger là 162 (2x) -> phải nhân 2 scale lên để to bằng Health (4x)
+        float hgScale = scale * 2f;
+        float hgW = hungerTex.getWidth() * hgScale;
+        float hgH = hungerTex.getHeight() * hgScale;
+        float hgX = hbX + hbW - hgW; // Canh lề phải bằng mép phải Hotbar
+        float hgY = hpY; // Ngang hàng với Health
+        batch.draw(hungerTex, hgX, hgY, hgW, hgH);
         font.setColor(Color.WHITE);
         font.draw(batch, "FPS: " + Gdx.graphics.getFramesPerSecond(), 20, Gdx.graphics.getHeight() - 40);
         font.draw(batch, "X: " + (int)player.getX() + "  Y: " + (int)player.getY(), 20, Gdx.graphics.getHeight() - 60);
@@ -203,29 +341,34 @@ public class GameScreen extends BaseScreen {
 
         batch.begin();
         Color prevColor = new Color(batch.getColor());
-        batch.setColor(0f, 0f, 0f, 0.35f);
+        batch.setColor(0f, 0f, 0f, 0.5f);
         batch.draw(overlayTexture, 0f, 0f, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         batch.setColor(prevColor);
-
-        drawCentered("PAUSED", Gdx.graphics.getHeight() * 0.62f);
-        drawCentered("P / ESC / G: Resume", Gdx.graphics.getHeight() * 0.48f);
-        drawCentered("M: Menu   K: Game Over", Gdx.graphics.getHeight() * 0.40f);
         batch.end();
-    }
 
-    private void drawCentered(String text, float y) {
-        overlayLayout.setText(overlayFont, text);
-        float x = (Gdx.graphics.getWidth() - overlayLayout.width) * 0.5f;
-        overlayFont.draw(batch, overlayLayout, x, y);
+        pauseStage.getViewport().update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
+        pauseStage.draw();
     }
 
     @Override
     public void dispose() {
         super.dispose();
+        if (pauseStage != null) pauseStage.dispose();
         font.dispose();
         BlockPalette.dispose();
         overlayTexture.dispose();
         overlayFont.dispose();
+        if (healthTextures != null) {
+            for (Texture t : healthTextures) { if (t != null) t.dispose(); }
+        }
+        if (hungerTextures != null) {
+            for (Texture t : hungerTextures) { if (t != null) t.dispose(); }
+        }
+        if (hotbarTex != null) hotbarTex.dispose();
+        if (selectorTex != null) selectorTex.dispose();
+        if (xpBgTex != null) xpBgTex.dispose();
+        if (xpFgTex != null) xpFgTex.dispose();
+        
         entityManager.dispose(); // DUOC-ENTITY: giải phóng tài nguyên player + mob
     }
 
