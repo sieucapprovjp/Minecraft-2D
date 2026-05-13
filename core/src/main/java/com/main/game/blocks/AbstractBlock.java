@@ -19,12 +19,12 @@ import com.main.game.utils.Constants;
 public abstract class AbstractBlock {
 
     // ─── Vị trí trong world (đơn vị tile) ────────────────────────
-    protected int tileX;
-    protected int tileY;
+    protected int  tileX;
+    protected int  tileY;
 
     // ─── Thuộc tính block ─────────────────────────────────────────
-    protected boolean isSolid;      // có collision không (Lâm Hùng dùng)
-    protected boolean isBreakable;  // có thể đào không
+    protected boolean  isSolid;      // có collision không (Lâm Hùng dùng)
+    protected boolean  isBreakable;  // có thể đào không
     protected float   hardness;     // độ cứng — thời gian đào (giây)
     protected String  blockId;      // ID định danh, vd: "dirt", "stone"
 
