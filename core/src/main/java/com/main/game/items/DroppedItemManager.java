@@ -3,6 +3,7 @@ package com.main.game.items;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.Array;
 import com.main.game.entities.Player;
+import com.main.game.inventory.Inventory;
 import com.main.game.world.World;
 
 public class DroppedItemManager {
@@ -16,10 +17,13 @@ public class DroppedItemManager {
         }
     }
 
-    public void update(float delta, World world, Player player) {
+    public void update(float delta, World world, Player player, Inventory inventory) {
         currentTime += delta;
-        for (DroppedItem item : items) {
-            item.update(delta, world, player);
+        for (int i = items.size - 1; i >= 0; i--) {
+            DroppedItem item = items.get(i);
+            if (item.update(delta, world, player, inventory, currentTime)) {
+                items.removeIndex(i);
+            }
         }
     }
 

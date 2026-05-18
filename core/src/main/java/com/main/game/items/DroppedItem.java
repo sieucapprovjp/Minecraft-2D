@@ -6,6 +6,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.main.game.blocks.AbstractBlock;
 import com.main.game.entities.Player;
+import com.main.game.inventory.Inventory;
 import com.main.game.world.World;
 
 public class DroppedItem {
@@ -19,7 +20,7 @@ public class DroppedItem {
 
     private final String itemId;
     private final TextureRegion texture;
-    private final int count;
+    private int count;
     private final Vector2 position;
     private final Vector2 velocity;
     private final float waitUntil;
@@ -36,7 +37,7 @@ public class DroppedItem {
         this.waitUntil = currentTime + (Math.abs(entry.getSx()) > 0.08f ? 1.0f : 0.5f);
     }
 
-    public void update(float delta, World world, Player player) {
+    public boolean update(float delta, World world, Player player, Inventory inventory, float currentTime) {
         float tickStep = delta * 60f;
 
         position.x += velocity.x * tickStep;
@@ -56,9 +57,10 @@ public class DroppedItem {
             applyConveyor(world);
         }
 
-        if (player != null && player.isAlive()) {
-            doSuck(player, tickStep);
+        if (player != null && player.isAlive() && inventory != null) {
+            return doSuck(player, inventory, currentTime, tickStep);
         }
+        return false;
     }
 
     public void render(SpriteBatch batch) {
@@ -113,17 +115,29 @@ public class DroppedItem {
         }
     }
 
-    private void doSuck(Player player, float tickStep) {
+    private boolean doSuck(Player player, Inventory inventory, float currentTime, float tickStep) {
+        if (currentTime < waitUntil) {
+            return false;
+        }
+
         float dx = (player.getX() + player.getWidth() / 2f) - getCenterX();
         float dy = (player.getY() + player.getHeight() / 2f) - getCenterY();
-        float dist2 = dx * dx + dy * dy;
-        if (dist2 <= 0.001f || dist2 > SUCK_RANGE * SUCK_RANGE) {
-            return;
+        float dist = Math.abs(dx) + Math.abs(dy);
+        if (dist <= 0.001f || dist >= 2f) {
+            return false;
         }
-        float dist = (float) Math.sqrt(dist2);
-        float force = SUCK_STRENGTH * tickStep;
-        velocity.x += dx / dist * force;
-        velocity.y += dy / dist * force;
+
+        if (Math.abs(dx) < 0.25f && Math.abs(dy) < 0.9f) {
+            int remaining = inventory.add(itemId, count);
+            count = remaining;
+            return remaining <= 0;
+        }
+
+        velocity.x = (dx / dist) * 0.2f;
+        velocity.y = (dy / dist) * 0.2f + 0.04f;
+        velocity.x += Math.signum(dx) * SUCK_STRENGTH * tickStep;
+        velocity.y += Math.signum(dy) * SUCK_STRENGTH * tickStep;
+        return false;
     }
 
     private float getCenterX() {
