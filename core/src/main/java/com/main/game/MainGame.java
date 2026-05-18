@@ -9,6 +9,10 @@ import com.main.game.navigation.ScreenRouter;
 import com.main.game.screens.BaseScreen;
 import com.main.game.screens.GameScreen;
 import com.main.game.screens.StateScreen;
+import com.main.game.screens.LoadingScreen;
+import com.main.game.screens.MenuScreen;
+import com.main.game.screens.ModeSelectScreen;
+import com.main.game.screens.SettingsScreen;
 import com.main.game.utils.TextureManager;
 import com.main.game.world.BlockPalette;
 
@@ -26,13 +30,15 @@ public class MainGame extends Game {
     private SpriteBatch batch;
     private AssetManager assetManager;
     private ScreenRouter screenRouter;
+    private GameState gameState;
 
     @Override
     public void create() {
         batch = new SpriteBatch();
         assetManager = new AssetManager();
         screenRouter = new ScreenRouter(this);
-        screenRouter.request(ScreenId.GAME);
+        gameState = new GameState();
+        screenRouter.request(ScreenId.LOADING);
     }
 
     @Override
@@ -43,10 +49,18 @@ public class MainGame extends Game {
 
     public Screen createScreen(ScreenId id) {
         switch (id) {
+            case LOADING:
+                return new LoadingScreen(this);
+            case MENU:
+                return new MenuScreen(this);
+            case MODE_SELECT:
+                return new ModeSelectScreen(this);
+            case SETTINGS:
+                return new SettingsScreen(this);
             case GAME:
                 return new GameScreen(this);
-            case MENU:
             case PAUSE:
+                return new StateScreen(this, id);
             case GAME_OVER:
                 return new StateScreen(this, id);
             default:
@@ -64,6 +78,10 @@ public class MainGame extends Game {
 
     public ScreenRouter getScreenRouter() {
         return screenRouter;
+    }
+
+    public GameState getGameState() {
+        return gameState;
     }
 
     @Override
