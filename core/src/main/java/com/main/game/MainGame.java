@@ -12,6 +12,7 @@ import com.main.game.screens.StateScreen;
 import com.main.game.screens.LoadingScreen;
 import com.main.game.screens.MenuScreen;
 import com.main.game.screens.ModeSelectScreen;
+import com.main.game.screens.SettingsScreen;
 import com.main.game.utils.TextureManager;
 import com.main.game.world.BlockPalette;
 
@@ -29,12 +30,14 @@ public class MainGame extends Game {
     private SpriteBatch batch;
     private AssetManager assetManager;
     private ScreenRouter screenRouter;
+    private GameState gameState;
 
     @Override
     public void create() {
         batch = new SpriteBatch();
         assetManager = new AssetManager();
         screenRouter = new ScreenRouter(this);
+        gameState = new GameState();
         screenRouter.request(ScreenId.LOADING);
     }
 
@@ -52,6 +55,8 @@ public class MainGame extends Game {
                 return new MenuScreen(this);
             case MODE_SELECT:
                 return new ModeSelectScreen(this);
+            case SETTINGS:
+                return new SettingsScreen(this);
             case GAME:
                 return new GameScreen(this);
             case PAUSE:
@@ -73,6 +78,10 @@ public class MainGame extends Game {
 
     public ScreenRouter getScreenRouter() {
         return screenRouter;
+    }
+
+    public GameState getGameState() {
+        return gameState;
     }
 
     @Override
