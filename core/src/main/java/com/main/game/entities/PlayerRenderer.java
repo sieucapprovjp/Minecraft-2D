@@ -139,13 +139,13 @@ class PlayerRenderer {
 
     private void loadAssets() {
         tBodyL = new Texture(Gdx.files.internal("mvp/player/body4.png"));
-        tBodyR = new Texture(Gdx.files.internal("mvp/player/body4_1.png"));
+        tBodyR = new Texture(Gdx.files.internal("mvp/player/body4.png"));
         tArmL = new Texture(Gdx.files.internal("mvp/player/arm4.png"));
-        tArmR = new Texture(Gdx.files.internal("mvp/player/arm4_1.png"));
+        tArmR = new Texture(Gdx.files.internal("mvp/player/arm4.png"));
         tLegL = new Texture(Gdx.files.internal("mvp/player/leg.png"));
-        tLegR = new Texture(Gdx.files.internal("mvp/player/leg_1.png"));
+        tLegR = new Texture(Gdx.files.internal("mvp/player/leg.png"));
         tHeadR = new Texture(Gdx.files.internal("mvp/player/right.png"));
-        tHeadL = new Texture(Gdx.files.internal("mvp/player/right_1.png"));
+        tHeadL = new Texture(Gdx.files.internal("mvp/player/left.png"));
         tBootL = new Texture(Gdx.files.internal("mvp/player/boot.png"));
         tBootR = new Texture(Gdx.files.internal("mvp/player/boot1.png"));
 
