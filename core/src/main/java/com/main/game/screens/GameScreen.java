@@ -110,7 +110,12 @@ public class GameScreen extends BaseScreen {
 
         // ── Spawn mob mẫu để test ────────────────────── DUOC-ENTITY ──
         entityManager.addMob(new Mob(spawnX + 10f, spawnY + 5f, Mob.MobType.ZOMBIE, player, physics, world));
+        entityManager.addMob(new Mob(spawnX + 14f, spawnY + 5f, Mob.MobType.HUSK, player, physics, world));
         entityManager.addMob(new Mob(spawnX + 20f, spawnY + 5f, Mob.MobType.SKELETON, player, physics, world));
+        entityManager.addMob(new Mob(spawnX - 8f, spawnY + 5f, Mob.MobType.COW, player, physics, world));
+        entityManager.addMob(new Mob(spawnX - 12f, spawnY + 5f, Mob.MobType.PIG, player, physics, world));
+        entityManager.addMob(new Mob(spawnX - 16f, spawnY + 5f, Mob.MobType.SHEEP, player, physics, world));
+        entityManager.addMob(new Mob(spawnX - 20f, spawnY + 5f, Mob.MobType.CHICKEN, player, physics, world));
 
         paused = false;
         dead = false;
@@ -133,8 +138,8 @@ public class GameScreen extends BaseScreen {
         healthTextures = new Texture[21];
         hungerTextures = new Texture[21];
         for (int i = 0; i <= 20; i++) {
-            healthTextures[i] = new Texture(Gdx.files.internal("mvp/ui/health/health" + i + ".png"));
-            hungerTextures[i] = new Texture(Gdx.files.internal("mvp/ui/hunger/hunger_" + i + ".png"));
+            healthTextures[i] = loadTextureWithFallback("mvp/ui/health/health" + i + ".png", "mvp/ui/health/health0.png");
+            hungerTextures[i] = loadTextureWithFallback("mvp/ui/hunger/hunger_" + i + ".png", "mvp/ui/hunger/hunger_0.png");
         }
         hotbarTex = new Texture(Gdx.files.internal("mvp/ui/hotbar.png"));
         selectorTex = new Texture(Gdx.files.internal("mvp/ui/selector.png"));
@@ -427,6 +432,13 @@ public class GameScreen extends BaseScreen {
         deathBtnH = sh * 0.12f;
         deathBtnX = (sw - deathBtnW) / 2f;
         deathBtnY = sh * 0.38f;
+    }
+
+    private Texture loadTextureWithFallback(String path, String fallbackPath) {
+        if (Gdx.files.internal(path).exists()) {
+            return new Texture(Gdx.files.internal(path));
+        }
+        return new Texture(Gdx.files.internal(fallbackPath));
     }
 
     @Override

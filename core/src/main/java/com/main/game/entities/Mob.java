@@ -1,7 +1,5 @@
 package com.main.game.entities;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -29,34 +27,14 @@ import com.main.game.world.World;
 public class Mob extends Entity {
 
     // ─── Kiểu mob ─────────────────────────────────────────────
-    public enum MobType { ZOMBIE, SKELETON }
+    public enum MobType { ZOMBIE, HUSK, SKELETON, COW, PIG, SHEEP, CHICKEN }
 
-    // ─── Hằng số mặc định ─────────────────────────────────────
-    private static final float DEFAULT_PATROL_SPEED  = 2f;
-    private static final float DEFAULT_CHASE_SPEED   = 3.5f;
-    private static final float DEFAULT_AGGRO_RADIUS  = 8f;
-    private static final float DEFAULT_DEAGGRO       = 14f;
-    private static final float DEFAULT_ATTACK_RANGE  = 1.2f;
-    private static final float DEFAULT_ATTACK_COOL   = 1.5f;
-    private static final float DEFAULT_PATROL_RANGE  = 6f;
     private static final float MOB_W = 0.8f;
     private static final float MOB_H = 1.8f;
-
-    private static final float WALK_FRAME_DUR = 0.12f; // giây/frame (6 frames cow walk)
-    private static final float HURT_BLINK_DUR = 0.08f;
-
-    // ─── AI config ────────────────────────────────────────────
-    private final float patrolSpeed;
-    private final float chaseSpeed;
-    private final float aggroRadius;
-    private final float deAggroRadius;
-    private final float attackRange;
-    private final float attackCooldown;
-    private final float patrolRange;
-    private final int   attackDamage;
+    private static final float JUMP_IMPULSE = 10f;
 
     // ─── AI state ─────────────────────────────────────────────
-    private enum AIState { PATROL, CHASE, ATTACK }
+    public enum AIState { PATROL, CHASE, ATTACK }
     private AIState aiState = AIState.PATROL;
 
     private float patrolOriginX;
@@ -66,15 +44,14 @@ public class Mob extends Entity {
     private EntityState state = EntityState.IDLE;
     private float stateTime   = 0f;
 
-    // ─── Textures ─────────────────────────────────────────────
-    private Texture texLook;
-    private Texture texHurt;
-    private Texture[] texWalk; // cow_walk_1 .. cow_walk_6
-
     // ─── Animations ───────────────────────────────────────────
     private Animation<TextureRegion> animIdle;
     private Animation<TextureRegion> animWalk;
     private Animation<TextureRegion> animHurt;
+    private final MobAssetPack assets = new MobAssetPack();
+    private final MobBrain brain = new MobBrain();
+    private final MobRenderer renderer = new MobRenderer();
+    private final MobProfile profile;
 
     // ─── Refs ─────────────────────────────────────────────────
     private Player          target;
@@ -89,65 +66,19 @@ public class Mob extends Entity {
         this.target        = target;
         this.physics       = physics;
         this.world         = world;
+        this.profile = MobProfile.forType(type);
+        this.health = profile.maxHealth;
 
-        switch (type) {
-            case SKELETON:
-                patrolSpeed    = 1.8f;
-                chaseSpeed     = 3.0f;
-                aggroRadius    = 12f;
-                deAggroRadius  = 18f;
-                attackRange    = 6f;   // bắn tên — TODO: projectile sau
-                attackCooldown = 2.0f;
-                patrolRange    = 5f;
-                attackDamage   = 3;
-                health         = 20;
-                break;
-            case ZOMBIE:
-            default:
-                patrolSpeed    = DEFAULT_PATROL_SPEED;
-                chaseSpeed     = DEFAULT_CHASE_SPEED;
-                aggroRadius    = DEFAULT_AGGRO_RADIUS;
-                deAggroRadius  = DEFAULT_DEAGGRO;
-                attackRange    = DEFAULT_ATTACK_RANGE;
-                attackCooldown = DEFAULT_ATTACK_COOL;
-                patrolRange    = DEFAULT_PATROL_RANGE;
-                attackDamage   = 2;
-                health         = 20;
-                break;
-        }
-
-        loadAssets();
+        loadAssets(type);
     }
 
     // ─── Asset loading ─────────────────────────────────────────
 
-    private void loadAssets() {
-        texLook = new Texture(Gdx.files.internal("mvp/mob/cow/cow_look.png"));
-        texHurt = new Texture(Gdx.files.internal("mvp/mob/cow/cow_hurt.png"));
-
-        // Tải 6 frame đi bộ
-        texWalk = new Texture[6];
-        for (int i = 0; i < 6; i++) {
-            texWalk[i] = new Texture(
-                Gdx.files.internal("mvp/mob/cow/cow_walk_" + (i + 1) + ".png"));
-        }
-
-        // IDLE: chỉ dùng cow_look (1 frame, loop chậm)
-        animIdle = new Animation<>(0.6f,
-            new TextureRegion(texLook));
-        animIdle.setPlayMode(Animation.PlayMode.LOOP);
-
-        // WALK: 6 frame cow_walk_1..6
-        TextureRegion[] walkFrames = new TextureRegion[6];
-        for (int i = 0; i < 6; i++) walkFrames[i] = new TextureRegion(texWalk[i]);
-        animWalk = new Animation<>(WALK_FRAME_DUR, walkFrames);
-        animWalk.setPlayMode(Animation.PlayMode.LOOP);
-
-        // HURT: blink giữa cow_hurt và cow_look
-        animHurt = new Animation<>(HURT_BLINK_DUR,
-            new TextureRegion(texHurt),
-            new TextureRegion(texLook));
-        animHurt.setPlayMode(Animation.PlayMode.LOOP);
+    private void loadAssets(MobType type) {
+        assets.load(type);
+        animIdle = assets.idle();
+        animWalk = assets.walk();
+        animHurt = assets.hurt();
     }
 
     // ─── Vòng đời ──────────────────────────────────────────────
@@ -158,7 +89,7 @@ public class Mob extends Entity {
 
         stateTime += delta;
         tickTimers(delta);
-        updateAI(delta);
+        brain.update(this);
         physics.update(this, world, delta);
         updateEntityState();
         updateBounds();
@@ -166,93 +97,44 @@ public class Mob extends Entity {
 
     @Override
     public void render(SpriteBatch batch) {
-        if (!isAlive) return;
-
-        TextureRegion frame = getCurrentFrame();
-        if (frame == null) return;
-
-        boolean needFlip = (!facingRight && !frame.isFlipX())
-            || ( facingRight &&  frame.isFlipX());
-        if (needFlip) frame.flip(true, false);
-
-        batch.draw(frame,
-            position.x, position.y,
-            width, height);
+        renderer.render(batch, this, animIdle, animWalk, animHurt);
     }
 
     @Override
     public void dispose() {
-        texLook.dispose();
-        texHurt.dispose();
-        for (Texture t : texWalk) if (t != null) t.dispose();
+        assets.dispose();
     }
 
-    // ─── Animation helper ──────────────────────────────────────
-
-    private TextureRegion getCurrentFrame() {
-        switch (state) {
-            case RUN:  return animWalk.getKeyFrame(stateTime);
-            case HURT: return animHurt.getKeyFrame(stateTime);
-            case IDLE:
-            default:   return animIdle.getKeyFrame(stateTime);
-        }
-    }
-
-    // ─── AI ────────────────────────────────────────────────────
-
-    private void updateAI(float delta) {
-        float dist = distanceTo(target);
-
-        switch (aiState) {
-            case PATROL:
-                if (dist <= aggroRadius && target.isAlive()) {
-                    aiState = AIState.CHASE;
-                } else {
-                    doPatrol();
-                }
-                break;
-
-            case CHASE:
-                if (dist > deAggroRadius || !target.isAlive()) {
-                    aiState    = AIState.PATROL;
-                    velocity.x = 0;
-                } else if (dist <= attackRange) {
-                    aiState    = AIState.ATTACK;
-                    velocity.x = 0;
-                } else {
-                    doChase();
-                }
-                break;
-
-            case ATTACK:
-                velocity.x = 0;
-                if (dist > attackRange) {
-                    aiState = AIState.CHASE;
-                } else {
-                    doAttack(delta);
-                }
-                break;
-        }
-    }
-
-    private void doPatrol() {
+    void doPatrol() {
         boolean hitWall    = (Math.abs(velocity.x) < 0.01f && state == EntityState.RUN);
-        boolean outOfRange = (position.x < patrolOriginX - patrolRange)
-            || (position.x > patrolOriginX + patrolRange);
+        boolean outOfRange = (position.x < patrolOriginX - profile.patrolRange)
+            || (position.x > patrolOriginX + profile.patrolRange);
         if (hitWall || outOfRange) facingRight = !facingRight;
-        velocity.x = facingRight ? patrolSpeed : -patrolSpeed;
+        velocity.x = facingRight ? profile.patrolSpeed : -profile.patrolSpeed;
+        if (MobMovementHelper.shouldJumpOverObstacle(this, world, facingRight)) {
+            velocity.y = JUMP_IMPULSE;
+            onGround = false;
+        }
     }
 
-    private void doChase() {
+    void doChase() {
         boolean playerRight = target.getX() > position.x;
         facingRight = playerRight;
-        velocity.x  = playerRight ? chaseSpeed : -chaseSpeed;
+        velocity.x  = playerRight ? profile.chaseSpeed : -profile.chaseSpeed;
+        if (MobMovementHelper.shouldJumpOverObstacle(this, world, facingRight)) {
+            velocity.y = JUMP_IMPULSE;
+            onGround = false;
+        }
     }
 
-    private void doAttack(float delta) {
+    void doAttack() {
+        if (!MobSightHelper.hasLineOfSight(world, this, target)) {
+            aiState = AIState.CHASE;
+            return;
+        }
         if (attackTimer <= 0f) {
-            target.takeDamage(attackDamage);
-            attackTimer = attackCooldown;
+            target.takeDamage(profile.attackDamage);
+            attackTimer = profile.attackCooldown;
         }
     }
 
@@ -263,7 +145,7 @@ public class Mob extends Entity {
         if (hurtTimer  > 0) hurtTimer  -= delta;
     }
 
-    private float distanceTo(Entity other) {
+    float distanceTo(Entity other) {
         float dx = (other.getX() + other.width / 2) - (position.x + width / 2);
         float dy = (other.getY() + other.height / 2) - (position.y + height / 2);
         return (float) Math.sqrt(dx * dx + dy * dy);
@@ -296,6 +178,13 @@ public class Mob extends Entity {
     public EntityState getState()   { return state;   }
     public AIState     getAIState() { return aiState;  }
     public int         getHealth()  { return health;   }
+    public boolean     isHostile()  { return profile.hostile;  }
+    float getStateTime() { return stateTime; }
 
     public void setTarget(Player p)   { this.target  = p;   }
+    Player getTarget() { return target; }
+    void setAiState(AIState aiState) { this.aiState = aiState; }
+    float getAggroRadius() { return profile.aggroRadius; }
+    float getDeAggroRadius() { return profile.deAggroRadius; }
+    float getAttackRange() { return profile.attackRange; }
 }
