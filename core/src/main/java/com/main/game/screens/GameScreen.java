@@ -17,6 +17,10 @@ import com.main.game.entities.Mob;
 import com.main.game.entities.Player;
 import com.main.game.interaction.BlockBreakOverlay;
 import com.main.game.interaction.BlockBreaker;
+import com.main.game.inventory.Inventory;
+import com.main.game.inventory.InventoryController;
+import com.main.game.inventory.InventoryInteractionHandler;
+import com.main.game.inventory.InventoryRenderer;
 import com.main.game.items.BlockDropFactory;
 import com.main.game.items.DroppedItemManager;
 import com.main.game.navigation.ScreenId;
@@ -47,6 +51,10 @@ public class GameScreen extends BaseScreen {
     private BlockBreaker blockBreaker;
     private BlockBreakOverlay blockBreakOverlay;
     private DroppedItemManager droppedItemManager;
+    private Inventory inventory;
+    private InventoryController inventoryController;
+    private InventoryRenderer inventoryRenderer;
+    private InventoryInteractionHandler inventoryInteractionHandler;
     private boolean paused;
     private boolean dead;
     private Texture overlayTexture;
@@ -66,7 +74,6 @@ public class GameScreen extends BaseScreen {
     private Texture selectorTex;
     private Texture xpBgTex;
     private Texture xpFgTex;
-    private int selectedSlot = 0;
 
     private float deathBtnX, deathBtnY, deathBtnW, deathBtnH;
 
@@ -94,6 +101,10 @@ public class GameScreen extends BaseScreen {
         blockBreaker = new BlockBreaker();
         blockBreakOverlay = new BlockBreakOverlay();
         droppedItemManager = new DroppedItemManager();
+        inventory = new Inventory();
+        inventoryController = new InventoryController();
+        inventoryRenderer = new InventoryRenderer();
+        inventoryInteractionHandler = new InventoryInteractionHandler();
         blockBreaker.setBlockBreakListener((block, worldRef) ->
             droppedItemManager.spawn(BlockDropFactory.createDrop(block, worldRef), worldRef));
 
@@ -159,25 +170,10 @@ public class GameScreen extends BaseScreen {
             player.ban();
         }
 
-        // Chọn ô hotbar (phím 1-9)
-        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1))
-            selectedSlot = 0;
-        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_2))
-            selectedSlot = 1;
-        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_3))
-            selectedSlot = 2;
-        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_4))
-            selectedSlot = 3;
-        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_5))
-            selectedSlot = 4;
-        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_6))
-            selectedSlot = 5;
-        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_7))
-            selectedSlot = 6;
-        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_8))
-            selectedSlot = 7;
-        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_9))
-            selectedSlot = 8;
+        inventoryController.update();
+        if (inventoryController.wasJustClosed()) {
+            inventoryInteractionHandler.onCloseInventory(inventory);
+        }
 
         if (paused) {
             player.setMining(false, player.getX() + player.getWidth() / 2f);
@@ -186,7 +182,10 @@ public class GameScreen extends BaseScreen {
         // DUOC-ENTITY: update toàn bộ entity (Player input + Mob AI + sync physics)
         if (!dead) {
             entityManager.update(delta);
-            droppedItemManager.update(delta, world, player);
+            droppedItemManager.update(delta, world, player, inventory);
+            if (inventoryController.isInventoryOpen()) {
+                inventoryInteractionHandler.update(inventory, inventoryRenderer);
+            }
         }
 
         // Chết -> Game Over
@@ -291,20 +290,13 @@ public class GameScreen extends BaseScreen {
         float hbW = hotbarTex.getWidth() * scale;
         float hbH = hotbarTex.getHeight() * scale;
 
-        // Vẽ Hotbar (căn giữa cạnh dưới)
         float hbX = (sw - hbW) / 2f;
         float hbY = 10f;
-        batch.draw(hotbarTex, hbX, hbY, hbW, hbH);
-
-        // Vẽ Selector
-        // Kích thước chuẩn: hotbar width 182, ô mỗi slot 20, viền slot lệch 1.
-        // Hotbar đã upscaled 4x -> khoảng cách mỗi ô là 80, lệch 4
-        float selW = selectorTex.getWidth() * scale;
-        float selH = selectorTex.getHeight() * scale;
-        float slotOffset = 80f * scale;
-        float selX = hbX - (4f * scale) + (selectedSlot * slotOffset);
-        float selY = hbY - (4f * scale);
-        batch.draw(selectorTex, selX, selY, selW, selH);
+        inventoryRenderer.renderHotbar(batch, inventory, inventoryController, hotbarTex, selectorTex, sw, scale);
+        if (inventoryController.isInventoryOpen()) {
+            inventoryRenderer.renderInventory(batch, inventory, sw, sh, scale);
+            inventoryRenderer.renderCarriedStack(batch, inventoryInteractionHandler.getCarriedStack());
+        }
 
         // Vẽ XP Bar (Ngay trên hotbar)
         // Lưu ý: Ảnh XP Bar chỉ có kích thước ~357 (gần 2x), ta sẽ scale nó để bằng
@@ -472,6 +464,8 @@ public class GameScreen extends BaseScreen {
             blockBreakOverlay.dispose();
         if (droppedItemManager != null)
             droppedItemManager.clear();
+        if (inventoryRenderer != null)
+            inventoryRenderer.dispose();
 
         entityManager.dispose(); // DUOC-ENTITY: giải phóng tài nguyên player + mob
     }
