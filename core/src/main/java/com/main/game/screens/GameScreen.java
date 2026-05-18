@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector2;
+import com.main.game.GameState;
 import com.main.game.MainGame;
 import com.main.game.entities.EntityManager;
 import com.main.game.entities.Mob;
@@ -59,6 +60,8 @@ public class GameScreen extends BaseScreen {
     private Texture xpBgTex;
     private Texture xpFgTex;
     private int selectedSlot = 0;
+
+    private float deathBtnX, deathBtnY, deathBtnW, deathBtnH;
 
     public GameScreen(MainGame game) {
         super(game);
@@ -138,7 +141,7 @@ public class GameScreen extends BaseScreen {
             DemoBlockViewer.populateDemo(world, sx, sy);
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.K)) {
-            game.getScreenRouter().request(ScreenId.GAME_OVER);
+            player.kill();
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.B)) {
             player.ban();
@@ -179,13 +182,18 @@ public class GameScreen extends BaseScreen {
 
         // Handle clicks on Pause/Death screens
         if (paused || dead) {
-            if (Gdx.input.justTouched()) {
-                float mx = Gdx.input.getX();
-                float my = Gdx.graphics.getHeight() - Gdx.input.getY();
-                if (paused)
+            float mx = Gdx.input.getX();
+            float my = Gdx.graphics.getHeight() - Gdx.input.getY();
+            if (paused) {
+                if (Gdx.input.justTouched()) {
                     handlePauseClick(mx, my);
-                else if (dead)
-                    handleDeathClick(mx, my);
+                }
+            } else if (dead) {
+                updateDeathButtonLayout();
+                boolean hover = mx >= deathBtnX && mx <= deathBtnX + deathBtnW && my >= deathBtnY && my <= deathBtnY + deathBtnH;
+                if (Gdx.input.justTouched() && hover) {
+                    handleDeathClick();
+                }
             }
             return;
         }
@@ -328,6 +336,33 @@ public class GameScreen extends BaseScreen {
         } else if (dead) {
             drawDeathOverlay();
         }
+
+        drawBrightnessOverlay();
+    }
+
+    private void drawBrightnessOverlay() {
+        GameState gameState = game.getGameState();
+        int brightness = gameState.brightness;
+        float alpha;
+        Color overlayColor;
+
+        if (brightness < 50) {
+            alpha = (50 - brightness) / 50f * 0.8f;
+            overlayColor = new Color(0f, 0f, 0f, alpha);
+        } else if (brightness > 50) {
+            alpha = (brightness - 50) / 50f * 0.4f;
+            overlayColor = new Color(1f, 1f, 1f, alpha);
+        } else {
+            return;
+        }
+
+        uiProjection.setToOrtho2D(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        batch.setProjectionMatrix(uiProjection);
+        batch.begin();
+        batch.setColor(overlayColor);
+        batch.draw(overlayTexture, 0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        batch.setColor(Color.WHITE);
+        batch.end();
     }
 
     private void drawDeathOverlay() {
@@ -356,19 +391,9 @@ public class GameScreen extends BaseScreen {
         }
     }
 
-    private void handleDeathClick(float mx, float my) {
-        float sw = Gdx.graphics.getWidth();
-        float sh = Gdx.graphics.getHeight();
-
-        float bw = 220f * (sw / 640f);
-        float bh = 40f * (sh / 360f);
-        float bx = (sw - bw) / 2f;
-        float by = sh * 0.40f;
-
-        if (mx >= bx && mx <= bx + bw && my >= by && my <= by + bh) {
-            player.respawn(world.getSpawnPoint().x, world.getSpawnPoint().y);
-            dead = false;
-        }
+    private void handleDeathClick() {
+        player.respawn(world.getSpawnPoint().x, world.getSpawnPoint().y);
+        dead = false;
     }
 
     private void drawPauseOverlay() {
@@ -378,6 +403,15 @@ public class GameScreen extends BaseScreen {
         batch.begin();
         batch.draw(pauseTexture, 0f, 0f, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         batch.end();
+    }
+
+    private void updateDeathButtonLayout() {
+        float sw = Gdx.graphics.getWidth();
+        float sh = Gdx.graphics.getHeight();
+        deathBtnW = sw * 0.45f;
+        deathBtnH = sh * 0.12f;
+        deathBtnX = (sw - deathBtnW) / 2f;
+        deathBtnY = sh * 0.38f;
     }
 
     @Override

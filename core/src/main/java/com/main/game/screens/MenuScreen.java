@@ -104,6 +104,7 @@ public class MenuScreen extends BaseScreen {
                     case 2: // Help (placeholder)
                         break;
                     case 3: // Settings (placeholder)
+                        game.getScreenRouter().request(ScreenId.SETTINGS);
                         break;
                 }
             }

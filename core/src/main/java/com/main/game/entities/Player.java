@@ -152,7 +152,7 @@ public class Player extends Entity {
             legBackAngle = mappedAngle;
             
             // Đầu ngẩng lên một chút khi chạy
-            headTilt = 5f * (facingRight ? 1f : -1f);
+            headTilt = 5f;
         } else if (state == EntityState.JUMP) {
             armFrontAngle = 160f;
             armBackAngle = -20f;
@@ -176,14 +176,14 @@ public class Player extends Entity {
             batch.setColor(1f, 0.5f, 0.5f, 1f);
         }
 
-        TextureRegion head = facingRight ? regHeadR : regHeadL;
-        TextureRegion body = facingRight ? regBodyR : regBodyL;
-        TextureRegion armFront = facingRight ? regArmR : regArmL;
-        TextureRegion armBack = facingRight ? regArmL : regArmR;
-        TextureRegion legFront = facingRight ? regLegR : regLegL;
-        TextureRegion legBack = facingRight ? regLegL : regLegR;
-        TextureRegion bootFront = facingRight ? regBootR : regBootL;
-        TextureRegion bootBack = facingRight ? regBootL : regBootR;
+        TextureRegion head = regHeadR;
+        TextureRegion body = regBodyR;
+        TextureRegion armFront = regArmR;
+        TextureRegion armBack = regArmL;
+        TextureRegion legFront = regLegR;
+        TextureRegion legBack = regLegL;
+        TextureRegion bootFront = regBootR;
+        TextureRegion bootBack = regBootL;
 
         float px = position.x;
         float py = position.y;
@@ -207,22 +207,30 @@ public class Player extends Entity {
         float armY = bodyY + bodyH - 0.1f;
 
         // Xếp theo order từ trong ra ngoài (back -> front)
+        float scaleX = facingRight ? 1f : -1f;
+        float angleSign = facingRight ? 1f : -1f;
+        float armFrontRot = armFrontAngle * angleSign;
+        float armBackRot = armBackAngle * angleSign;
+        float legFrontRot = legFrontAngle * angleSign;
+        float legBackRot = legBackAngle * angleSign;
+        float headRot = headTilt * angleSign;
+
         // Draw Back Arm
-        batch.draw(armBack, cx - armW/2f, armY - armH, armW/2f, armH, armW, armH, 1f, 1f, armBackAngle);
+        batch.draw(armBack, cx - armW/2f, armY - armH, armW/2f, armH, armW, armH, scaleX, 1f, armBackRot);
         // Draw Back Boot
-        batch.draw(bootBack, cx - bootW/2f, legY - bootH, bootW/2f, legH + bootH, bootW, bootH, 1f, 1f, legBackAngle);
+        batch.draw(bootBack, cx - bootW/2f, legY - bootH, bootW/2f, legH + bootH, bootW, bootH, scaleX, 1f, legBackRot);
         // Draw Back Leg
-        batch.draw(legBack, cx - legW/2f, legY, legW/2f, legH, legW, legH, 1f, 1f, legBackAngle);
+        batch.draw(legBack, cx - legW/2f, legY, legW/2f, legH, legW, legH, scaleX, 1f, legBackRot);
         // Draw Body
-        batch.draw(body, cx - bodyW/2f, bodyY, bodyW, bodyH);
+        batch.draw(body, cx - bodyW/2f, bodyY, bodyW/2f, 0f, bodyW, bodyH, scaleX, 1f, 0f);
         // Draw Head (thêm headTilt)
-        batch.draw(head, cx - headW/2f, headY, headW/2f, 0f, headW, headH, 1f, 1f, headTilt);
+        batch.draw(head, cx - headW/2f, headY, headW/2f, 0f, headW, headH, scaleX, 1f, headRot);
         // Draw Front Boot
-        batch.draw(bootFront, cx - bootW/2f, legY - bootH, bootW/2f, legH + bootH, bootW, bootH, 1f, 1f, legFrontAngle);
+        batch.draw(bootFront, cx - bootW/2f, legY - bootH, bootW/2f, legH + bootH, bootW, bootH, scaleX, 1f, legFrontRot);
         // Draw Front Leg
-        batch.draw(legFront, cx - legW/2f, legY, legW/2f, legH, legW, legH, 1f, 1f, legFrontAngle);
+        batch.draw(legFront, cx - legW/2f, legY, legW/2f, legH, legW, legH, scaleX, 1f, legFrontRot);
         // Draw Front Arm
-        batch.draw(armFront, cx - armW/2f, armY - armH, armW/2f, armH, armW, armH, 1f, 1f, armFrontAngle);
+        batch.draw(armFront, cx - armW/2f, armY - armH, armW/2f, armH, armW, armH, scaleX, 1f, armFrontRot);
 
         batch.setColor(1f, 1f, 1f, 1f); // reset
     }
@@ -314,6 +322,13 @@ public class Player extends Entity {
             state     = EntityState.HURT;
             stateTime = 0f;
         }
+    }
+
+    public void kill() {
+        health = 0;
+        isAlive = false;
+        state = EntityState.DEAD;
+        hurtTimer = 0f;
     }
 
     // ─── Getters ───────────────────────────────────────────────

@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.MathUtils;
+import com.main.game.GameState;
 import com.main.game.MainGame;
 import com.main.game.navigation.ScreenId;
 
@@ -25,13 +26,22 @@ public class ModeSelectScreen extends BaseScreen {
     private Texture labelsTexture;
     private Texture doneTexture;
     private Texture backTexture;
+    private Texture settingsTexture;
 
     private float doneScale = 1f;
     private float backScale = 1f;
+    private float settingsScale = 1f;
+
+    private final int[] menuChoices = {0, 0, 0, 0};
 
     // Cached button rects (computed once per frame in draw)
     private float doneX, doneY, doneW, doneH;
     private float backX, backY, backW, backH;
+    private float settingsX, settingsY, settingsW, settingsH;
+    private float uiScale;
+    private float logoX, logoY, logoW, logoH;
+    private float panelX, panelY, panelW, panelH;
+    private float lblX, lblY, lblW, lblH;
 
     public ModeSelectScreen(MainGame game) {
         super(game);
@@ -51,10 +61,18 @@ public class ModeSelectScreen extends BaseScreen {
         labelsTexture = new Texture(Gdx.files.internal("images/menu2/world-options-text.png"));
         doneTexture = new Texture(Gdx.files.internal("images/menu/done.png"));
         backTexture = new Texture(Gdx.files.internal("images/menu/back.png"));
+        settingsTexture = new Texture(Gdx.files.internal("images/unnamed/settings.png"));
+
+        GameState gameState = game.getGameState();
+        menuChoices[0] = gameState.hardcore ? 3 : (gameState.creative ? 1 : 0);
+        menuChoices[1] = gameState.bonusChest;
+        menuChoices[2] = gameState.skin;
+        menuChoices[3] = gameState.loot;
     }
 
     @Override
     public void update(float delta) {
+        updateLayout();
         float sh = Gdx.graphics.getHeight();
         float mx = Gdx.input.getX();
         float my = sh - Gdx.input.getY();
@@ -64,6 +82,7 @@ public class ModeSelectScreen extends BaseScreen {
         boolean doneHover = mx >= doneX && mx <= doneX + doneW && my >= doneY && my <= doneY + doneH;
         doneScale += ((doneHover ? 1.05f : 1.0f) - doneScale) * 0.2f;
         if (doneHover && clicked) {
+            applyMenuChoices();
             game.getScreenRouter().request(ScreenId.GAME);
         }
 
@@ -72,6 +91,17 @@ public class ModeSelectScreen extends BaseScreen {
         backScale += ((backHover ? 1.05f : 1.0f) - backScale) * 0.2f;
         if (backHover && clicked) {
             game.getScreenRouter().request(ScreenId.MENU);
+        }
+
+        // Settings button hover
+        boolean settingsHover = mx >= settingsX && mx <= settingsX + settingsW && my >= settingsY && my <= settingsY + settingsH;
+        settingsScale += ((settingsHover ? 1.05f : 1.0f) - settingsScale) * 0.2f;
+        if (settingsHover && clicked) {
+            game.getScreenRouter().request(ScreenId.SETTINGS);
+        }
+
+        if (clicked && !(doneHover || backHover || settingsHover)) {
+            handleOptionClick(mx, my);
         }
     }
 
@@ -82,7 +112,7 @@ public class ModeSelectScreen extends BaseScreen {
 
         float sw = Gdx.graphics.getWidth();
         float sh = Gdx.graphics.getHeight();
-        float uiScale = Math.min(sw / 482f, sh / 344f);
+        updateLayout();
 
         batch.getProjectionMatrix().setToOrtho2D(0, 0, sw, sh);
         batch.begin();
@@ -95,42 +125,21 @@ public class ModeSelectScreen extends BaseScreen {
         batch.setColor(prev);
 
         // Logo (small title at top)
-        float logoW = logoTexture.getWidth() * uiScale;
-        float logoH = logoTexture.getHeight() * uiScale;
-        float logoX = (sw - logoW) / 2f;
-        float logoY = sh - logoH - 10f * uiScale;
         batch.draw(logoTexture, logoX, logoY, logoW, logoH);
 
         // Panel (world-options2) — centered below logo
-        float panelW = panelTexture.getWidth() * uiScale;
-        float panelH = panelTexture.getHeight() * uiScale;
-        float panelX = (sw - panelW) / 2f;
-        float panelY = logoY - panelH - 10f * uiScale;
         batch.draw(panelTexture, panelX, panelY, panelW, panelH);
 
         // Labels overlay (world-options-text) — on top of panel
-        float lblW = labelsTexture.getWidth() * uiScale * 2f; // labels are small, scale up
-        float lblH = labelsTexture.getHeight() * uiScale * 2f;
-        float lblX = panelX + (panelW - lblW) / 2f;
-        float lblY = panelY + (panelH - lblH) / 2f;
         batch.draw(labelsTexture, lblX, lblY, lblW, lblH);
 
         // Done button
-        float baseBtnW = doneTexture.getWidth() * uiScale;
-        float baseBtnH = doneTexture.getHeight() * uiScale;
-
-        // Cache for hit detection
-        doneW = baseBtnW;
-        doneH = baseBtnH;
-        doneX = sw / 2f - baseBtnW - 10f * uiScale;
-        doneY = panelY - baseBtnH - 15f * uiScale;
         drawScaledButton(doneTexture, doneX, doneY, doneW, doneH, doneScale);
 
+        // Settings button (placeholder)
+        drawScaledButton(settingsTexture, settingsX, settingsY, settingsW, settingsH, settingsScale);
+
         // Back button
-        backW = backTexture.getWidth() * uiScale;
-        backH = backTexture.getHeight() * uiScale;
-        backX = sw / 2f + 10f * uiScale;
-        backY = doneY;
         drawScaledButton(backTexture, backX, backY, backW, backH, backScale);
 
         batch.setColor(Color.WHITE);
@@ -145,6 +154,117 @@ public class ModeSelectScreen extends BaseScreen {
         float bright = (scale - 1f) * 10f;
         batch.setColor(1f + bright, 1f + bright, 1f + bright, 1f);
         batch.draw(tex, sx, sy, scaledW, scaledH);
+    }
+
+    private void handleOptionClick(float mx, float my) {
+        float sw = Gdx.graphics.getWidth();
+        float sh = Gdx.graphics.getHeight();
+        float scratchX = (mx / sw) * 480f - 240f;
+        float scratchY = (my / sh) * 360f - 180f;
+
+        int optID = Math.round((15f - scratchY) / 34f) + 1;
+        int choiceID = Math.round((scratchX + 58f) / 72f);
+
+        if (optID < 1 || optID > 4) {
+            return;
+        }
+
+        int maxChoice;
+        switch (optID) {
+            case 1:
+                maxChoice = 3;
+                break;
+            case 2:
+                maxChoice = 2;
+                break;
+            case 3:
+                maxChoice = 3;
+                break;
+            case 4:
+                maxChoice = 1;
+                break;
+            default:
+                return;
+        }
+
+        if (choiceID < 0 || choiceID > maxChoice) {
+            return;
+        }
+
+        menuChoices[optID - 1] = choiceID;
+    }
+
+    private void updateLayout() {
+        float sw = Gdx.graphics.getWidth();
+        float sh = Gdx.graphics.getHeight();
+        uiScale = Math.min(sw / 482f, sh / 344f);
+
+        logoW = logoTexture.getWidth() * uiScale;
+        logoH = logoTexture.getHeight() * uiScale;
+        logoX = (sw - logoW) / 2f;
+        logoY = sh - logoH - 10f * uiScale;
+
+        panelW = panelTexture.getWidth() * uiScale;
+        panelH = panelTexture.getHeight() * uiScale;
+        panelX = (sw - panelW) / 2f;
+        panelY = logoY - panelH - 10f * uiScale;
+
+        lblW = labelsTexture.getWidth() * uiScale * 2f;
+        lblH = labelsTexture.getHeight() * uiScale * 2f;
+        lblX = panelX + (panelW - lblW) / 2f;
+        lblY = panelY + (panelH - lblH) / 2f;
+
+        float baseBtnW = doneTexture.getWidth() * uiScale;
+        float baseBtnH = doneTexture.getHeight() * uiScale;
+
+        doneW = baseBtnW;
+        doneH = baseBtnH;
+        doneX = sw / 2f - baseBtnW - 10f * uiScale;
+        doneY = panelY - baseBtnH - 15f * uiScale;
+
+        settingsW = baseBtnW;
+        settingsH = baseBtnH;
+        settingsX = sw / 2f + 10f * uiScale;
+        settingsY = doneY;
+
+        backW = backTexture.getWidth() * uiScale;
+        backH = backTexture.getHeight() * uiScale;
+        backX = (sw - backW) / 2f;
+        backY = doneY - backH - 10f * uiScale;
+    }
+
+    private void applyMenuChoices() {
+        GameState gameState = game.getGameState();
+        int gameMode = menuChoices[0];
+
+        switch (gameMode) {
+            case 0:
+                gameState.creative = false;
+                gameState.survival = true;
+                gameState.hardcore = false;
+                break;
+            case 1:
+                gameState.creative = true;
+                gameState.survival = false;
+                gameState.hardcore = false;
+                break;
+            case 2:
+                gameState.creative = false;
+                gameState.survival = true;
+                gameState.hardcore = false;
+                break;
+            case 3:
+                gameState.creative = false;
+                gameState.survival = true;
+                gameState.hardcore = true;
+                break;
+            default:
+                break;
+        }
+
+        gameState.bonusChest = menuChoices[1];
+        gameState.skin = menuChoices[2];
+        gameState.loot = menuChoices[3];
     }
 
     @Override
@@ -162,5 +282,6 @@ public class ModeSelectScreen extends BaseScreen {
         if (labelsTexture != null) labelsTexture.dispose();
         if (doneTexture != null) doneTexture.dispose();
         if (backTexture != null) backTexture.dispose();
+        if (settingsTexture != null) settingsTexture.dispose();
     }
 }
