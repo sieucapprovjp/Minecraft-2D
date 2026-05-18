@@ -2,10 +2,7 @@ package com.main.game.entities;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.main.game.physics.PhysicsEngine;
 import com.main.game.world.World;
 
@@ -36,27 +33,14 @@ public class Player extends Entity {
     public static final float PLAYER_H    = 1.8f;  // tile
 
     private static final float HURT_DURATION   = 0.5f;
-    private static final float WALK_FRAME_DUR  = 0.15f; // giây/frame
-    private static final float HURT_FLASH_DUR  = 0.08f; // giây/frame blink
-
-    // ─── Rig Textures ──────────────────────────────────────────
-    private Texture tBodyL, tBodyR;
-    private Texture tArmL, tArmR;
-    private Texture tLegL, tLegR;
-    private Texture tHeadR, tHeadL;
-    private Texture tBootL, tBootR;
-
-    private TextureRegion regBodyL, regBodyR;
-    private TextureRegion regArmL, regArmR;
-    private TextureRegion regLegL, regLegR;
-    private TextureRegion regHeadR, regHeadL;
-    private TextureRegion regBootL, regBootR;
 
     private float stateTime = 0f;
 
     // ─── State ─────────────────────────────────────────────────
     private EntityState state     = EntityState.IDLE;
     private float       hurtTimer = 0f;
+    private float       miningTime = 0f;
+    private boolean     mining = false;
     private int         health    = 20;
     private int         maxHealth = 20;
     private boolean     isBanned  = false;
@@ -64,6 +48,7 @@ public class Player extends Entity {
     // ─── Dependency ────────────────────────────────────────────
     private final PhysicsEngine physics;
     private final World world;
+    private final PlayerRenderer renderer;
 
     // ───────────────────────────────────────────────────────────
 
@@ -71,33 +56,7 @@ public class Player extends Entity {
         super(x, y, PLAYER_W, PLAYER_H);
         this.physics = physics;
         this.world   = world;
-        loadAssets();
-    }
-
-    // ─── Asset loading ─────────────────────────────────────────
-
-    private void loadAssets() {
-        tBodyL = new Texture(Gdx.files.internal("mvp/player/body4.png"));
-        tBodyR = new Texture(Gdx.files.internal("mvp/player/body4_1.png"));
-        tArmL  = new Texture(Gdx.files.internal("mvp/player/arm4.png"));
-        tArmR  = new Texture(Gdx.files.internal("mvp/player/arm4_1.png"));
-        tLegL  = new Texture(Gdx.files.internal("mvp/player/leg.png"));
-        tLegR  = new Texture(Gdx.files.internal("mvp/player/leg_1.png"));
-        tHeadR = new Texture(Gdx.files.internal("mvp/player/right.png"));
-        tHeadL = new Texture(Gdx.files.internal("mvp/player/right_1.png"));
-        tBootL = new Texture(Gdx.files.internal("mvp/player/boot.png"));
-        tBootR = new Texture(Gdx.files.internal("mvp/player/boot1.png"));
-
-        regBodyL = new TextureRegion(tBodyL);
-        regBodyR = new TextureRegion(tBodyR);
-        regArmL  = new TextureRegion(tArmL);
-        regArmR  = new TextureRegion(tArmR);
-        regLegL  = new TextureRegion(tLegL);
-        regLegR  = new TextureRegion(tLegR);
-        regHeadR = new TextureRegion(tHeadR);
-        regHeadL = new TextureRegion(tHeadL);
-        regBootL = new TextureRegion(tBootL);
-        regBootR = new TextureRegion(tBootR);
+        this.renderer = new PlayerRenderer();
     }
 
     // ─── Vòng đời ──────────────────────────────────────────────
@@ -109,6 +68,7 @@ public class Player extends Entity {
         if (!isAlive || isBanned) return;
 
         stateTime += delta;
+        miningTime = mining ? miningTime + delta : 0f;
         handleInput(delta);
 
         lastVy = velocity.y;
@@ -129,110 +89,7 @@ public class Player extends Entity {
     @Override
     public void render(SpriteBatch batch) {
         if (!isAlive) return;
-
-        float armFrontAngle = 0f;
-        float armBackAngle = 0f;
-        float legFrontAngle = 0f;
-        float legBackAngle = 0f;
-        float headTilt = 0f;
-
-        if (state == EntityState.RUN) {
-            // Áp dụng logic đếm frame chính xác từ game gốc (Scratch)
-            // SteveNextWalkFrame = Math.abs(((Math.floor("walkFrame") % 12) - 5))
-            int walkFrame = (int) (stateTime * 15f);
-            int scratchWalkFrame = Math.abs((walkFrame % 12) - 5);
-            
-            // scratchWalkFrame chạy trong khoảng [0, 6] theo dạng sóng tam giác
-            // Ta map giá trị này sang góc xoay (bước nhảy 15 độ giống _WalkFrame * 15)
-            float mappedAngle = (scratchWalkFrame - 3) * 15f;
-            
-            armFrontAngle = mappedAngle;
-            armBackAngle = -mappedAngle;
-            legFrontAngle = -mappedAngle;
-            legBackAngle = mappedAngle;
-            
-            // Đầu ngẩng lên một chút khi chạy
-            headTilt = 5f;
-        } else if (state == EntityState.JUMP) {
-            armFrontAngle = 160f;
-            armBackAngle = -20f;
-            legFrontAngle = -20f;
-            legBackAngle = 20f;
-        } else if (state == EntityState.FALL) {
-            armFrontAngle = 160f;
-            armBackAngle = 20f;
-            legFrontAngle = 10f;
-            legBackAngle = -10f;
-        } else if (state == EntityState.IDLE) {
-            // Đứng yên hoàn toàn 0 độ, tay chân trùng nhau (giống ảnh 1)
-            armFrontAngle = 0f;
-            armBackAngle = 0f;
-            legFrontAngle = 0f;
-            legBackAngle = 0f;
-            headTilt = 0f;
-        }
-
-        if (isHurt()) {
-            batch.setColor(1f, 0.5f, 0.5f, 1f);
-        }
-
-        TextureRegion head = regHeadR;
-        TextureRegion body = regBodyR;
-        TextureRegion armFront = regArmR;
-        TextureRegion armBack = regArmL;
-        TextureRegion legFront = regLegR;
-        TextureRegion legBack = regLegL;
-        TextureRegion bootFront = regBootR;
-        TextureRegion bootBack = regBootL;
-
-        float px = position.x;
-        float py = position.y;
-        float cx = px + width / 2f;
-
-        float headW = 0.5f, headH = 0.5f;
-        float bodyW = 0.4f, bodyH = 0.6f;
-        float armW  = 0.2f, armH  = 0.6f; // Sửa armH = 0.6 (ngang với thân) để đúng chuẩn Minecraft
-        float legW  = 0.2f, legH  = 0.5f;
-        float bootW = 0.22f, bootH = 0.2f;
-
-        // Tính độ nhún (bobbing) khi chân xoạc ra
-        float maxLegAngle = Math.max(Math.abs(legFrontAngle), Math.abs(legBackAngle));
-        float totalLegH = legH + bootH;
-        // hông (hip) hạ xuống theo hàm cos để bàn chân bám sát mặt đất
-        float hipY = py + totalLegH * (float) Math.cos(Math.toRadians(maxLegAngle));
-
-        float legY = hipY - totalLegH + bootH; 
-        float bodyY = hipY;
-        float headY = bodyY + bodyH;
-        float armY = bodyY + bodyH - 0.1f;
-
-        // Xếp theo order từ trong ra ngoài (back -> front)
-        float scaleX = facingRight ? 1f : -1f;
-        float angleSign = facingRight ? 1f : -1f;
-        float armFrontRot = armFrontAngle * angleSign;
-        float armBackRot = armBackAngle * angleSign;
-        float legFrontRot = legFrontAngle * angleSign;
-        float legBackRot = legBackAngle * angleSign;
-        float headRot = headTilt * angleSign;
-
-        // Draw Back Arm
-        batch.draw(armBack, cx - armW/2f, armY - armH, armW/2f, armH, armW, armH, scaleX, 1f, armBackRot);
-        // Draw Back Boot
-        batch.draw(bootBack, cx - bootW/2f, legY - bootH, bootW/2f, legH + bootH, bootW, bootH, scaleX, 1f, legBackRot);
-        // Draw Back Leg
-        batch.draw(legBack, cx - legW/2f, legY, legW/2f, legH, legW, legH, scaleX, 1f, legBackRot);
-        // Draw Body
-        batch.draw(body, cx - bodyW/2f, bodyY, bodyW/2f, 0f, bodyW, bodyH, scaleX, 1f, 0f);
-        // Draw Head (thêm headTilt)
-        batch.draw(head, cx - headW/2f, headY, headW/2f, 0f, headW, headH, scaleX, 1f, headRot);
-        // Draw Front Boot
-        batch.draw(bootFront, cx - bootW/2f, legY - bootH, bootW/2f, legH + bootH, bootW, bootH, scaleX, 1f, legFrontRot);
-        // Draw Front Leg
-        batch.draw(legFront, cx - legW/2f, legY, legW/2f, legH, legW, legH, scaleX, 1f, legFrontRot);
-        // Draw Front Arm
-        batch.draw(armFront, cx - armW/2f, armY - armH, armW/2f, armH, armW, armH, scaleX, 1f, armFrontRot);
-
-        batch.setColor(1f, 1f, 1f, 1f); // reset
+        renderer.render(batch, this, state, stateTime, mining, miningTime, isHurt());
     }
 
     public void ban() {
@@ -245,11 +102,7 @@ public class Player extends Entity {
 
     @Override
     public void dispose() {
-        tBodyL.dispose(); tBodyR.dispose();
-        tArmL.dispose(); tArmR.dispose();
-        tLegL.dispose(); tLegR.dispose();
-        tHeadR.dispose(); tHeadL.dispose();
-        tBootL.dispose(); tBootR.dispose();
+        renderer.dispose();
     }
 
     // ─── Input ─────────────────────────────────────────────────
@@ -338,6 +191,13 @@ public class Player extends Entity {
     public int         getMaxHealth() { return maxHealth;  }
     public boolean     isHurt()       { return hurtTimer > 0; }
 
+    public void setMining(boolean mining, float targetX) {
+        this.mining = mining;
+        if (mining) {
+            this.facingRight = targetX >= position.x + width / 2f;
+        }
+    }
+
     public void respawn(float x, float y) {
         this.position.set(x, y);
         this.velocity.set(0, 0);
@@ -346,5 +206,7 @@ public class Player extends Entity {
         this.state = EntityState.IDLE;
         this.hurtTimer = 0;
         this.stateTime = 0;
+        this.mining = false;
+        this.miningTime = 0;
     }
 }

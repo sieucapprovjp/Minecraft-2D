@@ -114,6 +114,7 @@
 
 ## Quy tac lam viec voi Codex
 - Khong doi kien truc lon neu chua duoc yeu cau.
+- Khi them tinh nang moi, uu tien tao class/file rieng theo module phu hop; file integration nhu `GameScreen` chi nen goi API ngan (`update/render/dispose`) thay vi nhan toan bo logic moi.
 - Moi thay doi phai bao gom:
   - File da sua.
   - Co che nao bi anh huong.

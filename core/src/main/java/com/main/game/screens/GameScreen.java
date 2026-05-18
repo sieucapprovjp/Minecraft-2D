@@ -15,6 +15,10 @@ import com.main.game.MainGame;
 import com.main.game.entities.EntityManager;
 import com.main.game.entities.Mob;
 import com.main.game.entities.Player;
+import com.main.game.interaction.BlockBreakOverlay;
+import com.main.game.interaction.BlockBreaker;
+import com.main.game.items.BlockDropFactory;
+import com.main.game.items.DroppedItemManager;
 import com.main.game.navigation.ScreenId;
 import com.main.game.physics.PhysicsEngine;
 import com.main.game.utils.Constants;
@@ -40,6 +44,9 @@ public class GameScreen extends BaseScreen {
     private PhysicsEngine physics; // TODO(LHUNG-PHYSICS): collision + resolve
     private Player player; // DUOC-ENTITY: player input/state machine
     private EntityManager entityManager; // DUOC-ENTITY: quản lý update/render entity
+    private BlockBreaker blockBreaker;
+    private BlockBreakOverlay blockBreakOverlay;
+    private DroppedItemManager droppedItemManager;
     private boolean paused;
     private boolean dead;
     private Texture overlayTexture;
@@ -84,6 +91,11 @@ public class GameScreen extends BaseScreen {
         // ── Khởi tạo EntityManager ───────────────────── DUOC-ENTITY ──
         entityManager = new EntityManager();
         entityManager.setPlayer(player);
+        blockBreaker = new BlockBreaker();
+        blockBreakOverlay = new BlockBreakOverlay();
+        droppedItemManager = new DroppedItemManager();
+        blockBreaker.setBlockBreakListener((block, worldRef) ->
+            droppedItemManager.spawn(BlockDropFactory.createDrop(block, worldRef), worldRef));
 
         // ── Spawn mob mẫu để test ────────────────────── DUOC-ENTITY ──
         entityManager.addMob(new Mob(spawnX + 10f, spawnY + 5f, Mob.MobType.ZOMBIE, player, physics, world));
@@ -168,11 +180,13 @@ public class GameScreen extends BaseScreen {
             selectedSlot = 8;
 
         if (paused) {
+            player.setMining(false, player.getX() + player.getWidth() / 2f);
             return;
         }
         // DUOC-ENTITY: update toàn bộ entity (Player input + Mob AI + sync physics)
         if (!dead) {
             entityManager.update(delta);
+            droppedItemManager.update(delta, world, player);
         }
 
         // Chết -> Game Over
@@ -189,6 +203,7 @@ public class GameScreen extends BaseScreen {
                     handlePauseClick(mx, my);
                 }
             } else if (dead) {
+                player.setMining(false, player.getX() + player.getWidth() / 2f);
                 updateDeathButtonLayout();
                 boolean hover = mx >= deathBtnX && mx <= deathBtnX + deathBtnW && my >= deathBtnY && my <= deathBtnY + deathBtnH;
                 if (Gdx.input.justTouched() && hover) {
@@ -225,6 +240,12 @@ public class GameScreen extends BaseScreen {
             camera.position.x = Math.max(halfW, Math.min(world.width - halfW, camera.position.x));
             camera.position.y = Math.max(halfH, Math.min(world.height - halfH, camera.position.y));
         }
+
+        blockBreaker.update(delta, player, world, camera, viewport);
+        float miningTargetX = blockBreaker.hasHoveredBlock()
+            ? blockBreaker.getHoveredBlockX() + 0.5f
+            : player.getX() + player.getWidth() / 2f;
+        player.setMining(blockBreaker.isBreaking(), miningTargetX);
     }
 
     @Override
@@ -237,7 +258,9 @@ public class GameScreen extends BaseScreen {
 
         batch.begin();
         world.render(batch, camera);
+        droppedItemManager.render(batch);
         entityManager.render(batch); // DUOC-ENTITY: mob trước, player sau (render order)
+        blockBreakOverlay.render(batch, blockBreaker);
         batch.end();
 
         // ── HUD / debug block palette ────────────────────────────
@@ -445,6 +468,10 @@ public class GameScreen extends BaseScreen {
             xpBgTex.dispose();
         if (xpFgTex != null)
             xpFgTex.dispose();
+        if (blockBreakOverlay != null)
+            blockBreakOverlay.dispose();
+        if (droppedItemManager != null)
+            droppedItemManager.clear();
 
         entityManager.dispose(); // DUOC-ENTITY: giải phóng tài nguyên player + mob
     }
