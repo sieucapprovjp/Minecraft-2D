@@ -16,11 +16,22 @@ public class Chunk {
         this.blocks = new AbstractBlock[Constants.CHUNK_SIZE][Constants.CHUNK_SIZE];
     }
 
+    private void validateLocalCoordinates(int localX, int localY) {
+        if (localX < 0 || localX >= Constants.CHUNK_SIZE || localY < 0 || localY >= Constants.CHUNK_SIZE) {
+            throw new IllegalArgumentException(
+                    "Invalid local block coordinates (" + localX + ", " + localY + ") for chunk ("
+                            + chunkX + ", " + chunkY + "). Expected each coordinate to be in [0, "
+                            + Constants.CHUNK_SIZE + ").");
+        }
+    }
+
     public void setBlock(int localX, int localY, AbstractBlock block) {
+        validateLocalCoordinates(localX, localY);
         blocks[localX][localY] = block;
     }
 
     public AbstractBlock getBlock(int localX, int localY) {
+        validateLocalCoordinates(localX, localY);
         return blocks[localX][localY];
     }
 
