@@ -110,6 +110,7 @@ public class World {
     }
 
     /** Logic sinh Map + Hang động (Đã fix lỗi Overflow) */
+    /** Logic sinh Map + Hang động (Đã giới hạn độ sâu & làm dẹt hang) */
     public void generateChunk(int chunkX, int chunkY) {
         int startX = chunkX * Constants.CHUNK_SIZE;
         int endX = startX + Constants.CHUNK_SIZE;
@@ -121,7 +122,7 @@ public class World {
         float amplitude = 12f;
         float frequency = 0.04f;
 
-        NoiseUtils noiseUtils = new NoiseUtils(this.seed);
+        com.main.game.utils.NoiseUtils noiseUtils = new com.main.game.utils.NoiseUtils(this.seed);
 
         for (int x = startX; x < endX; x++) {
             // Set Biome mặc định cho tọa độ này
@@ -133,13 +134,18 @@ public class World {
             int surface = baseGround + (int) ((noiseVal + detailNoise) * amplitude);
             surface = Math.max(8, Math.min(height - 4, surface));
 
+            // GIỚI HẠN ĐỘ SÂU: Đáy map (Bedrock) chỉ cách mặt đất 30 block.
+            int bedrockY = surface - 30;
+
             for (int y = startY; y < endY; y++) {
                 AbstractBlock block = null;
-                if (y == 0) {
+
+                if (y <= bedrockY) {
+                    // Dưới mốc bedrockY sẽ là lớp đá không thể đập được
                     block = new SimpleBlock(x, y, "bedrock", true, false, 999f, BlockPalette.getBedrock());
-                } else if (y < surface - 3 && y > 0) {
-                    // Logic hang động chuẩn: KHÔNG cộng seed vào tọa độ
-                    double caveNoise = noiseUtils.noise2D(x * 0.05f, y * 0.05f);
+                } else if (y < surface - 3 && y > bedrockY) {
+                    // LÀM DẸT HANG ĐỘNG: Hệ số Y (0.15f) lớn hơn X (0.05f) giúp hang xoải ngang, tránh vực sâu thẳng đứng
+                    double caveNoise = noiseUtils.noise2D(x * 0.05f, y * 0.15f);
                     if (caveNoise >= -0.25) {
                         block = new SimpleBlock(x, y, "stone", true, true, 1.2f, BlockPalette.getStone());
                     }
