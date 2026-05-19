@@ -9,7 +9,7 @@ import com.main.game.blocks.types.WoodBlocks;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
+/*
  * Utility to populate a small demo grid in the world so you can visually inspect block types.
  *
  * Usage: call DemoBlockViewer.populateDemo(world, startX, startY) from GameScreen (for example on a key press).
