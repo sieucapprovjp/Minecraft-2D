@@ -51,9 +51,15 @@ public class GameScreen extends BaseScreen {
 
     @Override
     public void show() {
-        world = new World();
+
+        long currentSeed = System.currentTimeMillis();
+
+        world = new World(currentSeed);
         // TODO(KIEN-WORLD): seed nên lấy từ save/game config thay vì hardcode.
-        world.generate(1337L);
+
+        camera.position.set(world.width / 2f, world.height / 2f, 0f);
+        world.update(camera);
+        // world.generate(1337L);
 
         physics = new PhysicsEngine();
 
@@ -122,6 +128,9 @@ public class GameScreen extends BaseScreen {
         // DUOC-ENTITY: update toàn bộ entity (Player input + Mob AI + sync physics)
         entityManager.update(delta);
 
+        // update
+        world.update(camera);
+
         // Chết -> Game Over
         if (player.getHealth() <= 0) {
             game.getScreenRouter().request(ScreenId.GAME_OVER);
@@ -138,8 +147,11 @@ public class GameScreen extends BaseScreen {
             float followLerp = Math.min(1f, delta * 7f);
             camera.position.x += (targetX - camera.position.x) * followLerp;
             camera.position.y += (targetY - camera.position.y) * followLerp;
-            camera.position.x = Math.max(halfW, Math.min(world.width  - halfW, camera.position.x));
-            camera.position.y = Math.max(halfH, Math.min(world.height - halfH, camera.position.y));
+
+            // Xóa giới hạn (clamp) theo world.width để map chạy vô tận
+            // Chỉ giữ lại giới hạn đáy màn hình (y >= halfH) nếu không muốn rớt ra ngoài khoảng không
+            camera.position.y = Math.max(halfH, camera.position.y);
+
         } else {
             // Fallback WASD khi player chết hoặc chưa có
             float cameraSpeed = 16f;
@@ -154,8 +166,28 @@ public class GameScreen extends BaseScreen {
 
     @Override
     public void draw() {
-        Gdx.gl.glClearColor(0.4f, 0.7f, 1f, 1f);
+        // ─── XỬ LÝ MÀU NỀN THEO ĐỘ SÂU (DEPTH FADE) ───────────────
+        // Mặt đất thường ở khoảng Y = 64 (world.height / 2). Từ đây trở lên là sáng rực.
+        float surfaceY = world.height / 2f;
+
+        // Độ sâu bắt đầu tối đen như mực (mốc Y = 20).
+        float deepCaveY = 20f;
+
+        // Tính toán tỷ lệ ánh sáng (từ 0.0 đến 1.0) dựa vào vị trí camera
+        float lightRatio = (camera.position.y - deepCaveY) / (surfaceY - deepCaveY);
+
+        // Dùng Math.max và Math.min để "kẹp" (clamp) giá trị luôn nằm trong khoảng 0.0 -> 1.0
+        lightRatio = Math.max(0f, Math.min(1f, lightRatio));
+
+        // Nội suy màu: Bầu trời gốc (0.4, 0.7, 1.0) chuyển dần sang màu xám đen (0.02, 0.02, 0.05)
+        float r = (0.4f * lightRatio) + (0.02f * (1 - lightRatio));
+        float g = (0.7f * lightRatio) + (0.02f * (1 - lightRatio));
+        float b = (1.0f * lightRatio) + (0.05f * (1 - lightRatio));
+
+        // Set màu nền mới và clear màn hình
+        Gdx.gl.glClearColor(r, g, b, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        // ──────────────────────────────────────────────────────────
 
         camera.update();
         batch.setProjectionMatrix(camera.combined);
@@ -181,11 +213,10 @@ public class GameScreen extends BaseScreen {
         // ── Text HUD ─────────────────────────────────────────────────
         uiProjection.setToOrtho2D(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         batch.setProjectionMatrix(uiProjection);
-        
-        // Vẽ tim (giả lập bằng text màu đỏ cho nhanh, sau này có thể đổi bằng sprite)
+
         font.setColor(Color.RED);
         font.draw(batch, "HP: " + player.getHealth() + " / " + player.getMaxHealth(), 20, Gdx.graphics.getHeight() - 20);
-        
+
         font.setColor(Color.WHITE);
         font.draw(batch, "FPS: " + Gdx.graphics.getFramesPerSecond(), 20, Gdx.graphics.getHeight() - 40);
         font.draw(batch, "X: " + (int)player.getX() + "  Y: " + (int)player.getY(), 20, Gdx.graphics.getHeight() - 60);
