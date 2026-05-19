@@ -90,12 +90,27 @@ public class World {
         int maxX = Math.min(width - 1, (int) Math.ceil(camera.position.x + halfW) + 1);
         int minY = Math.max(0, (int) Math.floor(camera.position.y - halfH) - 1);
         int maxY = Math.min(height - 1, (int) Math.ceil(camera.position.y + halfH) + 1);
+        int chunkSize = Constants.CHUNK_SIZE;
+        int minChunkX = minX / chunkSize;
+        int maxChunkX = maxX / chunkSize;
+        int minChunkY = minY / chunkSize;
+        int maxChunkY = maxY / chunkSize;
 
-        for (int x = minX; x <= maxX; x++) {
-            for (int y = minY; y <= maxY; y++) {
-                AbstractBlock block = blocks[x][y];
-                if (block != null) {
-                    block.render(batch);
+        for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+            int startX = Math.max(minX, chunkX * chunkSize);
+            int endX = Math.min(maxX, ((chunkX + 1) * chunkSize) - 1);
+
+            for (int chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+                int startY = Math.max(minY, chunkY * chunkSize);
+                int endY = Math.min(maxY, ((chunkY + 1) * chunkSize) - 1);
+
+                for (int x = startX; x <= endX; x++) {
+                    for (int y = startY; y <= endY; y++) {
+                        AbstractBlock block = blocks[x][y];
+                        if (block != null) {
+                            block.render(batch);
+                        }
+                    }
                 }
             }
         }
