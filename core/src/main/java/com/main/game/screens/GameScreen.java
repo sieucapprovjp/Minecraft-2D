@@ -85,7 +85,6 @@ public class GameScreen extends BaseScreen {
     @Override
     public void show() {
         world = new World();
-        // TODO(KIEN-WORLD): seed nên lấy từ save/game config thay vì hardcode.
         world.generate(DEFAULT_WORLD_SEED);
 
         physics = new PhysicsEngine();
