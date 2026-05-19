@@ -4,14 +4,9 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 import com.main.game.blocks.AbstractBlock;
-import com.main.game.blocks.SimpleBlock;
+import com.main.game.worldgen.BiomeType;
+import com.main.game.worldgen.WorldGenerator;
 import com.main.game.utils.Constants;
-import com.badlogic.gdx.math.GridPoint2;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-
 
 /**
  * Quản lý toàn bộ map game: lưu trữ và truy xuất block.
@@ -33,51 +28,38 @@ import java.util.Random;
  */
 public class World {
 
-    //Dùng Map thay vì mảng 2D
-    private final long seed;
-    private final Map<GridPoint2, Chunk> chunks;
+    private final AbstractBlock[][] blocks;
+    private final BiomeType[] biomes;
     public final int width;
     public final int height;
 
-    public World(long seed) {
-        this.seed = seed;
+    public World() {
         this.width = Constants.WORLD_WIDTH;
         this.height = Constants.WORLD_HEIGHT;
-        this.chunks = new HashMap<>();
+        this.blocks = new AbstractBlock[width][height];
+        this.biomes = new BiomeType[width];
     }
 
-    // HÀM HỖ TRỢ: Đổi từ tọa độ World (VD: x=17) sang tọa độ Chunk (VD: chunkX=1)
-    private GridPoint2 getChunkCoord(int worldX, int worldY) {
-        // Dùng Math.floorDiv để tính toán an toàn cả với tọa độ âm
-        int cx = Math.floorDiv(worldX, Constants.CHUNK_SIZE);
-        int cy = Math.floorDiv(worldY, Constants.CHUNK_SIZE);
-        return new GridPoint2(cx, cy);
-    }
-
+    /** Lấy block tại tọa độ tile (x, y) */
     public AbstractBlock getBlock(int x, int y) {
         if (!isInBounds(x, y)) return null;
-
-        GridPoint2 chunkPos = getChunkCoord(x, y);
-        Chunk chunk = chunks.get(chunkPos); // Tìm chunk
-        if (chunk == null) return null; // Nếu chunk chưa tồn tại -> không có block
-
-        // Lấy tọa độ cục bộ (từ 0 đến 15) bên trong chunk đó
-        int localX = Math.floorMod(x, Constants.CHUNK_SIZE);
-        int localY = Math.floorMod(y, Constants.CHUNK_SIZE);
-        return chunk.getBlock(localX, localY);
+        return blocks[x][y];
     }
 
+    /** Đặt block tại tọa độ tile (x, y) */
     public void setBlock(int x, int y, AbstractBlock block) {
         if (!isInBounds(x, y)) return;
+        blocks[x][y] = block;
+    }
 
-        GridPoint2 chunkPos = getChunkCoord(x, y);
+    public void setBiome(int x, BiomeType biome) {
+        if (x < 0 || x >= width || biome == null) return;
+        biomes[x] = biome;
+    }
 
-        // Nếu chunk chưa tồn tại trong Map, tạo mới chunk đó
-        Chunk chunk = chunks.computeIfAbsent(chunkPos, k -> new Chunk(chunkPos.x, chunkPos.y));
-
-        int localX = Math.floorMod(x, Constants.CHUNK_SIZE);
-        int localY = Math.floorMod(y, Constants.CHUNK_SIZE);
-        chunk.setBlock(localX, localY, block);
+    public BiomeType getBiome(int x) {
+        if (x < 0 || x >= width) return BiomeType.FOREST;
+        return biomes[x] != null ? biomes[x] : BiomeType.FOREST;
     }
 
     /** Kiểm tra tọa độ có nằm trong world không */
@@ -94,78 +76,8 @@ public class World {
     /**
      * Sinh địa hình ngẫu nhiên bằng Fractal/Value Noise 1D
      */
-    /**
-     * Sinh địa hình cho một Chunk cụ thể (16x16)
-     */
-    public void generateChunk(int chunkX, int chunkY) {
-        int startX = chunkX * Constants.CHUNK_SIZE;
-        int endX = startX + Constants.CHUNK_SIZE;
-        int startY = chunkY * Constants.CHUNK_SIZE;
-        int endY = startY + Constants.CHUNK_SIZE;
-
-        Random random = new Random(this.seed + chunkX); // Seed phụ để trồng cây không bị trùng lặp
-        int baseGround = height / 2;
-        float amplitude = 12f;
-        float frequency = 0.04f;
-
-        // Khởi tạo NoiseUtils bằng biến seed chung của World
-        com.main.game.utils.NoiseUtils noiseUtils = new com.main.game.utils.NoiseUtils(this.seed);
-
-        for (int x = startX; x < endX; x++) {
-            float noiseVal = getSmoothNoise1D(x * frequency, this.seed);
-            float detailNoise = getSmoothNoise1D(x * frequency * 3f, this.seed + 1) * 0.2f;
-
-            int surface = baseGround + (int) ((noiseVal + detailNoise) * amplitude);
-            // Giới hạn trần và đáy
-            surface = Math.max(8, Math.min(height - 4, surface));
-
-            for (int y = startY; y < endY; y++) {
-                AbstractBlock block = null;
-
-                if (y == 0) {
-                    block = new SimpleBlock(x, y, "bedrock", true, false, 999f, BlockPalette.getBedrock());
-                } else if (y < surface - 3 && y > 0) {
-                    // Hang động dưới lòng đất
-                    double caveNoise = noiseUtils.noise2D(x * 0.05f, y * 0.05f);
-                    if (caveNoise >= -0.25) { // Nếu không phải lỗ hổng thì đặt đá
-                        block = new SimpleBlock(x, y, "stone", true, true, 1.2f, BlockPalette.getStone());
-                    }
-                } else if (y >= surface - 3 && y < surface) {
-                    block = new SimpleBlock(x, y, "dirt", true, true, 0.7f, BlockPalette.getDirt());
-                } else if (y == surface) {
-                    // Bề mặt 100% là cỏ
-                    block = new SimpleBlock(x, y, "grass", true, true, 0.6f, BlockPalette.getGrass());
-                }
-
-                if (block != null) {
-                    setBlock(x, y, block);
-                }
-            }
-
-            // Trồng cây: Chỉ trồng nếu cái Chunk này chứa bề mặt (surface)
-            if (startY <= surface + 1 && endY >= surface + 1) {
-                // Điều kiện x % 29 == 0 giúp cây cách đều nhau, kết hợp random để không phải lúc nào cũng mọc
-                if (x % 29 == 0 && random.nextFloat() < 0.65f) {
-                    int trunkBaseY = surface + 1;
-                    int trunkHeight = 3 + random.nextInt(2);
-
-                    for (int ty = 0; ty < trunkHeight; ty++) {
-                        setBlock(x, trunkBaseY + ty,
-                            new SimpleBlock(x, trunkBaseY + ty, "wood", true, true, 0.9f, BlockPalette.getWood()));
-                    }
-
-                    int leafY = trunkBaseY + trunkHeight;
-                    for (int lx = x - 1; lx <= x + 1; lx++) {
-                        for (int ly = leafY - 1; ly <= leafY; ly++) {
-                            if (getBlock(lx, ly) == null) {
-                                setBlock(lx, ly,
-                                    new SimpleBlock(lx, ly, "leaves", false, true, 0.2f, BlockPalette.getLeaves()));
-                            }
-                        }
-                    }
-                }
-            }
-        }
+    public void generate(long seed) {
+        WorldGenerator.generate(this, seed);
     }
 
     /**
@@ -181,13 +93,14 @@ public class World {
 
         for (int x = minX; x <= maxX; x++) {
             for (int y = minY; y <= maxY; y++) {
-                AbstractBlock block = getBlock(x, y);
+                AbstractBlock block = blocks[x][y];
                 if (block != null) {
                     block.render(batch);
                 }
             }
         }
     }
+
     /**
      * TÌM VỊ TRÍ SPAWN CHO NHÂN VẬT
      * Thả người chơi xuống mặt đất ở ngay giữa bản đồ.
@@ -199,7 +112,7 @@ public class World {
         for (int y = height - 1; y >= 0; y--) {
             if (isSolid(spawnX, y)) {
                 // Trả về tọa độ ngay TRÊN block đó để nhân vật không bị kẹt vào đất
-                return new Vector2(spawnX, y + 3);
+                return new Vector2(spawnX, y + 1);
             }
         }
 
@@ -207,47 +120,4 @@ public class World {
         return new Vector2(spawnX, height / 2f);
     }
 
-    // CÁC HÀM HỖ TRỢ SINH NOISE ĐỊA HÌNH
-
-    private float getSmoothNoise1D(float x, long seed) {
-        int intX = (int) Math.floor(x);
-        float fracX = x - intX;
-
-        float v1 = getSeededRandom(intX, seed);
-        float v2 = getSeededRandom(intX + 1, seed);
-
-        // Cosine Interpolation
-        float f = (1f - (float)Math.cos(fracX * Math.PI)) * 0.5f;
-        return v1 * (1f - f) + v2 * f;
-    }
-
-    private float getSeededRandom(int x, long seed) {
-        long n = x * 374761393L + seed * 668265263L;
-        n = (n ^ (n >> 13)) * 1274126177L;
-        return (((n & 0x7FFFFFFF) / (float) 0x7FFFFFFF) * 2f) - 1f;
-    }
-    /**
-     * Cập nhật và load/sinh Chunk dựa theo vị trí Camera
-     * Gọi hàm này liên tục trong render() hoặc update() của GameScreen
-     */
-    public void update(OrthographicCamera camera) {
-        // 1. Tính toán tọa độ Chunk mà Camera đang trỏ vào
-        int camChunkX = Math.floorDiv((int) camera.position.x, Constants.CHUNK_SIZE);
-        int camChunkY = Math.floorDiv((int) camera.position.y, Constants.CHUNK_SIZE);
-
-        // 2. Bán kính load Chunk xung quanh Camera (2 nghĩa là load 5x5 chunk)
-        int loadRadius = 4;
-
-        for (int cx = camChunkX - loadRadius; cx <= camChunkX + loadRadius; cx++) {
-            for (int cy = camChunkY - loadRadius; cy <= camChunkY + loadRadius; cy++) {
-                GridPoint2 pos = new GridPoint2(cx, cy);
-
-                // Nếu Chunk này chưa từng được sinh ra -> Tạo mới và Generate
-                if (!chunks.containsKey(pos)) {
-                    chunks.put(pos, new Chunk(cx, cy)); // Khởi tạo vỏ Chunk
-                    generateChunk(cx, cy);        // Bơm data đất đá vào
-                }
-            }
-        }
-    }
 }
