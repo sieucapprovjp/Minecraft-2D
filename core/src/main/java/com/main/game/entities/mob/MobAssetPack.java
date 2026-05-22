@@ -73,6 +73,34 @@ final class MobAssetPack {
                     "mobs/chicken/mobs/chicken5.png");
                 hurtAnim = single("mobs/chicken/mobs/chickenface.png");
                 break;
+            case COW:
+            case DOG:
+            case TAMED_HORSE:
+            case HORSE:
+            case WOLF:
+            case CAT:
+            case VILLAGER:
+            case COD:
+            case SALMON:
+            case TROPICAL_FISH:
+            case PUFFERFISH:
+            case DOLPHIN:
+                idleAnim = single("mvp/mob/cow/cow_look.png");
+                walkAnim = sequence("mvp/mob/cow/cow_walk_%d.png", 1, 6, 0.12f);
+                hurtAnim = single("mvp/mob/cow/cow_hurt.png");
+                break;
+            case PILLAGER:
+            case EVOKER:
+                idleAnim = single("mobs/skeleton/mobs/skeletonface.png");
+                walkAnim = sequenceWithFallback(0.12f,
+                    "mobs/skeleton/mobs/skeleton1.png",
+                    "mobs/skeleton/mobs/skeleton2.png",
+                    "mobs/skeleton/mobs/skeleton3.png",
+                    "mobs/skeleton/mobs/skeleton4.png");
+                hurtAnim = single("mobs/skeleton/mobs/skeletonfacehurt.png");
+                break;
+            case VINDICATOR:
+            case RAVAGER:
             case ZOMBIE:
             default:
                 idleAnim = single("mobs/zombie/mobs/zombielook.png");

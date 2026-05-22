@@ -30,11 +30,17 @@ import com.main.game.world.World;
 public class Mob extends Entity {
 
     // ─── Kiểu mob ─────────────────────────────────────────────
-    public enum MobType { ZOMBIE, HUSK, SKELETON, STRAY, COW, PIG, SHEEP, CHICKEN }
+    public enum MobType {
+        DOG, TAMED_HORSE,
+        COW, PIG, SHEEP, CHICKEN, HORSE, WOLF, CAT, VILLAGER, COD, SALMON, TROPICAL_FISH, PUFFERFISH, DOLPHIN,
+        ZOMBIE, HUSK, SKELETON, STRAY, PILLAGER, VINDICATOR, EVOKER, RAVAGER
+    }
 
-    private static final float MOB_W = 0.8f;
-    private static final float MOB_H = 1.8f;
     private static final float JUMP_IMPULSE = 10f;
+    private static final float PATROL_IDLE_DELAY = 1.2f;
+    private static final float HURT_DURATION = 0.3f;
+    private static final float DAMAGE_INVULN_DURATION = 0.8f;
+    private static final float PASSIVE_PANIC_DURATION = 5f;
 
     // ─── AI state ─────────────────────────────────────────────
     public enum AIState { PATROL, CHASE, ATTACK }
@@ -43,6 +49,10 @@ public class Mob extends Entity {
     private float patrolOriginX;
     private float attackTimer = 0f;
     private float hurtTimer   = 0f;
+    private float damageInvulnerabilityTimer = 0f;
+    private float patrolIdleTimer = 0f;
+    private float panicTimer = 0f;
+    private float panicDirection = 1f;
     private int   health;
     private EntityState state = EntityState.IDLE;
     private float stateTime   = 0f;
@@ -64,15 +74,27 @@ public class Mob extends Entity {
     // ───────────────────────────────────────────────────────────
 
     public Mob(float x, float y, MobType type, Player target, PhysicsEngine physics, World world) {
-        super(x, y, MOB_W, MOB_H);
+        this(x, y, type, target, physics, world, MobProfile.forType(type));
+    }
+
+    private Mob(float x, float y, MobType type, Player target, PhysicsEngine physics, World world, MobProfile profile) {
+        super(x, y, profile.width, profile.height);
         this.patrolOriginX = x;
         this.target        = target;
         this.physics       = physics;
         this.world         = world;
-        this.profile = MobProfile.forType(type);
+        this.profile = profile;
         this.health = profile.maxHealth;
 
         loadAssets(type);
+    }
+
+    public static int getRequiredSpawnWidth(MobType type) {
+        return Math.max(1, (int) Math.ceil(MobProfile.forType(type).width));
+    }
+
+    public static int getRequiredSpawnHeight(MobType type) {
+        return Math.max(1, (int) Math.ceil(MobProfile.forType(type).height));
     }
 
     // ─── Asset loading ─────────────────────────────────────────
@@ -109,10 +131,21 @@ public class Mob extends Entity {
     }
 
     void doPatrol() {
-        boolean hitWall    = (Math.abs(velocity.x) < 0.01f && state == EntityState.RUN);
-        boolean outOfRange = (position.x < patrolOriginX - profile.patrolRange)
-            || (position.x > patrolOriginX + profile.patrolRange);
-        if (hitWall || outOfRange) facingRight = !facingRight;
+        if (patrolIdleTimer > 0f) {
+            velocity.x = 0f;
+            return;
+        }
+
+        boolean hitWall = (Math.abs(velocity.x) < 0.01f && state == EntityState.RUN);
+        boolean pastLeft = position.x < patrolOriginX - profile.patrolRange;
+        boolean pastRight = position.x > patrolOriginX + profile.patrolRange;
+        boolean movingFartherOut = (pastLeft && !facingRight) || (pastRight && facingRight);
+        if (hitWall || movingFartherOut) {
+            facingRight = !facingRight;
+            patrolIdleTimer = PATROL_IDLE_DELAY;
+            velocity.x = 0f;
+            return;
+        }
         velocity.x = facingRight ? profile.patrolSpeed : -profile.patrolSpeed;
         if (MobMovementHelper.shouldJumpOverObstacle(this, world, facingRight)) {
             velocity.y = JUMP_IMPULSE;
@@ -121,9 +154,21 @@ public class Mob extends Entity {
     }
 
     void doChase() {
+        patrolIdleTimer = 0f;
+        panicTimer = 0f;
         boolean playerRight = target.getX() > position.x;
         facingRight = playerRight;
         velocity.x  = playerRight ? profile.chaseSpeed : -profile.chaseSpeed;
+        if (MobMovementHelper.shouldJumpOverObstacle(this, world, facingRight)) {
+            velocity.y = JUMP_IMPULSE;
+            onGround = false;
+        }
+    }
+
+    void doPanic() {
+        patrolIdleTimer = 0f;
+        facingRight = panicDirection > 0f;
+        velocity.x = panicDirection * profile.patrolSpeed * 1.35f;
         if (MobMovementHelper.shouldJumpOverObstacle(this, world, facingRight)) {
             velocity.y = JUMP_IMPULSE;
             onGround = false;
@@ -146,6 +191,9 @@ public class Mob extends Entity {
     private void tickTimers(float delta) {
         if (attackTimer > 0) attackTimer -= delta;
         if (hurtTimer  > 0) hurtTimer  -= delta;
+        if (damageInvulnerabilityTimer > 0) damageInvulnerabilityTimer -= delta;
+        if (patrolIdleTimer > 0) patrolIdleTimer -= delta;
+        if (panicTimer > 0) panicTimer -= delta;
     }
 
     float distanceTo(Entity other) {
@@ -165,15 +213,39 @@ public class Mob extends Entity {
 
     // ─── Nhận damage ──────────────────────────────────────────
 
-    public void takeDamage(int amount) {
-        if (hurtTimer > 0 || !isAlive) return;
+    public boolean takeDamage(int amount) {
+        if (damageInvulnerabilityTimer > 0 || !isAlive) return false;
         health -= amount;
-        hurtTimer = 0.3f;
+        hurtTimer = HURT_DURATION;
+        damageInvulnerabilityTimer = health > 0 ? DAMAGE_INVULN_DURATION : HURT_DURATION;
         stateTime = 0f;
         if (health <= 0) {
             health  = 0;
             isAlive = false;
         }
+        return true;
+    }
+
+    public void onPlayerHit(Player player) {
+        if (player == null || !isAlive) return;
+        if (isHostile()) {
+            target = player;
+            aiState = AIState.CHASE;
+            return;
+        }
+        panicDirection = player.getX() + player.getWidth() / 2f < position.x + width / 2f ? 1f : -1f;
+        panicTimer = PASSIVE_PANIC_DURATION;
+        if (onGround) {
+            velocity.y = JUMP_IMPULSE * 0.55f;
+            onGround = false;
+        }
+    }
+
+    public void applyKnockback(float x, float y) {
+        if (!isAlive) return;
+        velocity.x = x;
+        velocity.y = Math.max(velocity.y, y);
+        onGround = false;
     }
 
     // ─── Getters ───────────────────────────────────────────────
@@ -181,7 +253,11 @@ public class Mob extends Entity {
     public EntityState getState()   { return state;   }
     public AIState     getAIState() { return aiState;  }
     public int         getHealth()  { return health;   }
-    public boolean     isHostile()  { return profile.hostile;  }
+    public int         getAllegiance() { return profile.allegiance; }
+    public boolean     isTamed()    { return profile.allegiance == MobAllegiance.TAMED; }
+    public boolean     isPassive()  { return profile.allegiance == MobAllegiance.PASSIVE; }
+    public boolean     isHostile()  { return profile.allegiance == MobAllegiance.HOSTILE; }
+    boolean isPanicking() { return panicTimer > 0f; }
     float getStateTime() { return stateTime; }
 
     public void setTarget(Player p)   { this.target  = p;   }

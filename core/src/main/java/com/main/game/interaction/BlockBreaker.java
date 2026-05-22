@@ -115,6 +115,12 @@ public class BlockBreaker {
         return requested;
     }
 
+    public void cancel() {
+        hoveredBlockX = -1;
+        hoveredBlockY = -1;
+        resetBreaking();
+    }
+
     private boolean isWithinBlockReach(Player player, int tileX, int tileY) {
         float playerCenterX = player.getX() + player.getWidth() / 2f;
         float playerCenterY = player.getY() + player.getHeight() / 2f;

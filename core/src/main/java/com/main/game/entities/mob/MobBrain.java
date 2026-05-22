@@ -8,7 +8,11 @@ final class MobBrain {
         if (mob == null) return;
 
         if (!mob.isHostile()) {
-            mob.doPatrol();
+            if (mob.isPanicking()) {
+                mob.doPanic();
+            } else {
+                mob.doPatrol();
+            }
             return;
         }
 
