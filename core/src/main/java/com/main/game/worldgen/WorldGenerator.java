@@ -7,6 +7,7 @@ public final class WorldGenerator {
 
     private static final float TERRAIN_FREQUENCY = 0.04f;
     private static final float BIOME_FREQUENCY = 0.018f;
+    private static final int FILLER_LAYER_DEPTH = 2;
 
     private WorldGenerator() {
     }
@@ -48,10 +49,12 @@ public final class WorldGenerator {
                 blockId = "bedrock";
             } else if (y == surface) {
                 blockId = profile.surfaceBlock;
-            } else if (y >= surface - 3) {
+            } else if (y >= surface - FILLER_LAYER_DEPTH && y < surface) {
                 blockId = profile.fillerBlock;
-            } else {
+            } else if (y < surface) {
                 blockId = profile.deepBlock;
+            } else {
+                continue;
             }
             world.setBlock(x, y, WorldBlockFactory.create(x, y, blockId));
         }
@@ -76,11 +79,24 @@ public final class WorldGenerator {
     }
 
     private static void placeTree(World world, int x, int baseY, int height) {
-        for (int ty = 0; ty < height && baseY + ty < world.height; ty++) {
+        int leafY = baseY + height;
+
+        for (int ty = 0; ty < height; ty++) {
+            int trunkY = baseY + ty;
+            if (!world.isInBounds(x, trunkY) || world.getBlock(x, trunkY) != null) return;
+        }
+
+        for (int lx = x - 1; lx <= x + 1; lx++) {
+            for (int ly = leafY - 1; ly <= leafY; ly++) {
+                if (!world.isInBounds(lx, ly)) return;
+                if (world.getBlock(lx, ly) != null) return;
+            }
+        }
+
+        for (int ty = 0; ty < height; ty++) {
             world.setBlock(x, baseY + ty, WorldBlockFactory.create(x, baseY + ty, "wood"));
         }
 
-        int leafY = baseY + height;
         for (int lx = x - 1; lx <= x + 1; lx++) {
             for (int ly = leafY - 1; ly <= leafY; ly++) {
                 if (world.isInBounds(lx, ly) && world.getBlock(lx, ly) == null) {
