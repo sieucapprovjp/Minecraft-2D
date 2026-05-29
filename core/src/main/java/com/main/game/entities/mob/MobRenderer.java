@@ -31,6 +31,9 @@ final class MobRenderer {
         switch (mob.getState()) {
             case RUN:
                 return walkAnim != null ? walkAnim.getKeyFrame(mob.getStateTime()) : null;
+            case JUMP:
+            case FALL:
+                return walkAnim != null ? walkAnim.getKeyFrame(0f) : null;
             case HURT:
                 return hurtAnim != null ? hurtAnim.getKeyFrame(mob.getStateTime()) : null;
             case IDLE:

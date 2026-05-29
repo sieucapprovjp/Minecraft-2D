@@ -12,6 +12,7 @@ import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector2;
 import com.main.game.GameState;
 import com.main.game.MainGame;
+import com.main.game.combat.PlayerAttackController;
 import com.main.game.entities.EntityManager;
 import com.main.game.entities.player.Player;
 import com.main.game.interaction.BlockBreakOverlay;
@@ -42,7 +43,7 @@ import com.main.game.worldgen.BiomeMobSpawner;
  */
 public class GameScreen extends BaseScreen {
 
-    private static final float CAMERA_ZOOM = 0.65f;
+    private static final float CAMERA_ZOOM = 0.5f;
     private static final long DEFAULT_WORLD_SEED = 1337L;
 
     private World world; // TODO(KIEN-WORLD): quản lý world/chunk/camera follow
@@ -51,6 +52,7 @@ public class GameScreen extends BaseScreen {
     private EntityManager entityManager; // DUOC-ENTITY: quản lý update/render entity
     private BlockBreaker blockBreaker;
     private BlockBreakOverlay blockBreakOverlay;
+    private PlayerAttackController playerAttackController;
     private DroppedItemManager droppedItemManager;
     private Inventory inventory;
     private InventoryController inventoryController;
@@ -101,6 +103,7 @@ public class GameScreen extends BaseScreen {
         entityManager.setPlayer(player);
         blockBreaker = new BlockBreaker();
         blockBreakOverlay = new BlockBreakOverlay();
+        playerAttackController = new PlayerAttackController();
         droppedItemManager = new DroppedItemManager();
         inventory = new Inventory();
         inventoryController = new InventoryController();
@@ -239,7 +242,13 @@ public class GameScreen extends BaseScreen {
             camera.position.y = Math.max(halfH, Math.min(world.height - halfH, camera.position.y));
         }
 
-        blockBreaker.update(delta, player, world, camera, viewport);
+        boolean attacked = playerAttackController.update(delta, player, entityManager,
+            camera, viewport, inventoryController.isInventoryOpen());
+        if (attacked || inventoryController.isInventoryOpen()) {
+            blockBreaker.cancel();
+        } else {
+            blockBreaker.update(delta, player, world, camera, viewport);
+        }
         float miningTargetX = blockBreaker.hasHoveredBlock()
             ? blockBreaker.getHoveredBlockX() + 0.5f
             : player.getX() + player.getWidth() / 2f;

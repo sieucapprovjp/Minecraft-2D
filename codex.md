@@ -1,268 +1,313 @@
-﻿# codex.md
+# codex.md
 
-## Muc tieu du an
-- Du an game 2D phong cach Minecraft, xay dung bang Java + LibGDX.
-- Vertical slice uu tien: `world + player + collision + 1 mob`.
+## Project Goal
+- A 2D Minecraft-style game built with Java + LibGDX.
+- Vertical slice priority: `world + player + collision + 1 mob`.
 
-## Stack va cau truc
+## Stack And Structure
 - Engine: LibGDX.
 - Build: Gradle (`gradlew.bat`).
 - Modules:
-  - `core`: logic game, screens, world, entities, physics, navigation.
-  - `lwjgl3`: launcher desktop.
-  - `assets`: texture/sprite/font.
+  - `core`: game logic, screens, world, entities, physics, navigation.
+  - `lwjgl3`: desktop launcher.
+  - `assets`: textures, sprites, fonts.
 
-## Core file map (chi tiet)
+## Core File Map
 - `core/src/main/java/com/main/game/MainGame.java`
-  - Entry point cua game (`Game`).
-  - Tao resource dung chung: `SpriteBatch`, `AssetManager`, `ScreenRouter`, `GameState`.
-  - `render()` goi `screenRouter.flush()` truoc `super.render()`.
-  - Chiu trach nhiem dispose resource shared khi thoat game.
+  - Game entry point (`Game`).
+  - Creates shared resources: `SpriteBatch`, `AssetManager`, `ScreenRouter`, `GameState`.
+  - `render()` calls `screenRouter.flush()` before `super.render()`.
+  - Responsible for disposing shared resources when the game exits.
 - `core/src/main/java/com/main/game/GameState.java`
-  - Luu state toan cuc (vd: `brightness`) dung cho nhieu screen.
+  - Stores global state used by multiple screens, for example `brightness`.
 
 - `core/src/main/java/com/main/game/navigation/ScreenId.java`
-  - Enum dinh danh cac screen (`LOADING`, `MENU`, `GAME`, `PAUSE`, `GAME_OVER`, ...).
+  - Enum identifiers for screens (`LOADING`, `MENU`, `GAME`, `PAUSE`, `GAME_OVER`, ...).
 - `core/src/main/java/com/main/game/navigation/ScreenRouter.java`
-  - Co che chuyen screen an toan qua `request()` + `flush()`.
-  - Dam bao thu tu lifecycle: `onExit -> dispose -> create screen moi -> onEnter`.
-  - Tranh switch trung screen hien tai.
+  - Safe screen transition mechanism through `request()` + `flush()`.
+  - Enforces lifecycle order: `onExit -> dispose -> create new screen -> onEnter`.
+  - Avoids switching to the same current screen.
 
 - `core/src/main/java/com/main/game/screens/BaseScreen.java`
-  - Base class cho cac screen, giu reference `MainGame`, `batch`, `camera`, `viewport`.
-  - Dinh nghia hook `onEnter()` / `onExit()` va `update()` / `draw()`.
+  - Base class for screens. Holds references to `MainGame`, `batch`, `camera`, `viewport`.
+  - Defines `onEnter()` / `onExit()` hooks and `update()` / `draw()`.
 - `core/src/main/java/com/main/game/screens/GameScreen.java`
-  - Noi integration gameplay chinh: `World`, `PhysicsEngine`, `Player`, `EntityManager`.
-  - Xu ly input test transition (`ESC/P`, `M`, `K`, ...), camera follow, HUD, overlay.
+  - Main gameplay integration point: `World`, `PhysicsEngine`, `Player`, `EntityManager`.
+  - Handles test transition input (`ESC/P`, `M`, `K`, ...), camera follow, HUD, overlay.
   - Render order: world -> entities -> HUD -> overlay.
 - `core/src/main/java/com/main/game/screens/StateScreen.java`
-  - Screen trang thai (`PAUSE`, `GAME_OVER`) va dieu huong quay lai game/menu.
+  - State screen (`PAUSE`, `GAME_OVER`) with navigation back to game/menu.
 - `core/src/main/java/com/main/game/screens/MenuScreen.java`
-  - Menu chinh.
+  - Main menu.
 - `core/src/main/java/com/main/game/screens/LoadingScreen.java`
-  - Man hinh loading va chuyen tiep.
+  - Loading screen and transition.
 - `core/src/main/java/com/main/game/screens/ModeSelectScreen.java`
-  - Chon mode game.
+  - Game mode selection.
 - `core/src/main/java/com/main/game/screens/SettingsScreen.java`
-  - Cai dat (anh huong `GameState`).
+  - Settings screen, affects `GameState`.
 
 - `core/src/main/java/com/main/game/world/World.java`
-  - Quan ly grid world, generation terrain, spawn point, render theo camera.
-  - Noi can uu tien toi uu khi doi sang chunk streaming.
+  - Manages the world grid, terrain generation, spawn point, and camera-based rendering.
+  - Priority optimization target when moving to chunk streaming.
 - `core/src/main/java/com/main/game/world/BlockPalette.java`
-  - Load/giu texture block dung chung.
-  - Co fallback texture va dispose tap trung.
+  - Loads and stores shared block textures.
+  - Has fallback textures and centralized disposal.
 - `core/src/main/java/com/main/game/world/DemoBlockViewer.java`
-  - Tool debug de spawn/xem nhanh block trong world.
+  - Debug tool for spawning and quickly viewing blocks in the world.
 - `core/src/main/java/com/main/game/worldgen/*.java`
-  - Module tao world moi: biome, surface rules, decoration, house structure, spawn safety, mob spawn theo biome.
+  - New world generation module: biome, surface rules, decoration, house structure, spawn safety, biome-based mob spawning.
 
 - `core/src/main/java/com/main/game/blocks/AbstractBlock.java`
-  - Contract block co thuoc tinh vat ly: `solid`, `breakable`, `hardness`, `bounds`.
+  - Block contract with physical properties: `solid`, `breakable`, `hardness`, `bounds`.
 - `core/src/main/java/com/main/game/blocks/SimpleBlock.java`
-  - Implement co ban cho block.
+  - Basic implementation for blocks.
 - `core/src/main/java/com/main/game/blocks/types/*.java`
-  - Nhom block theo domain (`Nature`, `Ore`, `Stone`, `Wood`, `Utility`).
+  - Block groups by domain (`Nature`, `Ore`, `Stone`, `Wood`, `Utility`).
 
 - `core/src/main/java/com/main/game/entities/Entity.java`
-  - Base entity: position, velocity, bounds, trang thai song/chet.
+  - Base entity: position, velocity, bounds, alive/dead state.
 - `core/src/main/java/com/main/game/entities/player/Player.java`
-  - Input + state machine player + health/damage/respawn.
+  - Player input + state machine + health/damage/respawn.
 - `core/src/main/java/com/main/game/entities/player/PlayerRenderer.java`
-  - Render rig player theo body part, swing arm khi mining.
+  - Renders the player rig by body part, including arm swing while mining.
 - `core/src/main/java/com/main/game/entities/mob/Mob.java`
-  - Orchestration mob: state, health, physics, goi AI/render.
+  - Mob orchestration: state, health, physics, AI/render calls.
 - `core/src/main/java/com/main/game/entities/mob/MobBrain.java`
-  - AI mob (`PATROL`, `CHASE`, `ATTACK`).
+  - Mob AI (`PATROL`, `CHASE`, `ATTACK`).
+- `core/src/main/java/com/main/game/entities/mob/MobAllegiance.java`
+  - Integer allegiance constants: `TAMED = 0`, `PASSIVE = 1`, `HOSTILE = 2`.
 - `core/src/main/java/com/main/game/entities/mob/MobProfile.java`
-  - Thong so theo loai mob: hostile/passive, aggro, speed, damage, HP.
+  - Per-mob-type parameters: allegiance, aggro, speed, damage, HP, size.
 - `core/src/main/java/com/main/game/entities/mob/MobRenderer.java`
-  - Chon animation frame va render mob.
+  - Chooses animation frames and renders mobs.
 - `core/src/main/java/com/main/game/entities/mob/MobAssetPack.java`
-  - Load asset mob theo loai, co fallback neu thieu frame.
+  - Loads assets by mob type, with fallback when frames are missing.
 - `core/src/main/java/com/main/game/entities/mob/MobMovementHelper.java`
-  - Helper nhay qua vat can don gian.
+  - Helper for simple obstacle jumping.
 - `core/src/main/java/com/main/game/entities/mob/MobSightHelper.java`
-  - Check line-of-sight de tranh tan cong xuyen block.
+  - Line-of-sight checks to prevent attacks through blocks.
 - `core/src/main/java/com/main/game/entities/EntityManager.java`
-  - Update/render/dispose tap trung cho player + danh sach mob.
+  - Centralized update/render/dispose for player + mob list.
 - `core/src/main/java/com/main/game/entities/EntityState.java`
-  - Enum state cho entity (`IDLE`, `RUN`, `JUMP`, `FALL`, ...).
+  - Entity state enum (`IDLE`, `RUN`, `JUMP`, `FALL`, ...).
+
+- `core/src/main/java/com/main/game/combat/PlayerAttackController.java`
+  - Handles player left-click melee attacks against mobs, attack cooldown, falling critical damage, target hit-test, and knockback.
 
 - `core/src/main/java/com/main/game/interaction/BlockBreaker.java`
-  - Xu ly hover/break block, check block bi che, danh sach block khong the pha.
+  - Handles block hover/breaking, covered-block checks, and the unbreakable block list.
 - `core/src/main/java/com/main/game/interaction/BlockBreakOverlay.java`
-  - Render cursor va crack texture khi dang pha block.
+  - Renders cursor and crack texture while breaking blocks.
 
 - `core/src/main/java/com/main/game/items/DroppedItemManager.java`
-  - Quan ly item entity roi tren map.
+  - Manages dropped item entities on the map.
 - `core/src/main/java/com/main/game/items/DroppedItem.java`
-  - Vat ly item roi, pickup delay, hut ve player va ghi vao inventory.
+  - Dropped item physics, pickup delay, suction toward player, and inventory insertion.
 - `core/src/main/java/com/main/game/items/BlockDropFactory.java`
-  - Tao drop tu block bi pha.
+  - Creates drops from broken blocks.
 
 - `core/src/main/java/com/main/game/inventory/Inventory.java`
-  - Model inventory 36 slot pickup (hotbar + main inventory).
+  - Inventory model with 36 pickup slots: hotbar + main inventory.
 - `core/src/main/java/com/main/game/inventory/InventoryController.java`
-  - Toggle inventory, selected hotbar slot.
+  - Inventory toggle and selected hotbar slot.
 - `core/src/main/java/com/main/game/inventory/InventoryInteractionHandler.java`
-  - Click trai/phai de cam, dat, swap, stack, tach stack.
+  - Left/right click behavior for hold, place, swap, stack, and split stack.
 - `core/src/main/java/com/main/game/inventory/InventoryRenderer.java`
-  - Render hotbar/inventory/item dang cam va stack number.
+  - Renders hotbar/inventory/held item and stack numbers.
 - `core/src/main/java/com/main/game/inventory/InventoryLayout.java`
-  - Toa do slot dung chung cho render va hit-test.
+  - Shared slot coordinates for rendering and hit testing.
 - `core/src/main/java/com/main/game/inventory/ItemRegistry.java`
-  - Lookup texture va stack limit item/block.
+  - Item/block texture lookup and stack limits.
 
 - `core/src/main/java/com/main/game/physics/PhysicsEngine.java`
   - Gravity + collision/ground detection.
-  - Diem nong can nang cap: AABB day du 4 phia, resolve theo truc X/Y.
+  - Hotspot to improve: full four-sided AABB, resolved by X/Y axes.
 
 - `core/src/main/java/com/main/game/utils/Constants.java`
-  - Hang so game (viewport, tile size, gravity, toc do, ...).
+  - Game constants: viewport, tile size, gravity, speed, etc.
 - `core/src/main/java/com/main/game/utils/TextureManager.java`
-  - Quan ly texture dung chung theo key/cache.
+  - Shared texture manager by key/cache.
 - `core/src/main/java/com/main/game/ui/UISkin.java`
-  - Dinh nghia style UI (font, mau, skin binding neu dung Scene2D UI).
+  - UI style definitions: font, colors, skin binding if Scene2D UI is used.
 
-## Cach chay nhanh
-- Chay game desktop: `./gradlew.bat lwjgl3:run`
-- Build toan bo: `./gradlew.bat build`
-- Chay test (neu co): `./gradlew.bat test`
+## Quick Run
+- Run desktop game: `./gradlew.bat lwjgl3:run`
+- Build all: `./gradlew.bat build`
+- Run tests, if available: `./gradlew.bat test`
 
-## Co che da lam (hien tai)
+## Current Implemented Systems
 - Screen lifecycle:
-  - Tao/dispose `SpriteBatch`, `AssetManager` chi trong `MainGame`.
-  - Chuyen screen chi qua `ScreenRouter.request(ScreenId)`.
-  - Khi doi screen: `onExit() -> dispose() -> create screen moi -> onEnter()`.
+  - `SpriteBatch` and `AssetManager` are created/disposed only in `MainGame`.
+  - Screens transition only through `ScreenRouter.request(ScreenId)`.
+  - Screen switch order: `onExit() -> dispose() -> create new screen -> onEnter()`.
 - World:
-  - Terrain ngau nhien (khoang 400x128), nhieu lop dia chat.
-  - Co culling de giam block render ngoai khung nhin.
+  - Random terrain, around 400x128, with multiple geological layers.
+  - Includes culling to reduce block rendering outside the camera view.
 - Player:
-  - Input co ban: di trai/phai, jump.
-  - State co ban: `IDLE`, `RUN`, `JUMP`, `FALL`, `HURT`, `DEAD`.
-  - Render da tach sang `entities/player/PlayerRenderer.java`.
-  - Co mining arm animation khi dang pha block.
+  - Basic input: move left/right, jump.
+  - Basic states: `IDLE`, `RUN`, `JUMP`, `FALL`, `HURT`, `DEAD`.
+  - Rendering has been split into `entities/player/PlayerRenderer.java`.
+  - Has mining arm animation while breaking blocks.
+  - Can left-click mobs to deal melee damage when not clicking a block.
 - Physics:
-  - Da co gravity + ground detection co ban.
-  - Da resolve collision theo truc X/Y cho entity va block solid.
+  - Basic gravity + ground detection.
+  - Collision is resolved by X/Y axes for entities and solid blocks.
 - Blocks/Assets:
-  - Co `BlockPalette`, `TextureManager`, bo block type classes.
-  - Da cap nhat asset path sau khi xoa cac file `*_1.png`.
-  - HUD texture co fallback khi thieu frame rieng le.
+  - Has `BlockPalette`, `TextureManager`, and block type classes.
+  - Asset paths were updated after removing `*_1.png` files.
+  - HUD textures have fallback when individual frames are missing.
 - Block breaking:
-  - Co cursor hover block va crack animation tu `assets/cursor`.
-  - Chi cho pha block visible, khong pha block bi block khac che.
-  - Co danh sach block khong the pha (`bedrock`).
-  - Khi pha xong, block spawn dropped item.
+  - Has block hover cursor and crack animation from `assets/cursor`.
+  - Only visible blocks can be broken; covered blocks are blocked.
+  - Has an unbreakable block list, for example `bedrock`.
+  - Broken blocks spawn dropped items.
 - Dropped item:
-  - Item roi co physics co ban: gravity, bounce ngang, snap dat, friction.
-  - Item hut ve player sau pickup delay va co the ghi vao inventory.
+  - Dropped items have basic physics: gravity, horizontal bounce, ground snap, friction.
+  - Items are pulled toward the player after pickup delay and can enter inventory.
 - Inventory/hotbar:
-  - Hotbar render item dung texture.
-  - Mo inventory bang `E`.
-  - Click trai/phai de cam, dat, swap, stack va tach stack.
-  - Stack number dung font asset trong `assets/fonts`.
+  - Hotbar renders items using textures.
+  - Inventory opens with `E`.
+  - Left/right click manages hold, place, swap, stack, and split stack.
+  - Stack numbers use the font asset in `assets/fonts`.
 - Mob:
-  - Da co mob hostile: `ZOMBIE`, `HUSK`, `SKELETON`.
-  - Da co mob passive: `COW`, `PIG`, `SHEEP`, `CHICKEN`.
-  - Hostile aggro player trong ban kinh 8 block; passive khong tan cong.
-  - Co patrol/chase/attack, line-of-sight check, nhay qua vat can co ban.
-  - Da refactor mob thanh `Mob`, `MobBrain`, `MobProfile`, `MobRenderer`, `MobAssetPack`, helper movement/sight.
+  - Mob allegiance is grouped by integer: `0` tamed, `1` passive, `2` hostile.
+  - Tamed mob types include `DOG`, `TAMED_HORSE`.
+  - Passive mob types include `COW`, `PIG`, `SHEEP`, `CHICKEN`, `HORSE`, `WOLF`, `CAT`, `VILLAGER`, fish, and `DOLPHIN`.
+  - Hostile mob types include `ZOMBIE`, `HUSK`, `SKELETON`, `STRAY`, `PILLAGER`, `VINDICATOR`, `EVOKER`, `RAVAGER`.
+  - Hostiles aggro the player within 8 blocks; passives do not attack and panic briefly when hit.
+  - Mobs have per-type width/height in `MobProfile`; spawn safety uses the required mob size.
+  - Includes patrol/chase/attack, panic, line-of-sight checks, simple obstacle jumping, and light knockback when hit.
+  - Jump/fall rendering uses the first walk frame instead of the idle/look frame.
+  - Mobs were refactored into `Mob`, `MobBrain`, `MobProfile`, `MobRenderer`, `MobAssetPack`, movement/sight helpers.
+- Combat:
+  - `PlayerAttackController` handles left-click melee attack against mobs.
+  - Attack prioritizes clicked mob bounds before block breaking; if a mob is hit, block breaking is canceled for that click.
+  - Current player attack is intentionally simple: base damage, falling critical, cooldown, mob invulnerability frames, hurt image, knockback, passive panic, hostile aggro.
+  - Mace, potions, spear/charge attack, special mob interactions, and shield mechanics are intentionally out of scope for now.
 - Worldgen MVP:
-  - `World.generate(seed)` da tach sang `WorldGenerator.generate(world, seed)`.
-  - Da co 3 biome: `FOREST`, `DESERT`, `SNOW`.
-  - Da co village/house structure don gian tren mat dat phang.
-  - Da co spawn safety helper va initial mob spawn theo biome.
-  - Da them block biome: `snow`, `ice`, `sandstone`, `cactus` voi generated texture fallback neu chua co asset.
-  - Da them mob biome `STRAY` dung profile rieng va fallback skeleton asset.
+  - `World.generate(seed)` was split into `WorldGenerator.generate(world, seed)`.
+  - Has 3 biomes: `FOREST`, `DESERT`, `SNOW`.
+  - Has simple village/house structures on flat ground.
+  - Has spawn safety helper and initial biome-based mob spawning.
+  - Added biome blocks: `snow`, `ice`, `sandstone`, `cactus`, with generated texture fallback if assets are missing.
+  - Added biome mob `STRAY` with its own profile and skeleton asset fallback.
 
-## Co che dang thieu/uu tien tiep
-- Chay `./gradlew.bat lwjgl3:run` sau moi lan doi asset de bat runtime missing texture.
-- Them projectile that cho `SKELETON` thay vi damage truc tiep.
-- Them co che player danh mob va mob drop item/loot.
-- Nang cap mob spawn system thanh spawn theo thoi gian/chunk thay vi initial spawn luc vao game.
-- Xu ly dropped item overflow khi dong inventory ma inventory day.
-- Chuan hoa asset atlas va naming convention de tranh crash do doi/xoa file.
+## Missing Systems / Next Priorities
+- Run `./gradlew.bat lwjgl3:run` after every asset change to catch runtime missing textures.
+- Add real projectiles for `SKELETON` instead of direct damage.
+- Add mob item/loot drops.
+- Upgrade mob spawning to a time/chunk-based system instead of initial spawn on game entry.
+- Handle dropped item overflow when closing a full inventory.
+- Standardize asset atlas and naming conventions to avoid crashes after renames/deletions.
 
-## Tien do worldgen MVP 2026-05-18
-- Da tach logic tao the gioi khoi `World` sang package `worldgen`.
-- Da implement biome noise cho forest/desert/snow va luu biome theo cot trong `World`.
-- Da them decoration co ban: cay forest/snow, cactus desert, ice patch snow.
-- Da them village/house structure placer voi dieu kien ground tuong doi phang.
-- Da them `SpawnSafety` cho entity/structure spawn validation.
-- Da thay spawn mob test trong `GameScreen` bang `BiomeMobSpawner.spawnInitialMobs(...)`.
-- Da them block moi `snow`, `ice`, `sandstone`, `cactus` vao palette/registry.
-- Verify: `./gradlew.bat classes` pass.
+## Worldgen MVP Progress 2026-05-18
+- Split world generation logic from `World` into the `worldgen` package.
+- Implemented biome noise for forest/desert/snow and stores biome by world column.
+- Added basic decoration: forest/snow trees, desert cactus, snow ice patches.
+- Added village/house structure placer with relatively flat-ground checks.
+- Added `SpawnSafety` for entity/structure spawn validation.
+- Replaced test mob spawning in `GameScreen` with `BiomeMobSpawner.spawnInitialMobs(...)`.
+- Added new blocks `snow`, `ice`, `sandstone`, `cactus` to palette/registry.
+- Verify: `./gradlew.bat classes` passes.
 
-## Tien do cuoi ngay 2026-05-18
+## End-Of-Day Progress 2026-05-18
 - Menu/New Game:
-  - Man hinh New Game da dung background random tu `assets/stage`.
-  - Da can lai setting/done button.
+  - New Game screen now uses a random background from `assets/stage`.
+  - Settings/done buttons were realigned.
 - Block breaking:
-  - Da co hover cursor, crack animation, mining arm animation.
-  - Da check visible block va chan pha block bi che.
-  - Da chan block khong the pha nhu `bedrock`.
+  - Has hover cursor, crack animation, and mining arm animation.
+  - Checks visible blocks and blocks breaking covered blocks.
+  - Blocks unbreakable blocks such as `bedrock`.
 - Dropped item:
-  - Da co dropped item entity tu block bi pha.
-  - Da co physics + pickup/suction vao inventory.
+  - Has dropped item entities from broken blocks.
+  - Has physics + pickup/suction into inventory.
 - Inventory:
-  - Da co hotbar, inventory panel, stack number font, click left/right de quan ly item.
-  - Da can lai slot layout theo texture `images/gui_invrow/inventory.png`.
+  - Has hotbar, inventory panel, stack numbers, left/right click item management.
+  - Slot layout is aligned to `images/gui_invrow/inventory.png`.
 - Player:
-  - Da tach package `entities/player`.
-  - Da sua asset path sau khi xoa file `*_1.png`.
+  - Split into the `entities/player` package.
+  - Fixed asset paths after removing `*_1.png` files.
 - Mob:
-  - Da them nhieu loai mob passive/hostile.
-  - Hostile aggro trong 8 block, passive chi patrol.
-  - Da tach package `entities/mob` va chia nho file logic/render/profile/assets.
+  - Added multiple passive/hostile mob types.
+  - Hostiles aggro within 8 blocks; passives only patrol.
+  - Split into `entities/mob` and separated logic/render/profile/assets.
 - Asset/runtime:
-  - Da ra soat cac path asset trong Java.
-  - Da them fallback cho HUD texture thieu frame.
+  - Reviewed Java asset paths.
+  - Added fallback for missing HUD texture frames.
 - Verify:
-  - `./gradlew.bat classes` pass sau refactor package `entities`.
-  - Can chay tiep `./gradlew.bat lwjgl3:run` de verify runtime game sau khi asset thay doi.
+  - `./gradlew.bat classes` passes after refactoring the `entities` package.
+  - Need to run `./gradlew.bat lwjgl3:run` next to verify game runtime after asset changes.
 
-## Quy tac lam viec voi Codex
-- Khong doi kien truc lon neu chua duoc yeu cau.
-- Khi them tinh nang moi, uu tien tao class/file rieng theo module phu hop; file integration nhu `GameScreen` chi nen goi API ngan (`update/render/dispose`) thay vi nhan toan bo logic moi.
-- Moi thay doi phai bao gom:
-  - File da sua.
-  - Co che nao bi anh huong.
-  - Cach verify trong game (input/scene expected).
-- Uu tien fix theo blocker gameplay truoc (physics, input, state).
+## Gameplay Progress 2026-05-29
+- Mob grouping:
+  - Added `MobAllegiance` with `TAMED = 0`, `PASSIVE = 1`, `HOSTILE = 2`.
+  - Added expanded mob type list: dog/tamed horse, passive animals/villager/fish/dolphin, and hostile illager/ravager types.
+  - `DOG` represents the tamed form; `WOLF` represents the untamed form.
+  - Existing mob behavior still avoids taming and dog/horse follow AI for now.
+- Mob size:
+  - `MobProfile` now owns per-mob `width` and `height`.
+  - Example sizes: `PIG = 1.5 x 1.0`, `CHICKEN = 0.6 x 0.8`, humanoid hostiles `0.8 x 1.8`, `RAVAGER = 2.0 x 2.2`.
+  - `BiomeMobSpawner` uses the required mob size when calling `SpawnSafety.findSurfaceSpawn(...)`.
+- Mob behavior:
+  - Patrol turn delay was extended with `patrolIdleTimer` so mobs pause longer before moving again.
+  - Fixed passive mobs flipping left/right at patrol boundaries by only turning when moving farther out of range.
+  - Reduced hostile chase speed to avoid overly fast pursuit.
+  - Mob jump/fall render uses the first walk frame instead of the idle/look frame.
+- Camera:
+  - `GameScreen.CAMERA_ZOOM` changed from `0.65f` to `0.5f` so the camera is closer to the player.
+- Combat:
+  - Added `combat/PlayerAttackController.java`.
+  - Left-click on a mob now deals melee damage when the mob is within reach and the cursor is on its bounds.
+  - Mob hit response includes hurt frame, `0.8s` damage invulnerability, light knockback, passive panic, and hostile chase aggro.
+  - Falling player attacks deal a simple critical hit (`2 -> 3` damage).
+  - Combat intentionally excludes mace, potions, spear/charge attacks, special mob interactions, and shields.
+- Verify:
+  - `./gradlew.bat classes` passes after these gameplay changes.
+  - `./gradlew.bat lwjgl3:run` starts without reported runtime errors during short checks, but the command times out because the game loop does not exit by itself.
 
-## Quy chuan comment trong code
-- Chi comment `why` hoac trade-off; khong mo ta lai dong code hien ro nghia.
-- O logic game loop/physics, comment ngan de ghi ro assumption.
-- TODO phai co ngu canh:
-  - Pham vi viec can lam.
-  - Dieu kien hoan thanh.
-  - Nguoi xu ly (neu co).
-- Mau:
-  - `// Why: resolve Y truoc de tranh ket goc khi roi xuong block`
-  - `// TODO(lhung): bo sung collision canh trai/phai cho AABB truoc merge physics`
+## Codex Working Rules
+- Do not make large architecture changes unless requested.
+- When implementing a new large feature, automatically split it into new files/classes and a suitable new directory/package. Avoid stuffing large logic into existing integration files.
+- Do not over-engineer anything. Only do exactly what was requested and what is necessary for the feature/fix to work correctly.
+- Prioritize project performance. If code can be shorter, clearer, and still maintainable, write it shorter.
+- When adding a new feature, prefer creating a dedicated class/file under the appropriate module. Integration files like `GameScreen` should only call short APIs (`update/render/dispose`) instead of owning all new logic.
+- Every change must include:
+  - Files changed.
+  - Systems affected.
+  - How to verify in game: input/scene and expected result.
+- Prioritize gameplay blockers first: physics, input, state.
 
-## Quy chuan comment PR/Review
-- Dung muc do: `blocker`, `major`, `minor`, `nit`.
-- Moi comment nen co:
-  - Van de quan sat duoc.
-  - Rui ro gameplay/bug.
-  - De xuat sua cu the.
-- Uu tien review vao: crash, collision sai, state sai, leak tai nguyen, pha lifecycle screen.
+## Code Comment Rules
+- Only comment `why` or trade-offs. Do not restate obvious code behavior.
+- In game loop/physics logic, use short comments to record assumptions.
+- TODO comments must include context:
+  - Work scope.
+  - Completion condition.
+  - Owner, if available.
+- Examples:
+  - `// Why: resolve Y first to avoid corner sticking when falling onto a block`
+  - `// TODO(lhung): add left/right AABB collision before merging physics`
 
-## Rule bat buoc cho screen va tai nguyen
-- Khong goi `setScreen()` truc tiep trong module gameplay.
-- Khong dispose `batch`/`assetManager` trong Screen.
-- Neu can doi man, goi `game.getScreenRouter().request(...)`.
+## PR/Review Comment Rules
+- Use severity levels: `blocker`, `major`, `minor`, `nit`.
+- Each comment should include:
+  - Observed issue.
+  - Gameplay/bug risk.
+  - Concrete fix suggestion.
+- Prioritize review coverage for: crashes, incorrect collision, incorrect state, resource leaks, screen lifecycle violations.
 
-## Checklist khi nhan task
-1. Nhac lai task + module bi anh huong (`world`, `player`, `physics`, `screen`, `assets`).
-2. Doc file lien quan trong `core/src/main/java/com/main/game/...`.
-3. Sua nho, dung scope.
-4. Chay lai `lwjgl3:run` hoac test lien quan.
-5. Bao cao ket qua va huong test thu cong trong game.
+## Mandatory Rules For Screens And Resources
+- Do not call `setScreen()` directly in gameplay modules.
+- Do not dispose `batch`/`assetManager` inside a `Screen`.
+- If a screen transition is needed, call `game.getScreenRouter().request(...)`.
 
-## Ghi chu team
-- Merge vao `main` qua PR, tranh merge thang khi chua review.
-- Uu tien xu ly blocker >24h (dac biet Physics dang block cac nhanh khac).
+## Task Checklist
+1. Restate the task + affected module (`world`, `player`, `physics`, `screen`, `assets`).
+2. Read related files under `core/src/main/java/com/main/game/...`.
+3. Make a small, scoped change.
+4. Run `lwjgl3:run` or the relevant test.
+5. Report results and manual in-game verification steps.
+
+## Team Notes
+- Merge into `main` through PR. Avoid direct merge without review.
+- Prioritize blockers older than 24h, especially Physics because it blocks other branches.

@@ -26,10 +26,12 @@ public final class BiomeMobSpawner {
             int side = i % 2 == 0 ? -1 : 1;
             int distance = 12 + i * 7 + random.nextInt(5);
             int targetX = playerX + side * distance;
-            Vector2 spawn = SpawnSafety.findSurfaceSpawn(world, targetX, 10, 1, 2);
+            Mob.MobType type = chooseMobForBiome(world.getBiome(targetX), random);
+            int spawnWidth = Mob.getRequiredSpawnWidth(type);
+            int spawnHeight = Mob.getRequiredSpawnHeight(type);
+            Vector2 spawn = SpawnSafety.findSurfaceSpawn(world, targetX, 10, spawnWidth, spawnHeight);
             if (spawn == null) continue;
 
-            Mob.MobType type = chooseMobForBiome(world.getBiome((int) spawn.x), random);
             entityManager.addMob(new Mob(spawn.x, spawn.y, type, player, physics, world));
             spawned++;
         }
