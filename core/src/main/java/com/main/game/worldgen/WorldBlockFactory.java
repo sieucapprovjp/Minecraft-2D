@@ -14,9 +14,13 @@ final class WorldBlockFactory {
         if (id == null || "air".equals(id)) {
             return null;
         }
-        boolean solid = !"leaves".equals(id);
+        boolean solid = !isBackgroundBlock(id);
         boolean breakable = !"bedrock".equals(id);
         return new SimpleBlock(x, y, id, solid, breakable, hardness(id), texture(id));
+    }
+
+    private static boolean isBackgroundBlock(String id) {
+        return "wood".equals(id) || "planks".equals(id) || "leaves".equals(id);
     }
 
     private static float hardness(String id) {
