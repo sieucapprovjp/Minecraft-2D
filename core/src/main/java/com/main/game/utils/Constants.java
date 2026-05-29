@@ -17,7 +17,6 @@ public final class Constants {
     public static final int   TILE_SIZE             = 32;       // pixel
     public static final int   WORLD_WIDTH           = 400;      // số tile ngang (team chốt)
     public static final int   WORLD_HEIGHT          = 128;      // số tile dọc
-    public static final int   CHUNK_SIZE            = 16;       // tile mỗi chunk
 
     // ─── Camera / Viewport ───────────────────────────────────────
     // Dùng đơn vị tile cho camera (1 unit = 1 tile) để tránh làm việc với pixel
@@ -42,4 +41,6 @@ public final class Constants {
     public static final int LAYER_WORLD             = 1;
     public static final int LAYER_ENTITY            = 2;
     public static final int LAYER_UI                = 3;
+
+    public static final int CHUNK_SIZE = 16;
 }
