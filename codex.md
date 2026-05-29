@@ -74,8 +74,10 @@
   - Mob orchestration: state, health, physics, AI/render calls.
 - `core/src/main/java/com/main/game/entities/mob/MobBrain.java`
   - Mob AI (`PATROL`, `CHASE`, `ATTACK`).
+- `core/src/main/java/com/main/game/entities/mob/MobAllegiance.java`
+  - Integer allegiance constants: `TAMED = 0`, `PASSIVE = 1`, `HOSTILE = 2`.
 - `core/src/main/java/com/main/game/entities/mob/MobProfile.java`
-  - Per-mob-type parameters: hostile/passive, aggro, speed, damage, HP.
+  - Per-mob-type parameters: allegiance, aggro, speed, damage, HP, size.
 - `core/src/main/java/com/main/game/entities/mob/MobRenderer.java`
   - Chooses animation frames and renders mobs.
 - `core/src/main/java/com/main/game/entities/mob/MobAssetPack.java`
@@ -88,6 +90,9 @@
   - Centralized update/render/dispose for player + mob list.
 - `core/src/main/java/com/main/game/entities/EntityState.java`
   - Entity state enum (`IDLE`, `RUN`, `JUMP`, `FALL`, ...).
+
+- `core/src/main/java/com/main/game/combat/PlayerAttackController.java`
+  - Handles player left-click melee attacks against mobs, attack cooldown, falling critical damage, target hit-test, and knockback.
 
 - `core/src/main/java/com/main/game/interaction/BlockBreaker.java`
   - Handles block hover/breaking, covered-block checks, and the unbreakable block list.
@@ -143,6 +148,7 @@
   - Basic states: `IDLE`, `RUN`, `JUMP`, `FALL`, `HURT`, `DEAD`.
   - Rendering has been split into `entities/player/PlayerRenderer.java`.
   - Has mining arm animation while breaking blocks.
+  - Can left-click mobs to deal melee damage when not clicking a block.
 - Physics:
   - Basic gravity + ground detection.
   - Collision is resolved by X/Y axes for entities and solid blocks.
@@ -164,11 +170,20 @@
   - Left/right click manages hold, place, swap, stack, and split stack.
   - Stack numbers use the font asset in `assets/fonts`.
 - Mob:
-  - Hostile mobs: `ZOMBIE`, `HUSK`, `SKELETON`.
-  - Passive mobs: `COW`, `PIG`, `SHEEP`, `CHICKEN`.
-  - Hostiles aggro the player within 8 blocks; passives do not attack.
-  - Includes patrol/chase/attack, line-of-sight checks, and simple obstacle jumping.
+  - Mob allegiance is grouped by integer: `0` tamed, `1` passive, `2` hostile.
+  - Tamed mob types include `DOG`, `TAMED_HORSE`.
+  - Passive mob types include `COW`, `PIG`, `SHEEP`, `CHICKEN`, `HORSE`, `WOLF`, `CAT`, `VILLAGER`, fish, and `DOLPHIN`.
+  - Hostile mob types include `ZOMBIE`, `HUSK`, `SKELETON`, `STRAY`, `PILLAGER`, `VINDICATOR`, `EVOKER`, `RAVAGER`.
+  - Hostiles aggro the player within 8 blocks; passives do not attack and panic briefly when hit.
+  - Mobs have per-type width/height in `MobProfile`; spawn safety uses the required mob size.
+  - Includes patrol/chase/attack, panic, line-of-sight checks, simple obstacle jumping, and light knockback when hit.
+  - Jump/fall rendering uses the first walk frame instead of the idle/look frame.
   - Mobs were refactored into `Mob`, `MobBrain`, `MobProfile`, `MobRenderer`, `MobAssetPack`, movement/sight helpers.
+- Combat:
+  - `PlayerAttackController` handles left-click melee attack against mobs.
+  - Attack prioritizes clicked mob bounds before block breaking; if a mob is hit, block breaking is canceled for that click.
+  - Current player attack is intentionally simple: base damage, falling critical, cooldown, mob invulnerability frames, hurt image, knockback, passive panic, hostile aggro.
+  - Mace, potions, spear/charge attack, special mob interactions, and shield mechanics are intentionally out of scope for now.
 - Worldgen MVP:
   - `World.generate(seed)` was split into `WorldGenerator.generate(world, seed)`.
   - Has 3 biomes: `FOREST`, `DESERT`, `SNOW`.
@@ -180,7 +195,7 @@
 ## Missing Systems / Next Priorities
 - Run `./gradlew.bat lwjgl3:run` after every asset change to catch runtime missing textures.
 - Add real projectiles for `SKELETON` instead of direct damage.
-- Add player attacks against mobs and mob item/loot drops.
+- Add mob item/loot drops.
 - Upgrade mob spawning to a time/chunk-based system instead of initial spawn on game entry.
 - Handle dropped item overflow when closing a full inventory.
 - Standardize asset atlas and naming conventions to avoid crashes after renames/deletions.
@@ -222,6 +237,33 @@
 - Verify:
   - `./gradlew.bat classes` passes after refactoring the `entities` package.
   - Need to run `./gradlew.bat lwjgl3:run` next to verify game runtime after asset changes.
+
+## Gameplay Progress 2026-05-29
+- Mob grouping:
+  - Added `MobAllegiance` with `TAMED = 0`, `PASSIVE = 1`, `HOSTILE = 2`.
+  - Added expanded mob type list: dog/tamed horse, passive animals/villager/fish/dolphin, and hostile illager/ravager types.
+  - `DOG` represents the tamed form; `WOLF` represents the untamed form.
+  - Existing mob behavior still avoids taming and dog/horse follow AI for now.
+- Mob size:
+  - `MobProfile` now owns per-mob `width` and `height`.
+  - Example sizes: `PIG = 1.5 x 1.0`, `CHICKEN = 0.6 x 0.8`, humanoid hostiles `0.8 x 1.8`, `RAVAGER = 2.0 x 2.2`.
+  - `BiomeMobSpawner` uses the required mob size when calling `SpawnSafety.findSurfaceSpawn(...)`.
+- Mob behavior:
+  - Patrol turn delay was extended with `patrolIdleTimer` so mobs pause longer before moving again.
+  - Fixed passive mobs flipping left/right at patrol boundaries by only turning when moving farther out of range.
+  - Reduced hostile chase speed to avoid overly fast pursuit.
+  - Mob jump/fall render uses the first walk frame instead of the idle/look frame.
+- Camera:
+  - `GameScreen.CAMERA_ZOOM` changed from `0.65f` to `0.5f` so the camera is closer to the player.
+- Combat:
+  - Added `combat/PlayerAttackController.java`.
+  - Left-click on a mob now deals melee damage when the mob is within reach and the cursor is on its bounds.
+  - Mob hit response includes hurt frame, `0.8s` damage invulnerability, light knockback, passive panic, and hostile chase aggro.
+  - Falling player attacks deal a simple critical hit (`2 -> 3` damage).
+  - Combat intentionally excludes mace, potions, spear/charge attacks, special mob interactions, and shields.
+- Verify:
+  - `./gradlew.bat classes` passes after these gameplay changes.
+  - `./gradlew.bat lwjgl3:run` starts without reported runtime errors during short checks, but the command times out because the game loop does not exit by itself.
 
 ## Codex Working Rules
 - Do not make large architecture changes unless requested.
