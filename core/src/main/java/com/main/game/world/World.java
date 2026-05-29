@@ -26,10 +26,12 @@ import com.badlogic.gdx.math.Vector2;
 import com.main.game.blocks.AbstractBlock;
 import com.main.game.blocks.SimpleBlock;
 import com.main.game.worldgen.BiomeType;
+import com.main.game.worldgen.WorldBlockFactory;
+import com.main.game.worldgen.cave.CaveGenerator;
 import com.main.game.utils.Constants;
-import com.main.game.utils.NoiseUtils;
 import com.badlogic.gdx.math.GridPoint2;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -39,9 +41,19 @@ import java.util.Random;
  */
 public class World {
 
+    public static final int BEDROCK_TOP_Y = 3;
+    public static final int DEEPSLATE_TOP_Y = 40;
+    private static final int PLAYER_SPAWN_WIDTH_TILES = 2;
+    private static final int PLAYER_SPAWN_HEIGHT_TILES = 3;
+    private static final int SPAWN_PLATFORM_HALF_WIDTH = 4;
+    private static final int SPAWN_PLATFORM_SURFACE_GAP = 10;
+    private static final int SPAWN_FALL_HEIGHT = 5;
+
     private final long seed;
     private final Map<GridPoint2, Chunk> chunks;
     private final Map<Integer, BiomeType> biomes;
+    private final int[] surfaceByX;
+    private boolean generated;
     public final int width;
     public final int height;
 
@@ -51,6 +63,8 @@ public class World {
         this.height = Constants.WORLD_HEIGHT;
         this.chunks = new HashMap<>();
         this.biomes = new HashMap<>();
+        this.surfaceByX = new int[width];
+        Arrays.fill(surfaceByX, -1);
     }
 
     private GridPoint2 getChunkCoord(int worldX, int worldY) {
@@ -93,6 +107,30 @@ public class World {
         return block != null && block.isSolid();
     }
 
+    public void generate() {
+        if (generated) return;
+
+        int maxChunkX = Math.floorDiv(width - 1, Constants.CHUNK_SIZE);
+        int maxChunkY = Math.floorDiv(height - 1, Constants.CHUNK_SIZE);
+        for (int cx = 0; cx <= maxChunkX; cx++) {
+            for (int cy = 0; cy <= maxChunkY; cy++) {
+                generateChunk(cx, cy);
+            }
+        }
+
+        CaveGenerator.generate(this, seed);
+        generated = true;
+    }
+
+    public int getSurfaceY(int x) {
+        if (x < 0 || x >= width) return -1;
+        if (surfaceByX[x] >= 0) return surfaceByX[x];
+        for (int y = height - 1; y >= 0; y--) {
+            if (isSolid(x, y)) return y;
+        }
+        return -1;
+    }
+
     /** Load chunk trong phạm vi map hữu hạn xung quanh camera. */
     public void update(OrthographicCamera camera) {
         int camChunkX = Math.floorDiv((int) camera.position.x, Constants.CHUNK_SIZE);
@@ -114,8 +152,7 @@ public class World {
         }
     }
 
-    /** Logic sinh Map + Hang động (Đã fix lỗi Overflow) */
-    /** Logic sinh Map + Hang động (Đã giới hạn độ sâu & làm dẹt hang) */
+    /** Logic sinh terrain hữu hạn; cave/ore V1 chạy sau khi toàn map đã có terrain. */
     public void generateChunk(int chunkX, int chunkY) {
         if (chunkX < 0 || chunkY < 0) return;
         int startX = chunkX * Constants.CHUNK_SIZE;
@@ -129,8 +166,6 @@ public class World {
         float amplitude = 12f;
         float frequency = 0.04f;
 
-        com.main.game.utils.NoiseUtils noiseUtils = new com.main.game.utils.NoiseUtils(this.seed);
-
         for (int x = startX; x < endX; x++) {
             // Set Biome mặc định cho tọa độ này
             setBiome(x, BiomeType.FOREST);
@@ -140,22 +175,16 @@ public class World {
 
             int surface = baseGround + (int) ((noiseVal + detailNoise) * amplitude);
             surface = Math.max(8, Math.min(height - 4, surface));
-
-            // GIỚI HẠN ĐỘ SÂU: Đáy map (Bedrock) chỉ cách mặt đất 30 block.
-            int bedrockY = surface - 30;
+            surfaceByX[x] = surface;
 
             for (int y = startY; y < endY; y++) {
                 AbstractBlock block = null;
 
-                if (y <= bedrockY) {
-                    // Dưới mốc bedrockY sẽ là lớp đá không thể đập được
+                if (y <= BEDROCK_TOP_Y) {
                     block = new SimpleBlock(x, y, "bedrock", true, false, 999f, BlockPalette.getBedrock());
-                } else if (y < surface - 3 && y > bedrockY) {
-                    // Hệ số Y lớn hơn X giúp hang xoải ngang, tránh vực sâu thẳng đứng.
-                    double caveNoise = noiseUtils.noise2D(x * 0.05f, y * 0.15f);
-                    if (caveNoise >= -0.25) {
-                        block = new SimpleBlock(x, y, "stone", true, true, 1.2f, BlockPalette.getStone());
-                    }
+                } else if (y < surface - 3) {
+                    String blockId = y <= DEEPSLATE_TOP_Y ? "deepslate" : "stone";
+                    block = WorldBlockFactory.create(x, y, blockId);
                 } else if (y >= surface - 3 && y < surface) {
                     block = new SimpleBlock(x, y, "dirt", true, true, 0.7f, BlockPalette.getDirt());
                 } else if (y == surface) {
@@ -203,11 +232,39 @@ public class World {
     }
 
     public Vector2 getSpawnPoint() {
-        int spawnX = width / 2;
-        for (int y = height - 1; y >= 0; y--) {
-            if (isSolid(spawnX, y)) return new Vector2(spawnX, y + 3);
+        int spawnX = Math.max(SPAWN_PLATFORM_HALF_WIDTH + 1,
+            Math.min(width - SPAWN_PLATFORM_HALF_WIDTH - PLAYER_SPAWN_WIDTH_TILES - 1, width / 2));
+        int spawnY = prepareFloatingSpawnPlatform(spawnX);
+        return new Vector2(spawnX + 0.1f, spawnY);
+    }
+
+    public boolean isSafePlayerSpawn(int x, int y) {
+        if (y <= 0 || y + PLAYER_SPAWN_HEIGHT_TILES >= height) return false;
+        for (int tx = x; tx < x + PLAYER_SPAWN_WIDTH_TILES; tx++) {
+            if (!isInBounds(tx, y - 1) || !isSolid(tx, y - 1)) return false;
+            for (int ty = y; ty < y + PLAYER_SPAWN_HEIGHT_TILES; ty++) {
+                if (!isInBounds(tx, ty) || isSolid(tx, ty)) return false;
+            }
         }
-        return new Vector2(spawnX, height / 2f);
+        return true;
+    }
+
+    private int prepareFloatingSpawnPlatform(int centerX) {
+        int surface = Math.max(DEEPSLATE_TOP_Y + 1, getSurfaceY(centerX));
+        int platformY = Math.min(
+            height - PLAYER_SPAWN_HEIGHT_TILES - SPAWN_FALL_HEIGHT - 2,
+            Math.max(surface + SPAWN_PLATFORM_SURFACE_GAP, DEEPSLATE_TOP_Y + 24)
+        );
+        int minX = centerX - SPAWN_PLATFORM_HALF_WIDTH;
+        int maxX = centerX + SPAWN_PLATFORM_HALF_WIDTH + PLAYER_SPAWN_WIDTH_TILES - 1;
+        for (int x = minX; x <= maxX; x++) {
+            if (x < 1 || x >= width - 1) continue;
+            setBlock(x, platformY, WorldBlockFactory.create(x, platformY, "planks"));
+            for (int y = platformY + 1; y <= platformY + SPAWN_FALL_HEIGHT + PLAYER_SPAWN_HEIGHT_TILES + 1; y++) {
+                setBlock(x, y, null);
+            }
+        }
+        return platformY + SPAWN_FALL_HEIGHT;
     }
 
     private float getSmoothNoise1D(float x, long seed) {

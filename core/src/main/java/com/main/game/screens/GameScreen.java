@@ -54,6 +54,7 @@ public class GameScreen extends BaseScreen {
     private GlyphLayout overlayLayout;
     private Matrix4 uiProjection;
     private BitmapFont font;
+    private float spawnGuardTimer;
 
     // Pause & Death textures
     private Texture pauseTexture;
@@ -80,26 +81,21 @@ public class GameScreen extends BaseScreen {
         world = new World(currentSeed);
         physics = new PhysicsEngine();
 
-        // ─── MỒI CHUNK TRƯỚC KHI TÌM SPAWN ─────────────
-        // 1. Đặt tạm Camera ra giữa bản đồ
+        // Sinh toàn bộ finite world trước khi tìm spawn để cave/ore không bị lỗi seam.
+        world.generate();
         camera.position.set(world.width / 2f, world.height / 2f, 0f);
         camera.update();
 
-        // 2. Ép World sinh ra Chunk đất đá tại vị trí Camera
-        world.update(camera);
-
-        // 3. Tìm Spawn Point (Chắc chắn sẽ chạm đất)
         Vector2 spawn = world.getSpawnPoint();
         float spawnX = spawn.x;
         float spawnY = spawn.y;
 
-        // 4. Khởi tạo Player tại tọa độ an toàn
         player = new Player(spawnX, spawnY, physics, world);
+        spawnGuardTimer = 5f;
+        ensurePlayerSpawnSafety();
 
-        // 5. Cập nhật lại camera bám theo sát Player
-        camera.position.set(spawnX, spawnY, 0f);
+        camera.position.set(player.getX(), player.getY(), 0f);
         camera.update();
-        // ───────────────────────────────────────────────
 
         // ── Khởi tạo EntityManager & Tools ─────────────
         entityManager = new EntityManager();
@@ -169,6 +165,10 @@ public class GameScreen extends BaseScreen {
 
         if (!dead) {
             entityManager.update(delta);
+            if (spawnGuardTimer > 0f) {
+                ensurePlayerSpawnSafety();
+                spawnGuardTimer -= delta;
+            }
             droppedItemManager.update(delta, world, player, inventory);
             if (inventoryController.isInventoryOpen()) inventoryInteractionHandler.update(inventory, inventoryRenderer);
         }
@@ -350,7 +350,17 @@ public class GameScreen extends BaseScreen {
 
     private void handleDeathClick() {
         player.respawn(world.getSpawnPoint().x, world.getSpawnPoint().y);
+        ensurePlayerSpawnSafety();
         dead = false;
+    }
+
+    private void ensurePlayerSpawnSafety() {
+        int tileX = Math.max(1, Math.min(world.width - 2, (int) Math.floor(player.getX())));
+        int tileY = Math.max(1, (int) Math.floor(player.getY()));
+        if (tileY <= World.DEEPSLATE_TOP_Y) {
+            Vector2 spawn = world.getSpawnPoint();
+            player.respawn(spawn.x, spawn.y);
+        }
     }
 
     private void drawPauseOverlay() {
