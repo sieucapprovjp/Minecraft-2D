@@ -164,7 +164,7 @@ public class World {
                     int trunkBaseY = surface + 1;
                     int trunkHeight = 3 + random.nextInt(2);
                     for (int ty = 0; ty < trunkHeight; ty++) {
-                        setBlock(x, trunkBaseY + ty, new SimpleBlock(x, trunkBaseY + ty, "wood", true, true, 0.9f, BlockPalette.getWood()));
+                        setBlock(x, trunkBaseY + ty, new SimpleBlock(x, trunkBaseY + ty, "wood", false, true, 0.9f, BlockPalette.getWood()));
                     }
                     int leafY = trunkBaseY + trunkHeight;
                     for (int lx = x - 1; lx <= x + 1; lx++) {
