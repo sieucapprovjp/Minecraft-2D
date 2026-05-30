@@ -18,8 +18,19 @@ public class BlockBreakOverlay {
         }
     }
 
-    public void render(SpriteBatch batch, BlockBreaker blockBreaker) {
-        if (!blockBreaker.hasHoveredBlock()) {
+    public void render(SpriteBatch batch, BlockBreaker blockBreaker,
+                       BlockPlacementController blockPlacementController) {
+        if (blockPlacementController != null && blockPlacementController.hasHoveredPlacement()) {
+            batch.setColor(0.25f, 0.9f, 0.35f, 0.55f);
+            batch.draw(cursorTexture,
+                blockPlacementController.getHoveredPlaceX(),
+                blockPlacementController.getHoveredPlaceY(),
+                1f,
+                1f);
+            batch.setColor(Color.WHITE);
+        }
+
+        if (blockBreaker == null || !blockBreaker.hasHoveredBlock()) {
             return;
         }
 

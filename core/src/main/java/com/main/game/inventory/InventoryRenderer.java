@@ -2,6 +2,7 @@ package com.main.game.inventory;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -19,9 +20,15 @@ public class InventoryRenderer {
 
     private final BitmapFont font;
     private final Texture inventoryTexture;
+    private final Texture durabilityTexture;
 
     public InventoryRenderer() {
         inventoryTexture = new Texture(Gdx.files.internal("images/gui_invrow/inventory.png"));
+        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+        pixmap.setColor(Color.WHITE);
+        pixmap.fill();
+        durabilityTexture = new Texture(pixmap);
+        pixmap.dispose();
         FreeTypeFontGenerator generator = new FreeTypeFontGenerator(
             Gdx.files.internal("fonts/2c90030680a2fafd21f53fd39a0862e7.otf"));
         FreeTypeFontGenerator.FreeTypeFontParameter params = new FreeTypeFontGenerator.FreeTypeFontParameter();
@@ -99,6 +106,7 @@ public class InventoryRenderer {
     public void dispose() {
         font.dispose();
         inventoryTexture.dispose();
+        durabilityTexture.dispose();
     }
 
     private void drawSlotItemInSlot(SpriteBatch batch, ItemStack stack, float slotX, float slotY, float panelScale) {
@@ -118,9 +126,34 @@ public class InventoryRenderer {
             return;
         }
         batch.draw(texture, x, y, size, size);
+        drawDurabilityBar(batch, stack, x, y - size * 0.08f, size);
         if (stack.getCount() > 1) {
             font.setColor(Color.WHITE);
             font.draw(batch, String.valueOf(stack.getCount()), x + size * 0.48f, y + size * 0.36f);
         }
+    }
+
+    private void drawDurabilityBar(SpriteBatch batch, ItemStack stack, float x, float y, float size) {
+        if (!stack.hasDurability()) {
+            return;
+        }
+        float ratio = stack.getDurabilityRatio();
+        float barWidth = size * 0.82f;
+        float barHeight = Math.max(2f, size * 0.07f);
+        float barX = x + (size - barWidth) / 2f;
+        float barY = y;
+
+        batch.setColor(0f, 0f, 0f, 0.85f);
+        batch.draw(durabilityTexture, barX - 1f, barY - 1f, barWidth + 2f, barHeight + 2f);
+
+        if (ratio > 0.55f) {
+            batch.setColor(0.15f, 0.9f, 0.25f, 1f);
+        } else if (ratio > 0.25f) {
+            batch.setColor(1f, 0.82f, 0.12f, 1f);
+        } else {
+            batch.setColor(0.95f, 0.16f, 0.12f, 1f);
+        }
+        batch.draw(durabilityTexture, barX, barY, barWidth * ratio, barHeight);
+        batch.setColor(Color.WHITE);
     }
 }

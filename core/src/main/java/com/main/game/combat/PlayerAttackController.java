@@ -9,6 +9,7 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import com.main.game.entities.EntityManager;
 import com.main.game.entities.mob.Mob;
 import com.main.game.entities.player.Player;
+import com.main.game.inventory.ToolRegistry;
 
 public class PlayerAttackController {
 
@@ -22,7 +23,8 @@ public class PlayerAttackController {
     private float cooldownTimer = 0f;
 
     public boolean update(float delta, Player player, EntityManager entityManager,
-                          OrthographicCamera camera, Viewport viewport, boolean inputBlocked) {
+                          OrthographicCamera camera, Viewport viewport, boolean inputBlocked,
+                          String heldItemId) {
         if (cooldownTimer > 0f) {
             cooldownTimer -= delta;
         }
@@ -39,7 +41,7 @@ public class PlayerAttackController {
         }
 
         float direction = target.getX() + target.getWidth() / 2f >= player.getX() + player.getWidth() / 2f ? 1f : -1f;
-        if (target.takeDamage(getDamage(player))) {
+        if (target.takeDamage(getDamage(player, heldItemId))) {
             target.onPlayerHit(player);
             target.applyKnockback(direction * KNOCKBACK_X, KNOCKBACK_Y);
             cooldownTimer = ATTACK_COOLDOWN;
@@ -48,9 +50,10 @@ public class PlayerAttackController {
         return false;
     }
 
-    private int getDamage(Player player) {
+    private int getDamage(Player player, String heldItemId) {
+        int damage = ToolRegistry.getAttackDamage(heldItemId, BASE_ATTACK_DAMAGE);
         boolean falling = !player.isOnGround() && player.getVelocity().y < 0f;
-        return falling ? Math.round(BASE_ATTACK_DAMAGE * 1.5f) : BASE_ATTACK_DAMAGE;
+        return falling ? Math.round(damage * 1.5f) : damage;
     }
 
     private Mob findTarget(Player player, EntityManager entityManager, OrthographicCamera camera, Viewport viewport) {

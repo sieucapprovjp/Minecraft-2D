@@ -3,14 +3,15 @@ package com.main.game.worldgen;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.main.game.blocks.AbstractBlock;
 import com.main.game.blocks.SimpleBlock;
+import com.main.game.utils.TextureManager;
 import com.main.game.world.BlockPalette;
 
-final class WorldBlockFactory {
+public final class WorldBlockFactory {
 
     private WorldBlockFactory() {
     }
 
-    static AbstractBlock create(int x, int y, String id) {
+    public static AbstractBlock create(int x, int y, String id) {
         if (id == null || "air".equals(id)) {
             return null;
         }
@@ -21,6 +22,8 @@ final class WorldBlockFactory {
 
     private static float hardness(String id) {
         if ("bedrock".equals(id)) return 999f;
+        if (isOre(id)) return ("diamond_ore".equals(id) || "deepslate_do".equals(id)) ? 5f : 3f;
+        if ("deepslate".equals(id)) return 1.8f;
         if ("stone".equals(id) || "sandstone".equals(id)) return 1.2f;
         if ("wood".equals(id) || "cactus".equals(id)) return 0.9f;
         if ("ice".equals(id)) return 0.4f;
@@ -41,6 +44,33 @@ final class WorldBlockFactory {
         if ("ice".equals(id)) return BlockPalette.getIce();
         if ("sandstone".equals(id)) return BlockPalette.getSandstone();
         if ("cactus".equals(id)) return BlockPalette.getCactus();
+        if ("deepslate".equals(id)) {
+            TextureRegion texture = TextureManager.getInstance().getTexture(id);
+            return texture != null ? texture : BlockPalette.getStone();
+        }
+        if (isOre(id)) {
+            TextureRegion texture = TextureManager.getInstance().getTexture(id);
+            return texture != null ? texture : BlockPalette.getStone();
+        }
         return BlockPalette.getStone();
+    }
+
+    private static boolean isOre(String id) {
+        return "coal_ore".equals(id)
+            || "iron_ore".equals(id)
+            || "gold_ore".equals(id)
+            || "diamond_ore".equals(id)
+            || "copper_ore".equals(id)
+            || "lapis_ore".equals(id)
+            || "redstone_ore".equals(id)
+            || "emerald_ore".equals(id)
+            || "deepslate_co".equals(id)
+            || "deepslate_io".equals(id)
+            || "deepslate_go".equals(id)
+            || "deepslate_do".equals(id)
+            || "deepslate_copper".equals(id)
+            || "ore_lapis_deepslate".equals(id)
+            || "deepslate_ro".equals(id)
+            || "deepslate_eo".equals(id);
     }
 }
