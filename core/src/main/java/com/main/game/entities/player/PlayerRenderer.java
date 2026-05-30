@@ -37,6 +37,8 @@ class PlayerRenderer {
         float legBackAngle = 0f;
         float headTilt = 0f;
 
+        boolean holdingTool = ToolRegistry.isTool(heldItemId);
+
         if (state == EntityState.RUN) {
             int walkFrame = (int) (stateTime * 15f);
             int scratchWalkFrame = Math.abs((walkFrame % 12) - 5);
@@ -48,12 +50,12 @@ class PlayerRenderer {
             legBackAngle = mappedAngle;
             headTilt = 5f;
         } else if (state == EntityState.JUMP) {
-            armFrontAngle = 160f;
+            armFrontAngle = holdingTool ? 55f : 160f;
             armBackAngle = -20f;
             legFrontAngle = -20f;
             legBackAngle = 20f;
         } else if (state == EntityState.FALL) {
-            armFrontAngle = 160f;
+            armFrontAngle = holdingTool ? 45f : 160f;
             armBackAngle = 20f;
             legFrontAngle = 10f;
             legBackAngle = -10f;
@@ -67,7 +69,7 @@ class PlayerRenderer {
 
         if (mining && state != EntityState.HURT && state != EntityState.DEAD) {
             float swing = Math.abs(((miningTime * MINING_ARM_SPEED) % 2f) - 1f);
-            armFrontAngle = 115f + swing * 65f;
+            armFrontAngle = 35f + swing * 70f;
             armBackAngle = 5f;
         }
 
@@ -176,22 +178,17 @@ class PlayerRenderer {
             return;
         }
 
-        float renderRotation = armRotation;
-        if (state == EntityState.JUMP || state == EntityState.FALL) {
-            renderRotation = player.isFacingRight() ? 35f : -35f;
-        }
-
-        float handDistance = armH * 0.88f;
-        double radians = Math.toRadians(renderRotation);
+        float handDistance = armH * 0.9f;
+        double radians = Math.toRadians(armRotation);
         float handX = shoulderX + (float) Math.sin(radians) * handDistance;
         float handY = shoulderY - (float) Math.cos(radians) * handDistance;
         float size = 0.682f;
         float originX = size * 0.5f;
         float originY = size * 0.08f;
         float scaleX = player.isFacingRight() ? 1f : -1f;
-        float toolRotation = renderRotation + (player.isFacingRight() ? -45f : 45f);
+        float toolRotation = armRotation + (player.isFacingRight() ? -45f : 45f);
         float forwardOffset = player.isFacingRight() ? 0.16f : -0.16f;
-        float verticalOffset = (state == EntityState.JUMP || state == EntityState.FALL) ? -0.08f : -0.2f;
+        float verticalOffset = (state == EntityState.JUMP || state == EntityState.FALL) ? -0.14f : -0.2f;
 
         batch.draw(texture,
             handX + forwardOffset - originX,
