@@ -5,7 +5,7 @@ import com.main.game.entities.player.Player;
 
 public class SpawnSafetyController {
 
-    private static final float SPAWN_GUARD_SECONDS = 5f;
+    private static final float SPAWN_GUARD_SECONDS = 1.25f;
     private static final float INITIAL_PLATFORM_SECONDS = 1.25f;
 
     private float spawnGuardTimer;

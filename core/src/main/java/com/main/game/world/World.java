@@ -51,6 +51,7 @@ public class World {
 
     private final long seed;
     private final Map<GridPoint2, Chunk> chunks;
+    private final GridPoint2 reusableChunkLookup;
     private final Map<Integer, BiomeType> biomes;
     private final int[] surfaceByX;
     private int initialSpawnPlatformMinX = -1;
@@ -65,6 +66,7 @@ public class World {
         this.width = Constants.WORLD_WIDTH;
         this.height = Constants.WORLD_HEIGHT;
         this.chunks = new HashMap<>();
+        this.reusableChunkLookup = new GridPoint2();
         this.biomes = new HashMap<>();
         this.surfaceByX = new int[width];
         Arrays.fill(surfaceByX, -1);
@@ -78,8 +80,8 @@ public class World {
 
     public AbstractBlock getBlock(int x, int y) {
         if (!isInBounds(x, y)) return null;
-        GridPoint2 chunkPos = getChunkCoord(x, y);
-        Chunk chunk = chunks.get(chunkPos);
+        reusableChunkLookup.set(Math.floorDiv(x, Constants.CHUNK_SIZE), Math.floorDiv(y, Constants.CHUNK_SIZE));
+        Chunk chunk = chunks.get(reusableChunkLookup);
         if (chunk == null) return null;
         return chunk.getBlock(Math.floorMod(x, Constants.CHUNK_SIZE), Math.floorMod(y, Constants.CHUNK_SIZE));
     }
@@ -129,7 +131,10 @@ public class World {
         if (x < 0 || x >= width) return -1;
         if (surfaceByX[x] >= 0) return surfaceByX[x];
         for (int y = height - 1; y >= 0; y--) {
-            if (isSolid(x, y)) return y;
+            if (isSolid(x, y)) {
+                surfaceByX[x] = y;
+                return y;
+            }
         }
         return -1;
     }
@@ -287,7 +292,7 @@ public class World {
         int maxX = centerX + INITIAL_SPAWN_PLATFORM_HALF_WIDTH + PLAYER_SPAWN_WIDTH_TILES - 1;
         for (int x = minX; x <= maxX; x++) {
             if (x < 1 || x >= width - 1) continue;
-            setBlock(x, platformY, new SimpleBlock(x, platformY, INITIAL_SPAWN_PLATFORM_ID, true, false, 999f, null));
+            setBlock(x, platformY, new SimpleBlock(x, platformY, INITIAL_SPAWN_PLATFORM_ID, true, false, 999f, BlockPalette.getBedrock()));
         }
         clearPlayerSpawnSpace(centerX, platformY + 1);
         initialSpawnPlatformMinX = minX;
