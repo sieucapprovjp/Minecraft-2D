@@ -129,7 +129,10 @@ public class World {
         if (x < 0 || x >= width) return -1;
         if (surfaceByX[x] >= 0) return surfaceByX[x];
         for (int y = height - 1; y >= 0; y--) {
-            if (isSolid(x, y)) return y;
+            if (isSolid(x, y)) {
+                surfaceByX[x] = y;
+                return y;
+            }
         }
         return -1;
     }
