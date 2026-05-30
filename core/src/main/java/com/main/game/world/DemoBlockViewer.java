@@ -32,10 +32,14 @@ public final class DemoBlockViewer {
         f.add((x,y) -> new NatureBlocks.DirtBlock(x,y));
         f.add((x,y) -> new NatureBlocks.GrassBlockBlock(x,y));
         f.add((x,y) -> new NatureBlocks.SandBlock(x,y));
+        f.add((x,y) -> new NatureBlocks.SnowBlock(x,y));
+        f.add((x,y) -> new NatureBlocks.IceBlock(x,y));
+        f.add((x,y) -> new NatureBlocks.CactusBlock(x,y));
 
         // Stone / base
         f.add((x,y) -> new StoneBlocks.StoneBlock(x,y));
         f.add((x,y) -> new StoneBlocks.BedrockBlock(x,y));
+        f.add((x,y) -> new StoneBlocks.SandstoneBlock(x,y));
 
         // Wood
         f.add((x,y) -> new WoodBlocks.OakLogBlock(x,y));
