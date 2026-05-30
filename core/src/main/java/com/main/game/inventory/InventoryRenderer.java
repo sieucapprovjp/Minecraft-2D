@@ -8,6 +8,8 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
+import com.main.game.crafting.CraftingController;
+import com.main.game.crafting.CraftingGrid;
 
 public class InventoryRenderer {
 
@@ -17,6 +19,8 @@ public class InventoryRenderer {
     private static final float HOTBAR_ITEM_SIZE_PX = 64f;
     private static final float INV_ITEM_SIZE_PX = 26f;
     private static final float INV_ITEM_Y_OFFSET_PX = -2f;
+    private static final float CRAFT_ITEM_X_OFFSET_PX = 4f;
+    private static final float CRAFT_ITEM_Y_OFFSET_PX = -4f;
 
     private final BitmapFont font;
     private final Texture inventoryTexture;
@@ -63,11 +67,26 @@ public class InventoryRenderer {
         }
     }
 
-    public void renderInventory(SpriteBatch batch, Inventory inventory, float sw, float sh, float scale) {
+    public void renderInventory(SpriteBatch batch, Inventory inventory, CraftingController craftingController,
+                                float sw, float sh, float scale) {
         InventoryLayout.PanelRect panel = InventoryLayout.computePanel(sw, sh, inventoryTexture.getWidth(), inventoryTexture.getHeight());
 
         batch.setColor(Color.WHITE);
         batch.draw(inventoryTexture, panel.x, panel.y, panel.width, panel.height);
+
+        if (craftingController != null) {
+            CraftingGrid grid = craftingController.getGrid();
+            for (int i = 0; i < CraftingGrid.SIZE; i++) {
+                drawSlotItemInSlot(batch, grid.getSlot(i),
+                    InventoryLayout.craftInputSlotX(panel, i) + CRAFT_ITEM_X_OFFSET_PX * panel.scale,
+                    InventoryLayout.craftInputSlotY(panel, i) + CRAFT_ITEM_Y_OFFSET_PX * panel.scale,
+                    panel.scale);
+            }
+            drawSlotItemInSlot(batch, craftingController.getResult(),
+                InventoryLayout.craftResultSlotX(panel) + CRAFT_ITEM_X_OFFSET_PX * panel.scale,
+                InventoryLayout.craftResultSlotY(panel) + CRAFT_ITEM_Y_OFFSET_PX * panel.scale,
+                panel.scale);
+        }
 
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < Inventory.HOTBAR_SIZE; col++) {
@@ -84,6 +103,10 @@ public class InventoryRenderer {
                 panel.y + InventoryLayout.INV_HOTBAR_ORIGIN_Y * panel.scale,
                 panel.scale);
         }
+    }
+
+    public void renderInventory(SpriteBatch batch, Inventory inventory, float sw, float sh, float scale) {
+        renderInventory(batch, inventory, null, sw, sh, scale);
     }
 
     public void renderCarriedStack(SpriteBatch batch, ItemStack stack) {

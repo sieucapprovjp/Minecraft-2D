@@ -33,6 +33,29 @@ public class Inventory {
         return remaining;
     }
 
+    public ItemStack addStack(ItemStack incoming) {
+        if (incoming == null || incoming.getCount() <= 0) {
+            return null;
+        }
+
+        if (!incoming.hasDurability()) {
+            int remaining = add(incoming.getItemId(), incoming.getCount());
+            if (remaining <= 0) {
+                return null;
+            }
+            incoming.setCount(remaining);
+            return incoming;
+        }
+
+        for (int i = 0; i < PICKUP_SLOT_COUNT; i++) {
+            if (slots[i] == null || slots[i].getCount() <= 0) {
+                slots[i] = incoming;
+                return null;
+            }
+        }
+        return incoming;
+    }
+
     public ItemStack getSlot(int index) {
         if (index < 0 || index >= slots.length) {
             return null;

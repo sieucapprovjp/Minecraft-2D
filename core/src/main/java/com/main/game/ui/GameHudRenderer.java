@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import com.main.game.crafting.CraftingController;
 import com.main.game.entities.player.Player;
 import com.main.game.inventory.Inventory;
 import com.main.game.inventory.InventoryController;
@@ -45,7 +46,8 @@ public class GameHudRenderer {
 
     public void render(SpriteBatch batch, Viewport viewport, Inventory inventory,
                        InventoryController inventoryController, InventoryRenderer inventoryRenderer,
-                       InventoryInteractionHandler inventoryInteractionHandler, Player player) {
+                       InventoryInteractionHandler inventoryInteractionHandler,
+                       CraftingController craftingController, Player player) {
         batch.setProjectionMatrix(viewport.getCamera().combined);
         batch.begin();
         drawDebugPalette(batch);
@@ -63,7 +65,7 @@ public class GameHudRenderer {
 
         inventoryRenderer.renderHotbar(batch, inventory, inventoryController, hotbarTex, selectorTex, sw, scale);
         if (inventoryController.isInventoryOpen()) {
-            inventoryRenderer.renderInventory(batch, inventory, sw, sh, scale);
+            inventoryRenderer.renderInventory(batch, inventory, craftingController, sw, sh, scale);
             inventoryRenderer.renderCarriedStack(batch, inventoryInteractionHandler.getCarriedStack());
         }
 

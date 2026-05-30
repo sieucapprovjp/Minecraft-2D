@@ -73,7 +73,7 @@ public class TextureManager {
 
         String base = nameMap.getOrDefault(name, name);
 
-        String[] searchDirs = new String[] {"", "atlas/", "mvp/tiles/", "mvp/player/", "mvp/ui/", "Ores/", "tiles/cave/Ores/"};
+        String[] searchDirs = new String[] {"", "atlas/", "items/", "mvp/tiles/", "mvp/player/", "mvp/ui/", "Ores/", "tiles/cave/Ores/"};
         String[] exts = new String[] {".png", ".jpg", ".jpeg"};
 
         for (String dir : searchDirs) {
