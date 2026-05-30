@@ -93,7 +93,7 @@ public class GameScreen extends BaseScreen {
         float spawnY = spawn.y;
 
         player = new Player(spawnX, spawnY, physics, world);
-        spawnGuardTimer = 5f;
+        spawnGuardTimer = 1.25f;
         initialSpawnPlatformTimer = 1.25f;
         ensurePlayerSpawnSafety();
 
