@@ -37,7 +37,7 @@ class PlayerRenderer {
         float legBackAngle = 0f;
         float headTilt = 0f;
 
-        boolean holdingTool = ToolRegistry.isTool(heldItemId);
+        boolean holdingItem = isHeldItemRenderable(heldItemId);
 
         if (state == EntityState.RUN) {
             int walkFrame = (int) (stateTime * 15f);
@@ -50,12 +50,12 @@ class PlayerRenderer {
             legBackAngle = mappedAngle;
             headTilt = 5f;
         } else if (state == EntityState.JUMP) {
-            armFrontAngle = holdingTool ? 55f : 160f;
+            armFrontAngle = holdingItem ? 55f : 160f;
             armBackAngle = -20f;
             legFrontAngle = -20f;
             legBackAngle = 20f;
         } else if (state == EntityState.FALL) {
-            armFrontAngle = holdingTool ? 45f : 160f;
+            armFrontAngle = holdingItem ? 45f : 160f;
             armBackAngle = 20f;
             legFrontAngle = 10f;
             legBackAngle = -10f;
@@ -126,7 +126,7 @@ class PlayerRenderer {
         batch.draw(bootFront, cx - bootW / 2f, legY - bootH, bootW / 2f, legH + bootH, bootW, bootH, scaleX, 1f, legFrontRot);
         batch.draw(legFront, cx - legW / 2f, legY, legW / 2f, legH, legW, legH, scaleX, 1f, legFrontRot);
         batch.draw(armFront, cx - armW / 2f, armY - armH, armW / 2f, armH, armW, armH, scaleX, 1f, armFrontRot);
-        drawHeldTool(batch, player, state, heldItemId, cx, armY, armH, armFrontRot);
+        drawHeldItem(batch, player, state, heldItemId, cx, armY, armH, armFrontRot);
 
         batch.setColor(Color.WHITE);
     }
@@ -168,9 +168,13 @@ class PlayerRenderer {
         regBootR = new TextureRegion(tBootR);
     }
 
-    private void drawHeldTool(SpriteBatch batch, Player player, EntityState state, String heldItemId,
+    private boolean isHeldItemRenderable(String heldItemId) {
+        return ToolRegistry.isTool(heldItemId) || ItemRegistry.isPlaceableBlock(heldItemId);
+    }
+
+    private void drawHeldItem(SpriteBatch batch, Player player, EntityState state, String heldItemId,
                               float shoulderX, float shoulderY, float armH, float armRotation) {
-        if (!ToolRegistry.isTool(heldItemId)) {
+        if (!isHeldItemRenderable(heldItemId)) {
             return;
         }
         TextureRegion texture = ItemRegistry.getTexture(heldItemId);
@@ -178,6 +182,15 @@ class PlayerRenderer {
             return;
         }
 
+        if (ToolRegistry.isTool(heldItemId)) {
+            drawHeldTool(batch, player, state, texture, shoulderX, shoulderY, armH, armRotation);
+        } else {
+            drawHeldBlock(batch, player, state, texture, shoulderX, shoulderY, armH, armRotation);
+        }
+    }
+
+    private void drawHeldTool(SpriteBatch batch, Player player, EntityState state, TextureRegion texture,
+                              float shoulderX, float shoulderY, float armH, float armRotation) {
         float handDistance = armH * 0.9f;
         double radians = Math.toRadians(armRotation);
         float handX = shoulderX + (float) Math.sin(radians) * handDistance;
@@ -200,5 +213,29 @@ class PlayerRenderer {
             scaleX,
             1f,
             toolRotation);
+    }
+
+    private void drawHeldBlock(SpriteBatch batch, Player player, EntityState state, TextureRegion texture,
+                               float shoulderX, float shoulderY, float armH, float armRotation) {
+        float handDistance = armH * 0.86f;
+        double radians = Math.toRadians(armRotation);
+        float handX = shoulderX + (float) Math.sin(radians) * handDistance;
+        float handY = shoulderY - (float) Math.cos(radians) * handDistance;
+        float size = 0.44f;
+        float origin = size * 0.5f;
+        float scaleX = player.isFacingRight() ? 1f : -1f;
+        float forwardOffset = player.isFacingRight() ? 0.16f : -0.16f;
+        float verticalOffset = (state == EntityState.JUMP || state == EntityState.FALL) ? -0.12f : -0.17f;
+
+        batch.draw(texture,
+            handX + forwardOffset - origin,
+            handY + verticalOffset - origin,
+            origin,
+            origin,
+            size,
+            size,
+            scaleX,
+            1f,
+            armRotation);
     }
 }

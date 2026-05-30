@@ -17,6 +17,7 @@ import com.main.game.entities.EntityManager;
 import com.main.game.entities.player.Player;
 import com.main.game.interaction.BlockBreakOverlay;
 import com.main.game.interaction.BlockBreaker;
+import com.main.game.interaction.BlockPlacementController;
 import com.main.game.inventory.Inventory;
 import com.main.game.inventory.InventoryController;
 import com.main.game.inventory.InventoryInteractionHandler;
@@ -41,6 +42,7 @@ public class GameScreen extends BaseScreen {
     private Player player;
     private EntityManager entityManager;
     private BlockBreaker blockBreaker;
+    private BlockPlacementController blockPlacementController;
     private BlockBreakOverlay blockBreakOverlay;
     private PlayerAttackController playerAttackController;
     private DroppedItemManager droppedItemManager;
@@ -104,6 +106,7 @@ public class GameScreen extends BaseScreen {
         entityManager = new EntityManager();
         entityManager.setPlayer(player);
         blockBreaker = new BlockBreaker();
+        blockPlacementController = new BlockPlacementController();
         blockBreakOverlay = new BlockBreakOverlay();
         playerAttackController = new PlayerAttackController();
         droppedItemManager = new DroppedItemManager();
@@ -226,10 +229,18 @@ public class GameScreen extends BaseScreen {
 
         String heldItemId = getHeldItemId();
         player.setHeldItemId(heldItemId);
+        boolean placedBlock = false;
+        if (blockPlacementController.update(player, world, camera, viewport, heldItemId,
+            inventoryController.isInventoryOpen())) {
+            player.playPlaceAnimation(blockPlacementController.getHoveredPlaceX() + 0.5f, heldItemId);
+            reduceHeldBlockStack();
+            blockBreaker.cancel();
+            placedBlock = true;
+        }
         boolean attacked = playerAttackController.update(delta, player, entityManager,
             camera, viewport, inventoryController.isInventoryOpen(), heldItemId);
         boolean brokeBlock = false;
-        if (attacked || inventoryController.isInventoryOpen()) {
+        if (placedBlock || attacked || inventoryController.isInventoryOpen()) {
             blockBreaker.cancel();
         } else {
             brokeBlock = blockBreaker.update(delta, player, world, camera, viewport, heldItemId);
@@ -263,7 +274,7 @@ public class GameScreen extends BaseScreen {
         world.render(batch, camera);
         droppedItemManager.render(batch);
         entityManager.render(batch);
-        blockBreakOverlay.render(batch, blockBreaker);
+        blockBreakOverlay.render(batch, blockBreaker, blockPlacementController);
         batch.end();
 
         // ── HUD (Giữ nguyên của Team) ─────────────────────────
@@ -457,6 +468,22 @@ public class GameScreen extends BaseScreen {
             return;
         }
         if (stack.damage(1)) {
+            inventory.setSlot(slot, null);
+        }
+        syncHeldItem();
+    }
+
+    private void reduceHeldBlockStack() {
+        if (inventory == null || inventoryController == null) {
+            return;
+        }
+        int slot = inventoryController.getSelectedHotbarSlot();
+        ItemStack stack = inventory.getSlot(slot);
+        if (stack == null || stack.getCount() <= 0) {
+            return;
+        }
+        stack.subtract(1);
+        if (stack.getCount() <= 0) {
             inventory.setSlot(slot, null);
         }
         syncHeldItem();
