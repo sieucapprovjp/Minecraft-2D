@@ -6,6 +6,7 @@ public final class StarterInventoryFactory {
         "wood_pickaxe",
         "wood_axe",
         "wood_shovel",
+        "wood_sword",
         "wood_hoe",
         "stone_pickaxe",
         "stone_axe",

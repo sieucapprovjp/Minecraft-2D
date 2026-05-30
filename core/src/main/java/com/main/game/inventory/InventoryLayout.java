@@ -9,6 +9,12 @@ public class InventoryLayout {
     public static final float INV_HOTBAR_ORIGIN_Y = 24f;
     public static final float INV_SLOT_STEP_PX = 40f;
     public static final float INV_SLOT_SIZE_PX = 32f;
+    public static final int CRAFT_INPUT_BASE_SLOT = Inventory.TOTAL_SIZE;
+    public static final int CRAFT_RESULT_SLOT = CRAFT_INPUT_BASE_SLOT + 4;
+    public static final float CRAFT_GRID_ORIGIN_X = 196f;
+    public static final float CRAFT_GRID_TOP_Y = 272f;
+    public static final float CRAFT_RESULT_X = 316f;
+    public static final float CRAFT_RESULT_Y = 252f;
 
     public static PanelRect computePanel(float screenWidth, float screenHeight, float textureWidth, float textureHeight) {
         float panelScale = Math.min(
@@ -23,6 +29,11 @@ public class InventoryLayout {
     }
 
     public static int findInventorySlot(float screenX, float screenY, PanelRect panel) {
+        int craftingSlot = findCraftingSlot(screenX, screenY, panel);
+        if (craftingSlot >= 0) {
+            return craftingSlot;
+        }
+
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < Inventory.HOTBAR_SIZE; col++) {
                 int slot = Inventory.HOTBAR_SIZE + row * Inventory.HOTBAR_SIZE + col;
@@ -39,6 +50,48 @@ public class InventoryLayout {
             if (insideSlot(screenX, screenY, slotX, slotY, panel.scale)) {
                 return col;
             }
+        }
+        return -1;
+    }
+
+    public static boolean isCraftInputSlot(int slot) {
+        return slot >= CRAFT_INPUT_BASE_SLOT && slot < CRAFT_INPUT_BASE_SLOT + 4;
+    }
+
+    public static boolean isCraftResultSlot(int slot) {
+        return slot == CRAFT_RESULT_SLOT;
+    }
+
+    public static int toCraftInputIndex(int slot) {
+        return isCraftInputSlot(slot) ? slot - CRAFT_INPUT_BASE_SLOT : -1;
+    }
+
+    public static float craftInputSlotX(PanelRect panel, int index) {
+        int col = index % 2;
+        return panel.x + (CRAFT_GRID_ORIGIN_X + col * INV_SLOT_STEP_PX) * panel.scale;
+    }
+
+    public static float craftInputSlotY(PanelRect panel, int index) {
+        int row = index / 2;
+        return panel.y + (CRAFT_GRID_TOP_Y - row * INV_SLOT_STEP_PX) * panel.scale;
+    }
+
+    public static float craftResultSlotX(PanelRect panel) {
+        return panel.x + CRAFT_RESULT_X * panel.scale;
+    }
+
+    public static float craftResultSlotY(PanelRect panel) {
+        return panel.y + CRAFT_RESULT_Y * panel.scale;
+    }
+
+    private static int findCraftingSlot(float screenX, float screenY, PanelRect panel) {
+        for (int i = 0; i < 4; i++) {
+            if (insideSlot(screenX, screenY, craftInputSlotX(panel, i), craftInputSlotY(panel, i), panel.scale)) {
+                return CRAFT_INPUT_BASE_SLOT + i;
+            }
+        }
+        if (insideSlot(screenX, screenY, craftResultSlotX(panel), craftResultSlotY(panel), panel.scale)) {
+            return CRAFT_RESULT_SLOT;
         }
         return -1;
     }

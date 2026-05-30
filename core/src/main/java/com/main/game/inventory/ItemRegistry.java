@@ -25,6 +25,7 @@ public final class ItemRegistry {
         "ice",
         "sandstone",
         "cactus",
+        "crafting_table",
         "coal_ore",
         "iron_ore",
         "gold_ore",
@@ -103,6 +104,8 @@ public final class ItemRegistry {
         if ("ice".equals(itemId)) return "ice";
         if ("sandstone".equals(itemId)) return "sandstone";
         if ("cactus".equals(itemId)) return "cactus";
+        if ("stick".equals(itemId)) return "stick";
+        if ("crafting_table".equals(itemId)) return "crafting_table";
         return itemId;
     }
 

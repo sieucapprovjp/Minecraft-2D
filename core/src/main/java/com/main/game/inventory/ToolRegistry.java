@@ -95,6 +95,7 @@ public final class ToolRegistry {
         register("wood_pickaxe", ToolType.PICKAXE, ToolMaterial.WOOD, "tools/wood/wood_pickaxe", 1.5f, 3, 30);
         register("wood_axe", ToolType.AXE, ToolMaterial.WOOD, "tools/wood/wood_axe_v1", "tools/wood/wood_axe_v2", 1.5f, 4, 30);
         register("wood_shovel", ToolType.SHOVEL, ToolMaterial.WOOD, "tools/wood/wood_shovel", 1.5f, 2, 30);
+        register("wood_sword", ToolType.SWORD, ToolMaterial.WOOD, "tools/wood/wood_sword", 1.0f, 4, 30);
         register("wood_hoe", ToolType.HOE, ToolMaterial.WOOD, "tools/wood/wood_hoe", 1.0f, 2, 30);
 
         register("stone_pickaxe", ToolType.PICKAXE, ToolMaterial.STONE, "tools/stone/stone_pickaxe", 2.0f, 4, 45);

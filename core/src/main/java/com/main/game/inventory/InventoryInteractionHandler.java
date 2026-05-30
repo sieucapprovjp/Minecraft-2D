@@ -2,12 +2,17 @@ package com.main.game.inventory;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.main.game.crafting.CraftingController;
 
 public class InventoryInteractionHandler {
 
     private ItemStack carriedStack;
 
     public void update(Inventory inventory, InventoryRenderer renderer) {
+        update(inventory, renderer, null);
+    }
+
+    public void update(Inventory inventory, InventoryRenderer renderer, CraftingController craftingController) {
         if (inventory == null || renderer == null) {
             return;
         }
@@ -20,47 +25,58 @@ public class InventoryInteractionHandler {
         }
 
         if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
-            onLeftClick(inventory, slot);
+            onLeftClick(inventory, craftingController, slot);
         } else if (Gdx.input.isButtonJustPressed(Input.Buttons.RIGHT)) {
-            onRightClick(inventory, slot);
+            onRightClick(inventory, craftingController, slot);
         }
     }
 
     public void onCloseInventory(Inventory inventory) {
-        if (inventory == null || carriedStack == null || carriedStack.getCount() <= 0) {
+        onCloseInventory(inventory, null);
+    }
+
+    public void onCloseInventory(Inventory inventory, CraftingController craftingController) {
+        if (inventory == null) {
             carriedStack = null;
             return;
         }
-        int remaining = inventory.add(carriedStack.getItemId(), carriedStack.getCount());
-        if (remaining <= 0) {
-            carriedStack = null;
-            return;
+
+        carriedStack = returnStackToInventory(inventory, carriedStack);
+        if (craftingController != null) {
+            craftingController.returnInputsToInventory(inventory);
         }
-        carriedStack.setCount(remaining);
     }
 
     public ItemStack getCarriedStack() {
         return carriedStack;
     }
 
-    private void onLeftClick(Inventory inventory, int slotIndex) {
-        ItemStack slotStack = inventory.getSlot(slotIndex);
+    private void onLeftClick(Inventory inventory, CraftingController craftingController, int slotIndex) {
+        if (InventoryLayout.isCraftResultSlot(slotIndex)) {
+            takeCraftingResult(craftingController);
+            return;
+        }
+        if (!isWritableSlot(inventory, craftingController, slotIndex)) {
+            return;
+        }
+
+        ItemStack slotStack = getSlot(inventory, craftingController, slotIndex);
         if (carriedStack == null) {
             if (slotStack != null && slotStack.getCount() > 0) {
                 carriedStack = slotStack;
-                inventory.setSlot(slotIndex, null);
+                setSlot(inventory, craftingController, slotIndex, null);
             }
             return;
         }
 
         if (slotStack == null || slotStack.getCount() <= 0) {
-            inventory.setSlot(slotIndex, carriedStack);
+            setSlot(inventory, craftingController, slotIndex, carriedStack);
             carriedStack = null;
             return;
         }
 
         if (!slotStack.getItemId().equals(carriedStack.getItemId())) {
-            inventory.setSlot(slotIndex, carriedStack);
+            setSlot(inventory, craftingController, slotIndex, carriedStack);
             carriedStack = slotStack;
             return;
         }
@@ -78,23 +94,34 @@ public class InventoryInteractionHandler {
         }
     }
 
-    private void onRightClick(Inventory inventory, int slotIndex) {
-        ItemStack slotStack = inventory.getSlot(slotIndex);
+    private void onRightClick(Inventory inventory, CraftingController craftingController, int slotIndex) {
+        if (InventoryLayout.isCraftResultSlot(slotIndex)) {
+            takeCraftingResult(craftingController);
+            return;
+        }
+        if (!isWritableSlot(inventory, craftingController, slotIndex)) {
+            return;
+        }
+
+        ItemStack slotStack = getSlot(inventory, craftingController, slotIndex);
         if (carriedStack == null) {
             if (slotStack == null || slotStack.getCount() <= 0) {
                 return;
             }
             int take = (slotStack.getCount() + 1) / 2;
-            carriedStack = new ItemStack(slotStack.getItemId(), take);
+            carriedStack = slotStack.copy();
+            carriedStack.setCount(take);
             slotStack.subtract(take);
             if (slotStack.getCount() <= 0) {
-                inventory.setSlot(slotIndex, null);
+                setSlot(inventory, craftingController, slotIndex, null);
             }
             return;
         }
 
         if (slotStack == null || slotStack.getCount() <= 0) {
-            inventory.setSlot(slotIndex, new ItemStack(carriedStack.getItemId(), 1));
+            ItemStack placed = carriedStack.copy();
+            placed.setCount(1);
+            setSlot(inventory, craftingController, slotIndex, placed);
             carriedStack.subtract(1);
             if (carriedStack.getCount() <= 0) {
                 carriedStack = null;
@@ -113,6 +140,47 @@ public class InventoryInteractionHandler {
         carriedStack.subtract(1);
         if (carriedStack.getCount() <= 0) {
             carriedStack = null;
+        }
+    }
+
+    private void takeCraftingResult(CraftingController craftingController) {
+        if (craftingController == null) {
+            return;
+        }
+        carriedStack = craftingController.takeResult(carriedStack);
+    }
+
+    private ItemStack returnStackToInventory(Inventory inventory, ItemStack stack) {
+        if (stack == null || stack.getCount() <= 0) {
+            return null;
+        }
+        return inventory.addStack(stack);
+    }
+
+    private boolean isWritableSlot(Inventory inventory, CraftingController craftingController, int slotIndex) {
+        if (slotIndex >= 0 && slotIndex < inventory.getTotalSize()) {
+            return true;
+        }
+        return craftingController != null && InventoryLayout.isCraftInputSlot(slotIndex);
+    }
+
+    private ItemStack getSlot(Inventory inventory, CraftingController craftingController, int slotIndex) {
+        if (slotIndex >= 0 && slotIndex < inventory.getTotalSize()) {
+            return inventory.getSlot(slotIndex);
+        }
+        if (craftingController != null && InventoryLayout.isCraftInputSlot(slotIndex)) {
+            return craftingController.getGrid().getSlot(InventoryLayout.toCraftInputIndex(slotIndex));
+        }
+        return null;
+    }
+
+    private void setSlot(Inventory inventory, CraftingController craftingController, int slotIndex, ItemStack stack) {
+        if (slotIndex >= 0 && slotIndex < inventory.getTotalSize()) {
+            inventory.setSlot(slotIndex, stack);
+            return;
+        }
+        if (craftingController != null && InventoryLayout.isCraftInputSlot(slotIndex)) {
+            craftingController.getGrid().setSlot(InventoryLayout.toCraftInputIndex(slotIndex), stack);
         }
     }
 }

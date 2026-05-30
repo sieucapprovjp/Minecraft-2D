@@ -6,6 +6,7 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.math.Vector2;
 import com.main.game.MainGame;
 import com.main.game.combat.PlayerAttackController;
+import com.main.game.crafting.CraftingController;
 import com.main.game.entities.EntityManager;
 import com.main.game.entities.player.Player;
 import com.main.game.interaction.BlockBreakOverlay;
@@ -47,6 +48,7 @@ public class GameScreen extends BaseScreen {
     private InventoryController inventoryController;
     private InventoryRenderer inventoryRenderer;
     private InventoryInteractionHandler inventoryInteractionHandler;
+    private CraftingController craftingController;
     private GameCameraController cameraController;
     private GameHudRenderer hudRenderer;
     private GameOverlayRenderer overlayRenderer;
@@ -96,6 +98,7 @@ public class GameScreen extends BaseScreen {
         inventoryController = new InventoryController();
         inventoryRenderer = new InventoryRenderer();
         inventoryInteractionHandler = new InventoryInteractionHandler();
+        craftingController = new CraftingController();
         cameraController = new GameCameraController();
         syncHeldItem();
         blockBreaker.setBlockBreakListener((block, worldRef) ->
@@ -120,7 +123,7 @@ public class GameScreen extends BaseScreen {
         if (Gdx.input.isKeyJustPressed(Input.Keys.B)) player.ban();
 
         inventoryController.update();
-        if (inventoryController.wasJustClosed()) inventoryInteractionHandler.onCloseInventory(inventory);
+        if (inventoryController.wasJustClosed()) inventoryInteractionHandler.onCloseInventory(inventory, craftingController);
         syncHeldItem();
 
         if (paused) {
@@ -133,7 +136,7 @@ public class GameScreen extends BaseScreen {
             spawnSafetyController.update(delta, world, player);
             droppedItemManager.update(delta, world, player, inventory);
             if (inventoryController.isInventoryOpen()) {
-                inventoryInteractionHandler.update(inventory, inventoryRenderer);
+                inventoryInteractionHandler.update(inventory, inventoryRenderer, craftingController);
                 syncHeldItem();
             }
         }
@@ -209,7 +212,7 @@ public class GameScreen extends BaseScreen {
         batch.end();
 
         hudRenderer.render(batch, viewport, inventory, inventoryController, inventoryRenderer,
-            inventoryInteractionHandler, player);
+            inventoryInteractionHandler, craftingController, player);
 
         if (paused) overlayRenderer.renderPause(batch);
         else if (dead) overlayRenderer.renderDeath(batch);
