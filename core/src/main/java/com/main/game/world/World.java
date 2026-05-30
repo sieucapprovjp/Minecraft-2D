@@ -290,7 +290,7 @@ public class World {
         int maxX = centerX + INITIAL_SPAWN_PLATFORM_HALF_WIDTH + PLAYER_SPAWN_WIDTH_TILES - 1;
         for (int x = minX; x <= maxX; x++) {
             if (x < 1 || x >= width - 1) continue;
-            setBlock(x, platformY, new SimpleBlock(x, platformY, INITIAL_SPAWN_PLATFORM_ID, true, false, 999f, null));
+            setBlock(x, platformY, new SimpleBlock(x, platformY, INITIAL_SPAWN_PLATFORM_ID, true, false, 999f, BlockPalette.getBedrock()));
         }
         clearPlayerSpawnSpace(centerX, platformY + 1);
         initialSpawnPlatformMinX = minX;
