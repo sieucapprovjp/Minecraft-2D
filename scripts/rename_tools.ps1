@@ -1,5 +1,5 @@
 param(
-    [string]$ToolsRoot = "D:\Project OOP\assets\tools",
+    [string]$ToolsRoot = (Join-Path $PSScriptRoot "..\assets\tools"),
     [switch]$Apply
 )
 
