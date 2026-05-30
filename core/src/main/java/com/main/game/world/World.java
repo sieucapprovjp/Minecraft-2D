@@ -43,16 +43,19 @@ public class World {
 
     public static final int BEDROCK_TOP_Y = 3;
     public static final int DEEPSLATE_TOP_Y = 40;
+    private static final String INITIAL_SPAWN_PLATFORM_ID = "initial_spawn_platform";
     private static final int PLAYER_SPAWN_WIDTH_TILES = 2;
     private static final int PLAYER_SPAWN_HEIGHT_TILES = 3;
-    private static final int SPAWN_PLATFORM_HALF_WIDTH = 4;
-    private static final int SPAWN_PLATFORM_SURFACE_GAP = 10;
-    private static final int SPAWN_FALL_HEIGHT = 5;
+    private static final int INITIAL_SPAWN_PLATFORM_HALF_WIDTH = 4;
+    private static final int INITIAL_SPAWN_PLATFORM_SURFACE_GAP = 3;
 
     private final long seed;
     private final Map<GridPoint2, Chunk> chunks;
     private final Map<Integer, BiomeType> biomes;
     private final int[] surfaceByX;
+    private int initialSpawnPlatformMinX = -1;
+    private int initialSpawnPlatformMaxX = -1;
+    private int initialSpawnPlatformY = -1;
     private boolean generated;
     public final int width;
     public final int height;
@@ -231,10 +234,17 @@ public class World {
         }
     }
 
+    public Vector2 getInitialSpawnPoint() {
+        int spawnX = getCenteredSpawnX();
+        int platformY = prepareInitialSpawnPlatform(spawnX);
+        return new Vector2(spawnX + 0.1f, platformY + 1f);
+    }
+
     public Vector2 getSpawnPoint() {
-        int spawnX = Math.max(SPAWN_PLATFORM_HALF_WIDTH + 1,
-            Math.min(width - SPAWN_PLATFORM_HALF_WIDTH - PLAYER_SPAWN_WIDTH_TILES - 1, width / 2));
-        int spawnY = prepareFloatingSpawnPlatform(spawnX);
+        int spawnX = getCenteredSpawnX();
+        int surface = Math.max(DEEPSLATE_TOP_Y + 1, getSurfaceY(spawnX));
+        int spawnY = Math.min(height - PLAYER_SPAWN_HEIGHT_TILES - 1, surface + 1);
+        clearPlayerSpawnSpace(spawnX, spawnY);
         return new Vector2(spawnX + 0.1f, spawnY);
     }
 
@@ -249,22 +259,54 @@ public class World {
         return true;
     }
 
-    private int prepareFloatingSpawnPlatform(int centerX) {
-        int surface = Math.max(DEEPSLATE_TOP_Y + 1, getSurfaceY(centerX));
-        int platformY = Math.min(
-            height - PLAYER_SPAWN_HEIGHT_TILES - SPAWN_FALL_HEIGHT - 2,
-            Math.max(surface + SPAWN_PLATFORM_SURFACE_GAP, DEEPSLATE_TOP_Y + 24)
-        );
-        int minX = centerX - SPAWN_PLATFORM_HALF_WIDTH;
-        int maxX = centerX + SPAWN_PLATFORM_HALF_WIDTH + PLAYER_SPAWN_WIDTH_TILES - 1;
-        for (int x = minX; x <= maxX; x++) {
-            if (x < 1 || x >= width - 1) continue;
-            setBlock(x, platformY, WorldBlockFactory.create(x, platformY, "planks"));
-            for (int y = platformY + 1; y <= platformY + SPAWN_FALL_HEIGHT + PLAYER_SPAWN_HEIGHT_TILES + 1; y++) {
-                setBlock(x, y, null);
+    public void removeInitialSpawnPlatform() {
+        if (initialSpawnPlatformY < 0) return;
+        for (int x = initialSpawnPlatformMinX; x <= initialSpawnPlatformMaxX; x++) {
+            AbstractBlock block = getBlock(x, initialSpawnPlatformY);
+            if (block != null && INITIAL_SPAWN_PLATFORM_ID.equals(block.getBlockId())) {
+                setBlock(x, initialSpawnPlatformY, null);
             }
         }
-        return platformY + SPAWN_FALL_HEIGHT;
+        initialSpawnPlatformMinX = -1;
+        initialSpawnPlatformMaxX = -1;
+        initialSpawnPlatformY = -1;
+    }
+
+    private int getCenteredSpawnX() {
+        return Math.max(INITIAL_SPAWN_PLATFORM_HALF_WIDTH + 1,
+            Math.min(width - INITIAL_SPAWN_PLATFORM_HALF_WIDTH - PLAYER_SPAWN_WIDTH_TILES - 1, width / 2));
+    }
+
+    private int prepareInitialSpawnPlatform(int centerX) {
+        int surface = Math.max(DEEPSLATE_TOP_Y + 1, getSurfaceY(centerX));
+        int platformY = Math.min(
+            height - PLAYER_SPAWN_HEIGHT_TILES - 2,
+            Math.max(surface + INITIAL_SPAWN_PLATFORM_SURFACE_GAP, DEEPSLATE_TOP_Y + 8)
+        );
+        int minX = centerX - INITIAL_SPAWN_PLATFORM_HALF_WIDTH;
+        int maxX = centerX + INITIAL_SPAWN_PLATFORM_HALF_WIDTH + PLAYER_SPAWN_WIDTH_TILES - 1;
+        for (int x = minX; x <= maxX; x++) {
+            if (x < 1 || x >= width - 1) continue;
+            setBlock(x, platformY, new SimpleBlock(x, platformY, INITIAL_SPAWN_PLATFORM_ID, true, false, 999f, null));
+        }
+        clearPlayerSpawnSpace(centerX, platformY + 1);
+        initialSpawnPlatformMinX = minX;
+        initialSpawnPlatformMaxX = maxX;
+        initialSpawnPlatformY = platformY;
+        return platformY;
+    }
+
+    private void clearPlayerSpawnSpace(int spawnX, int spawnY) {
+        int maxY = Math.min(height - 1, spawnY + PLAYER_SPAWN_HEIGHT_TILES + 1);
+        for (int x = spawnX; x < spawnX + PLAYER_SPAWN_WIDTH_TILES; x++) {
+            if (x < 0 || x >= width) continue;
+            for (int y = spawnY; y <= maxY; y++) {
+                AbstractBlock block = getBlock(x, y);
+                if (block != null && !INITIAL_SPAWN_PLATFORM_ID.equals(block.getBlockId())) {
+                    setBlock(x, y, null);
+                }
+            }
+        }
     }
 
     private float getSmoothNoise1D(float x, long seed) {

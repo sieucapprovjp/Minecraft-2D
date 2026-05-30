@@ -55,6 +55,7 @@ public class GameScreen extends BaseScreen {
     private Matrix4 uiProjection;
     private BitmapFont font;
     private float spawnGuardTimer;
+    private float initialSpawnPlatformTimer;
 
     // Pause & Death textures
     private Texture pauseTexture;
@@ -86,12 +87,13 @@ public class GameScreen extends BaseScreen {
         camera.position.set(world.width / 2f, world.height / 2f, 0f);
         camera.update();
 
-        Vector2 spawn = world.getSpawnPoint();
+        Vector2 spawn = world.getInitialSpawnPoint();
         float spawnX = spawn.x;
         float spawnY = spawn.y;
 
         player = new Player(spawnX, spawnY, physics, world);
         spawnGuardTimer = 5f;
+        initialSpawnPlatformTimer = 1.25f;
         ensurePlayerSpawnSafety();
 
         camera.position.set(player.getX(), player.getY(), 0f);
@@ -165,6 +167,7 @@ public class GameScreen extends BaseScreen {
 
         if (!dead) {
             entityManager.update(delta);
+            updateInitialSpawnPlatform(delta);
             if (spawnGuardTimer > 0f) {
                 ensurePlayerSpawnSafety();
                 spawnGuardTimer -= delta;
@@ -349,15 +352,27 @@ public class GameScreen extends BaseScreen {
     }
 
     private void handleDeathClick() {
-        player.respawn(world.getSpawnPoint().x, world.getSpawnPoint().y);
+        world.removeInitialSpawnPlatform();
+        initialSpawnPlatformTimer = 0f;
+        Vector2 spawn = world.getSpawnPoint();
+        player.respawn(spawn.x, spawn.y);
         ensurePlayerSpawnSafety();
         dead = false;
     }
 
+    private void updateInitialSpawnPlatform(float delta) {
+        if (initialSpawnPlatformTimer <= 0f) return;
+        initialSpawnPlatformTimer -= delta;
+        if (initialSpawnPlatformTimer <= 0f) {
+            world.removeInitialSpawnPlatform();
+        }
+    }
+
     private void ensurePlayerSpawnSafety() {
-        int tileX = Math.max(1, Math.min(world.width - 2, (int) Math.floor(player.getX())));
         int tileY = Math.max(1, (int) Math.floor(player.getY()));
         if (tileY <= World.DEEPSLATE_TOP_Y) {
+            world.removeInitialSpawnPlatform();
+            initialSpawnPlatformTimer = 0f;
             Vector2 spawn = world.getSpawnPoint();
             player.respawn(spawn.x, spawn.y);
         }
