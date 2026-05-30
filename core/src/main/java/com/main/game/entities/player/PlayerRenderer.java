@@ -177,7 +177,7 @@ class PlayerRenderer {
         if (!isHeldItemRenderable(heldItemId)) {
             return;
         }
-        TextureRegion texture = ItemRegistry.getTexture(heldItemId);
+        TextureRegion texture = ItemRegistry.getHeldTexture(heldItemId);
         if (texture == null) {
             return;
         }
