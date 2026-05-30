@@ -11,6 +11,7 @@ import java.util.Set;
 public final class ItemRegistry {
 
     private static final Map<String, TextureRegion> TEXTURE_CACHE = new HashMap<>();
+    private static final Map<String, TextureRegion> HELD_TEXTURE_CACHE = new HashMap<>();
     private static final Set<String> PLACEABLE_BLOCKS = Set.of(
         "dirt",
         "grass",
@@ -73,6 +74,22 @@ public final class ItemRegistry {
         return texture;
     }
 
+    public static TextureRegion getHeldTexture(String itemId) {
+        if (HELD_TEXTURE_CACHE.containsKey(itemId)) {
+            return HELD_TEXTURE_CACHE.get(itemId);
+        }
+
+        TextureRegion texture = getToolHeldTexture(itemId);
+        if (texture != null) {
+            HELD_TEXTURE_CACHE.put(itemId, texture);
+            return texture;
+        }
+
+        texture = getTexture(itemId);
+        HELD_TEXTURE_CACHE.put(itemId, texture);
+        return texture;
+    }
+
     public static boolean isPlaceableBlock(String itemId) {
         return itemId != null && !ToolRegistry.isTool(itemId) && PLACEABLE_BLOCKS.contains(itemId);
     }
@@ -95,6 +112,14 @@ public final class ItemRegistry {
             return null;
         }
         return TextureManager.getInstance().getTexture(tool.getTextureName());
+    }
+
+    private static TextureRegion getToolHeldTexture(String itemId) {
+        ToolRegistry.ToolDefinition tool = ToolRegistry.get(itemId);
+        if (tool == null) {
+            return null;
+        }
+        return TextureManager.getInstance().getTexture(tool.getHeldTextureName());
     }
 
     private static TextureRegion getBlockPaletteTexture(String itemId) {
