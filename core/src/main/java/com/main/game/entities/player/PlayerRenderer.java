@@ -6,6 +6,8 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.main.game.entities.EntityState;
+import com.main.game.inventory.ItemRegistry;
+import com.main.game.inventory.ToolRegistry;
 
 class PlayerRenderer {
 
@@ -27,12 +29,15 @@ class PlayerRenderer {
         loadAssets();
     }
 
-    void render(SpriteBatch batch, Player player, EntityState state, float stateTime, boolean mining, float miningTime, boolean hurt) {
+    void render(SpriteBatch batch, Player player, EntityState state, float stateTime,
+                boolean mining, float miningTime, boolean hurt, String heldItemId) {
         float armFrontAngle = 0f;
         float armBackAngle = 0f;
         float legFrontAngle = 0f;
         float legBackAngle = 0f;
         float headTilt = 0f;
+
+        boolean holdingItem = isHeldItemRenderable(heldItemId);
 
         if (state == EntityState.RUN) {
             int walkFrame = (int) (stateTime * 15f);
@@ -45,12 +50,12 @@ class PlayerRenderer {
             legBackAngle = mappedAngle;
             headTilt = 5f;
         } else if (state == EntityState.JUMP) {
-            armFrontAngle = 160f;
+            armFrontAngle = holdingItem ? 55f : 160f;
             armBackAngle = -20f;
             legFrontAngle = -20f;
             legBackAngle = 20f;
         } else if (state == EntityState.FALL) {
-            armFrontAngle = 160f;
+            armFrontAngle = holdingItem ? 45f : 160f;
             armBackAngle = 20f;
             legFrontAngle = 10f;
             legBackAngle = -10f;
@@ -64,7 +69,7 @@ class PlayerRenderer {
 
         if (mining && state != EntityState.HURT && state != EntityState.DEAD) {
             float swing = Math.abs(((miningTime * MINING_ARM_SPEED) % 2f) - 1f);
-            armFrontAngle = 115f + swing * 65f;
+            armFrontAngle = 35f + swing * 70f;
             armBackAngle = 5f;
         }
 
@@ -121,6 +126,7 @@ class PlayerRenderer {
         batch.draw(bootFront, cx - bootW / 2f, legY - bootH, bootW / 2f, legH + bootH, bootW, bootH, scaleX, 1f, legFrontRot);
         batch.draw(legFront, cx - legW / 2f, legY, legW / 2f, legH, legW, legH, scaleX, 1f, legFrontRot);
         batch.draw(armFront, cx - armW / 2f, armY - armH, armW / 2f, armH, armW, armH, scaleX, 1f, armFrontRot);
+        drawHeldItem(batch, player, state, heldItemId, cx, armY, armH, armFrontRot);
 
         batch.setColor(Color.WHITE);
     }
@@ -160,5 +166,76 @@ class PlayerRenderer {
         regHeadL = new TextureRegion(tHeadL);
         regBootL = new TextureRegion(tBootL);
         regBootR = new TextureRegion(tBootR);
+    }
+
+    private boolean isHeldItemRenderable(String heldItemId) {
+        return ToolRegistry.isTool(heldItemId) || ItemRegistry.isPlaceableBlock(heldItemId);
+    }
+
+    private void drawHeldItem(SpriteBatch batch, Player player, EntityState state, String heldItemId,
+                              float shoulderX, float shoulderY, float armH, float armRotation) {
+        if (!isHeldItemRenderable(heldItemId)) {
+            return;
+        }
+        TextureRegion texture = ItemRegistry.getTexture(heldItemId);
+        if (texture == null) {
+            return;
+        }
+
+        if (ToolRegistry.isTool(heldItemId)) {
+            drawHeldTool(batch, player, state, texture, shoulderX, shoulderY, armH, armRotation);
+        } else {
+            drawHeldBlock(batch, player, state, texture, shoulderX, shoulderY, armH, armRotation);
+        }
+    }
+
+    private void drawHeldTool(SpriteBatch batch, Player player, EntityState state, TextureRegion texture,
+                              float shoulderX, float shoulderY, float armH, float armRotation) {
+        float handDistance = armH * 0.9f;
+        double radians = Math.toRadians(armRotation);
+        float handX = shoulderX + (float) Math.sin(radians) * handDistance;
+        float handY = shoulderY - (float) Math.cos(radians) * handDistance;
+        float size = 0.682f;
+        float originX = size * 0.5f;
+        float originY = size * 0.08f;
+        float scaleX = player.isFacingRight() ? 1f : -1f;
+        float toolRotation = armRotation + (player.isFacingRight() ? -45f : 45f);
+        float forwardOffset = player.isFacingRight() ? 0.16f : -0.16f;
+        float verticalOffset = (state == EntityState.JUMP || state == EntityState.FALL) ? -0.14f : -0.2f;
+
+        batch.draw(texture,
+            handX + forwardOffset - originX,
+            handY - originY + verticalOffset,
+            originX,
+            originY,
+            size,
+            size,
+            scaleX,
+            1f,
+            toolRotation);
+    }
+
+    private void drawHeldBlock(SpriteBatch batch, Player player, EntityState state, TextureRegion texture,
+                               float shoulderX, float shoulderY, float armH, float armRotation) {
+        float handDistance = armH * 0.86f;
+        double radians = Math.toRadians(armRotation);
+        float handX = shoulderX + (float) Math.sin(radians) * handDistance;
+        float handY = shoulderY - (float) Math.cos(radians) * handDistance;
+        float size = 0.44f;
+        float origin = size * 0.5f;
+        float scaleX = player.isFacingRight() ? 1f : -1f;
+        float forwardOffset = player.isFacingRight() ? 0.16f : -0.16f;
+        float verticalOffset = (state == EntityState.JUMP || state == EntityState.FALL) ? -0.12f : -0.17f;
+
+        batch.draw(texture,
+            handX + forwardOffset - origin,
+            handY + verticalOffset - origin,
+            origin,
+            origin,
+            size,
+            size,
+            scaleX,
+            1f,
+            armRotation);
     }
 }

@@ -7,6 +7,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.main.game.blocks.AbstractBlock;
 import com.main.game.entities.player.Player;
+import com.main.game.inventory.ToolRegistry;
 import com.main.game.world.World;
 
 public class BlockBreaker {
@@ -30,7 +31,8 @@ public class BlockBreaker {
         this.blockBreakListener = blockBreakListener;
     }
 
-    public void update(float delta, Player player, World world, OrthographicCamera camera, Viewport viewport) {
+    public boolean update(float delta, Player player, World world, OrthographicCamera camera,
+                       Viewport viewport, String heldItemId) {
         hoveredBlockX = -1;
         hoveredBlockY = -1;
         breaking = false;
@@ -44,7 +46,7 @@ public class BlockBreaker {
 
         if (block == null || !isWithinBlockReach(player, tileX, tileY) || !hasLineOfSight(player, world, tileX, tileY)) {
             resetBreaking();
-            return;
+            return false;
         }
 
         hoveredBlockX = tileX;
@@ -52,7 +54,7 @@ public class BlockBreaker {
 
         if (!Gdx.input.isButtonPressed(Input.Buttons.LEFT) || !BlockBreakRules.canBreak(block)) {
             resetBreaking();
-            return;
+            return false;
         }
 
         breaking = true;
@@ -63,7 +65,8 @@ public class BlockBreaker {
             digSoundTimer = 0f;
         }
 
-        float hardness = Math.max(0.1f, block.getHardness());
+        float multiplier = ToolRegistry.getMiningMultiplier(heldItemId, block.getBlockId());
+        float hardness = Math.max(0.1f, block.getHardness() / multiplier);
         digStepDuration = hardness / BREAK_COMPLETE_STAGES;
         breakElapsed += delta;
         digSoundTimer += delta;
@@ -79,7 +82,9 @@ public class BlockBreaker {
             }
             world.setBlock(tileX, tileY, null);
             resetBreaking();
+            return true;
         }
+        return false;
     }
 
     public boolean hasHoveredBlock() {

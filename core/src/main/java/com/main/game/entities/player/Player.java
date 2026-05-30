@@ -35,6 +35,7 @@ public class Player extends Entity {
     public static final float PLAYER_H    = 1.8f;  // tile
 
     private static final float HURT_DURATION   = 0.5f;
+    private static final float PLACE_SWING_DURATION = 0.18f;
 
     private float stateTime = 0f;
 
@@ -42,7 +43,11 @@ public class Player extends Entity {
     private EntityState state     = EntityState.IDLE;
     private float       hurtTimer = 0f;
     private float       miningTime = 0f;
+    private float       placeSwingTimer = 0f;
+    private float       placeSwingTime = 0f;
+    private String      placeSwingItemId;
     private boolean     mining = false;
+    private String      heldItemId;
     private int         health    = 20;
     private int         maxHealth = 20;
     private boolean     isBanned  = false;
@@ -71,6 +76,13 @@ public class Player extends Entity {
 
         stateTime += delta;
         miningTime = mining ? miningTime + delta : 0f;
+        if (placeSwingTimer > 0f) {
+            placeSwingTimer = Math.max(0f, placeSwingTimer - delta);
+            placeSwingTime += delta;
+            if (placeSwingTimer <= 0f) {
+                placeSwingItemId = null;
+            }
+        }
         handleInput(delta);
 
         lastVy = velocity.y;
@@ -91,7 +103,10 @@ public class Player extends Entity {
     @Override
     public void render(SpriteBatch batch) {
         if (!isAlive) return;
-        renderer.render(batch, this, state, stateTime, mining, miningTime, isHurt());
+        boolean actionSwinging = mining || placeSwingTimer > 0f;
+        float actionSwingTime = mining ? miningTime : placeSwingTime;
+        String renderedHeldItemId = heldItemId != null ? heldItemId : placeSwingItemId;
+        renderer.render(batch, this, state, stateTime, actionSwinging, actionSwingTime, isHurt(), renderedHeldItemId);
     }
 
     public void ban() {
@@ -192,12 +207,24 @@ public class Player extends Entity {
     public int         getHealth()    { return health;     }
     public int         getMaxHealth() { return maxHealth;  }
     public boolean     isHurt()       { return hurtTimer > 0; }
+    public String      getHeldItemId() { return heldItemId;   }
+
+    public void setHeldItemId(String heldItemId) {
+        this.heldItemId = heldItemId;
+    }
 
     public void setMining(boolean mining, float targetX) {
         this.mining = mining;
         if (mining) {
             this.facingRight = targetX >= position.x + width / 2f;
         }
+    }
+
+    public void playPlaceAnimation(float targetX, String itemId) {
+        placeSwingTimer = PLACE_SWING_DURATION;
+        placeSwingTime = 0f;
+        placeSwingItemId = itemId;
+        facingRight = targetX >= position.x + width / 2f;
     }
 
     public void respawn(float x, float y) {
@@ -210,5 +237,8 @@ public class Player extends Entity {
         this.stateTime = 0;
         this.mining = false;
         this.miningTime = 0;
+        this.placeSwingTimer = 0;
+        this.placeSwingTime = 0;
+        this.placeSwingItemId = null;
     }
 }

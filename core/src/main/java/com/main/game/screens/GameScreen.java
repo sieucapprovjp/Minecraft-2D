@@ -3,54 +3,43 @@ package com.main.game.screens;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.GlyphLayout;
-import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector2;
-import com.main.game.GameState;
 import com.main.game.MainGame;
 import com.main.game.combat.PlayerAttackController;
 import com.main.game.entities.EntityManager;
 import com.main.game.entities.player.Player;
 import com.main.game.interaction.BlockBreakOverlay;
 import com.main.game.interaction.BlockBreaker;
+import com.main.game.interaction.BlockPlacementController;
 import com.main.game.inventory.Inventory;
 import com.main.game.inventory.InventoryController;
 import com.main.game.inventory.InventoryInteractionHandler;
 import com.main.game.inventory.InventoryRenderer;
+import com.main.game.inventory.ItemStack;
+import com.main.game.inventory.StarterInventoryFactory;
 import com.main.game.items.BlockDropFactory;
 import com.main.game.items.DroppedItemManager;
 import com.main.game.navigation.ScreenId;
 import com.main.game.physics.PhysicsEngine;
-import com.main.game.utils.Constants;
+import com.main.game.ui.GameCameraController;
+import com.main.game.ui.GameHudRenderer;
+import com.main.game.ui.GameOverlayRenderer;
 import com.main.game.world.BlockPalette;
 import com.main.game.world.DemoBlockViewer;
+import com.main.game.world.SpawnSafetyController;
 import com.main.game.world.World;
 import com.main.game.worldgen.BiomeMobSpawner;
 
-/**
- * Screen chính của game — nơi mọi module hội tụ.
- *
- * Mỗi thành viên chỉ cần quan tâm đến object của mình,
- * GameScreen lo việc gọi update/render theo đúng thứ tự.
- *
- * TODO(HUY-LEAD):
- * - Đây là điểm integration chính, chỉ merge khi module giao diện giữa các team
- * ổn định.
- */
 public class GameScreen extends BaseScreen {
 
     private static final float CAMERA_ZOOM = 0.5f;
-    private static final long DEFAULT_WORLD_SEED = 1337L;
 
-    private World world; // TODO(KIEN-WORLD): quản lý world/chunk/camera follow
-    private PhysicsEngine physics; // TODO(LHUNG-PHYSICS): collision + resolve
-    private Player player; // DUOC-ENTITY: player input/state machine
-    private EntityManager entityManager; // DUOC-ENTITY: quản lý update/render entity
+    private World world;
+    private PhysicsEngine physics;
+    private Player player;
+    private EntityManager entityManager;
     private BlockBreaker blockBreaker;
+    private BlockPlacementController blockPlacementController;
     private BlockBreakOverlay blockBreakOverlay;
     private PlayerAttackController playerAttackController;
     private DroppedItemManager droppedItemManager;
@@ -58,25 +47,12 @@ public class GameScreen extends BaseScreen {
     private InventoryController inventoryController;
     private InventoryRenderer inventoryRenderer;
     private InventoryInteractionHandler inventoryInteractionHandler;
+    private GameCameraController cameraController;
+    private GameHudRenderer hudRenderer;
+    private GameOverlayRenderer overlayRenderer;
+    private SpawnSafetyController spawnSafetyController;
     private boolean paused;
     private boolean dead;
-    private Texture overlayTexture;
-    private BitmapFont overlayFont;
-    private GlyphLayout overlayLayout;
-    private Matrix4 uiProjection;
-    private BitmapFont font;
-
-    // Pause & Death textures
-    private Texture pauseTexture;
-    private Texture deathTexture;
-
-    // HUD Textures
-    private Texture[] healthTextures;
-    private Texture[] hungerTextures;
-    private Texture hotbarTex;
-    private Texture selectorTex;
-    private Texture xpBgTex;
-    private Texture xpFgTex;
 
     private float deathBtnX, deathBtnY, deathBtnW, deathBtnH;
 
@@ -86,168 +62,122 @@ public class GameScreen extends BaseScreen {
 
     @Override
     public void show() {
-        world = new World();
-        // TODO(KIEN-WORLD): seed nên lấy từ save/game config thay vì hardcode.
-        world.generate(DEFAULT_WORLD_SEED);
-
+        // Tích hợp Seed Random
+        long currentSeed = System.currentTimeMillis();
+        world = new World(currentSeed);
         physics = new PhysicsEngine();
 
-        // ── Khởi tạo Player ─────────────────────────── DUOC-ENTITY ──
-        Vector2 spawn = world.getSpawnPoint();
+        // Sinh toàn bộ finite world trước khi tìm spawn để cave/ore không bị lỗi seam.
+        world.generate();
+        camera.position.set(world.width / 2f, world.height / 2f, 0f);
+        camera.update();
+
+        Vector2 spawn = world.getInitialSpawnPoint();
         float spawnX = spawn.x;
         float spawnY = spawn.y;
-        player = new Player(spawnX, spawnY, physics, world);
 
-        // ── Khởi tạo EntityManager ───────────────────── DUOC-ENTITY ──
+        player = new Player(spawnX, spawnY, physics, world);
+        spawnSafetyController = new SpawnSafetyController();
+        spawnSafetyController.beginInitialSpawn(world, player);
+
+        camera.position.set(player.getX(), player.getY(), 0f);
+        camera.update();
+
+        // ── Khởi tạo EntityManager & Tools ─────────────
         entityManager = new EntityManager();
         entityManager.setPlayer(player);
         blockBreaker = new BlockBreaker();
+        blockPlacementController = new BlockPlacementController();
         blockBreakOverlay = new BlockBreakOverlay();
         playerAttackController = new PlayerAttackController();
         droppedItemManager = new DroppedItemManager();
         inventory = new Inventory();
+        StarterInventoryFactory.populateStarterTools(inventory);
         inventoryController = new InventoryController();
         inventoryRenderer = new InventoryRenderer();
         inventoryInteractionHandler = new InventoryInteractionHandler();
+        cameraController = new GameCameraController();
+        syncHeldItem();
         blockBreaker.setBlockBreakListener((block, worldRef) ->
             droppedItemManager.spawn(BlockDropFactory.createDrop(block, worldRef), worldRef));
 
-        BiomeMobSpawner.spawnInitialMobs(world, player, physics, entityManager, DEFAULT_WORLD_SEED);
+        // Spawner của team sử dụng seed hiện tại
+        BiomeMobSpawner.spawnInitialMobs(world, player, physics, entityManager, currentSeed);
 
         paused = false;
         dead = false;
         camera.zoom = CAMERA_ZOOM;
-
-        Pixmap overlayPixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        overlayPixmap.setColor(Color.WHITE);
-        overlayPixmap.fill();
-        overlayTexture = new Texture(overlayPixmap);
-        overlayPixmap.dispose();
-
-        overlayFont = new BitmapFont();
-        overlayFont.setColor(Color.WHITE);
-        overlayLayout = new GlyphLayout();
-        uiProjection = new Matrix4();
-        font = new BitmapFont();
-        font.setColor(Color.WHITE);
-
-        // Load HUD textures
-        healthTextures = new Texture[21];
-        hungerTextures = new Texture[21];
-        for (int i = 0; i <= 20; i++) {
-            healthTextures[i] = loadTextureWithFallback("mvp/ui/health/health" + i + ".png", "mvp/ui/health/health0.png");
-            hungerTextures[i] = loadTextureWithFallback("mvp/ui/hunger/hunger_" + i + ".png", "mvp/ui/hunger/hunger_0.png");
-        }
-        hotbarTex = new Texture(Gdx.files.internal("mvp/ui/hotbar.png"));
-        selectorTex = new Texture(Gdx.files.internal("mvp/ui/selector.png"));
-        xpBgTex = new Texture(Gdx.files.internal("mvp/ui/xp/xp_bg.png"));
-        xpFgTex = new Texture(Gdx.files.internal("mvp/ui/xp/xp_fg.png"));
-
-        // Load Pause & Death screen textures
-        pauseTexture = new Texture(Gdx.files.internal("images/stage_sprite/pause.png"));
-        deathTexture = new Texture(Gdx.files.internal("images/stage_sprite/death_screen.png"));
-
-        // Spawn camera gần mặt đất để test terrain dễ hơn.
-        camera.position.set(spawnX, spawnY, 0f);
-        camera.update();
+        hudRenderer = new GameHudRenderer();
+        overlayRenderer = new GameOverlayRenderer();
     }
 
     @Override
     public void update(float delta) {
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || Gdx.input.isKeyJustPressed(Input.Keys.P)) {
-            paused = !paused;
-        }
-        if (Gdx.input.isKeyJustPressed(Input.Keys.M)) {
-            game.getScreenRouter().request(ScreenId.MENU);
-        }
-        if (Gdx.input.isKeyJustPressed(Input.Keys.O)) {
-            int sx = Math.max(2, (int) player.getX());
-            int sy = Math.max(2, (int) player.getY());
-            DemoBlockViewer.populateDemo(world, sx, sy);
-        }
-        if (Gdx.input.isKeyJustPressed(Input.Keys.K)) {
-            player.kill();
-        }
-        if (Gdx.input.isKeyJustPressed(Input.Keys.B)) {
-            player.ban();
-        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || Gdx.input.isKeyJustPressed(Input.Keys.P)) paused = !paused;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.M)) game.getScreenRouter().request(ScreenId.MENU);
+        if (Gdx.input.isKeyJustPressed(Input.Keys.O)) DemoBlockViewer.populateDemo(world, Math.max(2, (int) player.getX()), Math.max(2, (int) player.getY()));
+        if (Gdx.input.isKeyJustPressed(Input.Keys.K)) player.kill();
+        if (Gdx.input.isKeyJustPressed(Input.Keys.B)) player.ban();
 
         inventoryController.update();
-        if (inventoryController.wasJustClosed()) {
-            inventoryInteractionHandler.onCloseInventory(inventory);
-        }
+        if (inventoryController.wasJustClosed()) inventoryInteractionHandler.onCloseInventory(inventory);
+        syncHeldItem();
 
         if (paused) {
             player.setMining(false, player.getX() + player.getWidth() / 2f);
             return;
         }
-        // DUOC-ENTITY: update toàn bộ entity (Player input + Mob AI + sync physics)
+
         if (!dead) {
             entityManager.update(delta);
+            spawnSafetyController.update(delta, world, player);
             droppedItemManager.update(delta, world, player, inventory);
             if (inventoryController.isInventoryOpen()) {
                 inventoryInteractionHandler.update(inventory, inventoryRenderer);
+                syncHeldItem();
             }
         }
 
-        // Chết -> Game Over
-        if (player.getHealth() <= 0) {
-            dead = true;
-        }
+        if (player.getHealth() <= 0) dead = true;
 
-        // Handle clicks on Pause/Death screens
         if (paused || dead) {
             float mx = Gdx.input.getX();
             float my = Gdx.graphics.getHeight() - Gdx.input.getY();
-            if (paused) {
-                if (Gdx.input.justTouched()) {
-                    handlePauseClick(mx, my);
-                }
-            } else if (dead) {
+            if (paused && Gdx.input.justTouched()) handlePauseClick(mx, my);
+            else if (dead) {
                 player.setMining(false, player.getX() + player.getWidth() / 2f);
                 updateDeathButtonLayout();
-                boolean hover = mx >= deathBtnX && mx <= deathBtnX + deathBtnW && my >= deathBtnY && my <= deathBtnY + deathBtnH;
-                if (Gdx.input.justTouched() && hover) {
+                if (Gdx.input.justTouched() && mx >= deathBtnX && mx <= deathBtnX + deathBtnW && my >= deathBtnY && my <= deathBtnY + deathBtnH) {
                     handleDeathClick();
                 }
             }
             return;
         }
 
-        float halfW = camera.viewportWidth * camera.zoom / 2f;
-        float halfH = camera.viewportHeight * camera.zoom / 2f;
+        // KIEN: Cập nhật chunk trong phạm vi map khi di chuyển
+        world.update(camera);
+        cameraController.update(camera, world, player, delta);
 
-        if (player != null && player.isAlive()) {
-            // DUOC-ENTITY: camera follow player — clamp trong biên world
-            // TODO(KIEN-WORLD): chuyển logic này sang CameraController khi có chunk system
-            float targetX = player.getX() + Player.PLAYER_W / 2f;
-            float targetY = player.getY() + Player.PLAYER_H / 2f;
-            float followLerp = Math.min(1f, delta * 7f);
-            camera.position.x += (targetX - camera.position.x) * followLerp;
-            camera.position.y += (targetY - camera.position.y) * followLerp;
-            camera.position.x = Math.max(halfW, Math.min(world.width - halfW, camera.position.x));
-            camera.position.y = Math.max(halfH, Math.min(world.height - halfH, camera.position.y));
-        } else {
-            // Fallback WASD khi player chết hoặc chưa có
-            float cameraSpeed = 16f;
-            if (Gdx.input.isKeyPressed(Input.Keys.A))
-                camera.position.x -= cameraSpeed * delta;
-            if (Gdx.input.isKeyPressed(Input.Keys.D))
-                camera.position.x += cameraSpeed * delta;
-            if (Gdx.input.isKeyPressed(Input.Keys.S))
-                camera.position.y -= cameraSpeed * delta;
-            if (Gdx.input.isKeyPressed(Input.Keys.W))
-                camera.position.y += cameraSpeed * delta;
-            camera.position.x = Math.max(halfW, Math.min(world.width - halfW, camera.position.x));
-            camera.position.y = Math.max(halfH, Math.min(world.height - halfH, camera.position.y));
+        String heldItemId = getHeldItemId();
+        player.setHeldItemId(heldItemId);
+        boolean placedBlock = false;
+        if (blockPlacementController.update(player, world, camera, viewport, heldItemId,
+            inventoryController.isInventoryOpen())) {
+            player.playPlaceAnimation(blockPlacementController.getHoveredPlaceX() + 0.5f, heldItemId);
+            reduceHeldBlockStack();
+            blockBreaker.cancel();
+            placedBlock = true;
         }
-
         boolean attacked = playerAttackController.update(delta, player, entityManager,
-            camera, viewport, inventoryController.isInventoryOpen());
-        if (attacked || inventoryController.isInventoryOpen()) {
+            camera, viewport, inventoryController.isInventoryOpen(), heldItemId);
+        boolean brokeBlock = false;
+        if (placedBlock || attacked || inventoryController.isInventoryOpen()) {
             blockBreaker.cancel();
         } else {
-            blockBreaker.update(delta, player, world, camera, viewport);
+            brokeBlock = blockBreaker.update(delta, player, world, camera, viewport, heldItemId);
+        }
+        if (attacked || brokeBlock) {
+            damageHeldTool();
         }
         float miningTargetX = blockBreaker.hasHoveredBlock()
             ? blockBreaker.getHoveredBlockX() + 0.5f
@@ -257,7 +187,15 @@ public class GameScreen extends BaseScreen {
 
     @Override
     public void draw() {
-        Gdx.gl.glClearColor(0.4f, 0.7f, 1f, 1f);
+        // KIEN: Tối màu hang động
+        float surfaceY = world.height / 2f;
+        float deepCaveY = 20f;
+        float lightRatio = Math.max(0f, Math.min(1f, (camera.position.y - deepCaveY) / (surfaceY - deepCaveY)));
+        float r = (0.4f * lightRatio) + (0.02f * (1 - lightRatio));
+        float g = (0.7f * lightRatio) + (0.02f * (1 - lightRatio));
+        float b = (1.0f * lightRatio) + (0.05f * (1 - lightRatio));
+
+        Gdx.gl.glClearColor(r, g, b, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         camera.update();
@@ -266,166 +204,78 @@ public class GameScreen extends BaseScreen {
         batch.begin();
         world.render(batch, camera);
         droppedItemManager.render(batch);
-        entityManager.render(batch); // DUOC-ENTITY: mob trước, player sau (render order)
-        blockBreakOverlay.render(batch, blockBreaker);
+        entityManager.render(batch);
+        blockBreakOverlay.render(batch, blockBreaker, blockPlacementController);
         batch.end();
 
-        // ── HUD / debug block palette ────────────────────────────
-        batch.setProjectionMatrix(viewport.getCamera().combined);
-        batch.begin();
-        if (BlockPalette.getGrass() != null) {
-            batch.draw(BlockPalette.getGrass(), 0.25f, Constants.VIEWPORT_HEIGHT_TILES - 1.25f, 1f, 1f);
-        }
-        if (BlockPalette.getStone() != null) {
-            batch.draw(BlockPalette.getStone(), 1.35f, Constants.VIEWPORT_HEIGHT_TILES - 1.25f, 1f, 1f);
-        }
-        if (BlockPalette.getBedrock() != null) {
-            batch.draw(BlockPalette.getBedrock(), 2.45f, Constants.VIEWPORT_HEIGHT_TILES - 1.25f, 1f, 1f);
-        }
+        hudRenderer.render(batch, viewport, inventory, inventoryController, inventoryRenderer,
+            inventoryInteractionHandler, player);
 
-        // ── Text HUD ─────────────────────────────────────────────────
-        uiProjection.setToOrtho2D(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        batch.setProjectionMatrix(uiProjection);
-
-        // ── Vẽ Minecraft HUD ─────────────────────────────────────────
-        float sw = Gdx.graphics.getWidth();
-        float sh = Gdx.graphics.getHeight();
-
-        // Vì ảnh hotbar đã được upscaled lên 728x88, ta sẽ dùng scale = 0.5f hoặc 0.75f
-        // tùy màn hình
-        float scale = 0.65f;
-
-        float hbW = hotbarTex.getWidth() * scale;
-        float hbH = hotbarTex.getHeight() * scale;
-
-        float hbX = (sw - hbW) / 2f;
-        float hbY = 10f;
-        inventoryRenderer.renderHotbar(batch, inventory, inventoryController, hotbarTex, selectorTex, sw, scale);
-        if (inventoryController.isInventoryOpen()) {
-            inventoryRenderer.renderInventory(batch, inventory, sw, sh, scale);
-            inventoryRenderer.renderCarriedStack(batch, inventoryInteractionHandler.getCarriedStack());
-        }
-
-        // Vẽ XP Bar (Ngay trên hotbar)
-        // Lưu ý: Ảnh XP Bar chỉ có kích thước ~357 (gần 2x), ta sẽ scale nó để bằng
-        // chiều rộng Hotbar
-        float xpScaleX = hbW / xpBgTex.getWidth();
-        float xpScaleY = xpScaleX;
-        float xpBgW = xpBgTex.getWidth() * xpScaleX;
-        float xpBgH = xpBgTex.getHeight() * xpScaleY;
-
-        float xpX = hbX + (hbW - xpBgW) / 2f; // Sẽ bằng mép trái hotbar
-        float xpY = hbY + hbH + (5f * scale);
-        batch.draw(xpBgTex, xpX, xpY, xpBgW, xpBgH);
-
-        // Giả lập XP đang được 50%
-        float xpProgress = 0.5f;
-        batch.draw(xpFgTex, xpX, xpY, xpBgW * xpProgress, xpBgH, 0, 0, (int) (xpFgTex.getWidth() * xpProgress),
-                xpFgTex.getHeight(), false, false);
-
-        // Vẽ Health Bar
-        int hp = player.getHealth();
-        hp = Math.max(0, Math.min(20, hp));
-        Texture hpTex = healthTextures[hp];
-
-        // Ảnh Health là 324 (4x) -> scale bình thường
-        float hpScale = scale;
-        float hpW = hpTex.getWidth() * hpScale;
-        float hpH = hpTex.getHeight() * hpScale;
-        float hpX = hbX; // Canh trái bằng mép Hotbar
-        float hpY = xpY + xpBgH + (5f * scale);
-        batch.draw(hpTex, hpX, hpY, hpW, hpH);
-
-        // Vẽ Hunger Bar (Giả lập đầy 20)
-        int hunger = 20;
-        Texture hungerTex = hungerTextures[hunger];
-
-        // Ảnh Hunger là 162 (2x) -> phải nhân 2 scale lên để to bằng Health (4x)
-        float hgScale = scale * 2f;
-        float hgW = hungerTex.getWidth() * hgScale;
-        float hgH = hungerTex.getHeight() * hgScale;
-        float hgX = hbX + hbW - hgW; // Canh lề phải bằng mép phải Hotbar
-        float hgY = hpY; // Ngang hàng với Health
-        batch.draw(hungerTex, hgX, hgY, hgW, hgH);
-        font.setColor(Color.WHITE);
-        font.draw(batch, "FPS: " + Gdx.graphics.getFramesPerSecond(), 20, Gdx.graphics.getHeight() - 40);
-        font.draw(batch, "X: " + (int) player.getX() + "  Y: " + (int) player.getY(), 20,
-                Gdx.graphics.getHeight() - 60);
-
-        batch.end();
-
-        if (paused) {
-            drawPauseOverlay();
-        } else if (dead) {
-            drawDeathOverlay();
-        }
-
-        drawBrightnessOverlay();
-    }
-
-    private void drawBrightnessOverlay() {
-        GameState gameState = game.getGameState();
-        int brightness = gameState.brightness;
-        float alpha;
-        Color overlayColor;
-
-        if (brightness < 50) {
-            alpha = (50 - brightness) / 50f * 0.8f;
-            overlayColor = new Color(0f, 0f, 0f, alpha);
-        } else if (brightness > 50) {
-            alpha = (brightness - 50) / 50f * 0.4f;
-            overlayColor = new Color(1f, 1f, 1f, alpha);
-        } else {
-            return;
-        }
-
-        uiProjection.setToOrtho2D(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        batch.setProjectionMatrix(uiProjection);
-        batch.begin();
-        batch.setColor(overlayColor);
-        batch.draw(overlayTexture, 0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        batch.setColor(Color.WHITE);
-        batch.end();
-    }
-
-    private void drawDeathOverlay() {
-        uiProjection.setToOrtho2D(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        batch.setProjectionMatrix(uiProjection);
-
-        batch.begin();
-        batch.draw(deathTexture, 0f, 0f, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        batch.end();
+        if (paused) overlayRenderer.renderPause(batch);
+        else if (dead) overlayRenderer.renderDeath(batch);
+        overlayRenderer.renderBrightness(batch, game.getGameState());
     }
 
     private void handlePauseClick(float mx, float my) {
         float sw = Gdx.graphics.getWidth();
         float sh = Gdx.graphics.getHeight();
-
         float bw = 300f * (sw / 640f);
         float bh = 50f * (sh / 360f);
         float bx = (sw - bw) / 2f;
         float by1 = sh * 0.45f;
         float by2 = sh * 0.30f;
-
-        if (mx >= bx && mx <= bx + bw && my >= by1 && my <= by1 + bh) {
-            paused = false;
-        } else if (mx >= bx && mx <= bx + bw && my >= by2 && my <= by2 + bh) {
-            game.getScreenRouter().request(ScreenId.MENU);
-        }
+        if (mx >= bx && mx <= bx + bw && my >= by1 && my <= by1 + bh) paused = false;
+        else if (mx >= bx && mx <= bx + bw && my >= by2 && my <= by2 + bh) game.getScreenRouter().request(ScreenId.MENU);
     }
 
     private void handleDeathClick() {
-        player.respawn(world.getSpawnPoint().x, world.getSpawnPoint().y);
+        spawnSafetyController.respawn(world, player);
         dead = false;
     }
 
-    private void drawPauseOverlay() {
-        uiProjection.setToOrtho2D(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        batch.setProjectionMatrix(uiProjection);
+    private String getHeldItemId() {
+        if (inventory == null || inventoryController == null) {
+            return null;
+        }
+        ItemStack stack = inventory.getSlot(inventoryController.getSelectedHotbarSlot());
+        return stack == null || stack.getCount() <= 0 ? null : stack.getItemId();
+    }
 
-        batch.begin();
-        batch.draw(pauseTexture, 0f, 0f, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        batch.end();
+    private void syncHeldItem() {
+        if (player != null) {
+            player.setHeldItemId(getHeldItemId());
+        }
+    }
+
+    private void damageHeldTool() {
+        if (inventory == null || inventoryController == null) {
+            return;
+        }
+        int slot = inventoryController.getSelectedHotbarSlot();
+        ItemStack stack = inventory.getSlot(slot);
+        if (stack == null || !stack.hasDurability()) {
+            return;
+        }
+        if (stack.damage(1)) {
+            inventory.setSlot(slot, null);
+        }
+        syncHeldItem();
+    }
+
+    private void reduceHeldBlockStack() {
+        if (inventory == null || inventoryController == null) {
+            return;
+        }
+        int slot = inventoryController.getSelectedHotbarSlot();
+        ItemStack stack = inventory.getSlot(slot);
+        if (stack == null || stack.getCount() <= 0) {
+            return;
+        }
+        stack.subtract(1);
+        if (stack.getCount() <= 0) {
+            inventory.setSlot(slot, null);
+        }
+        syncHeldItem();
     }
 
     private void updateDeathButtonLayout() {
@@ -437,56 +287,18 @@ public class GameScreen extends BaseScreen {
         deathBtnY = sh * 0.38f;
     }
 
-    private Texture loadTextureWithFallback(String path, String fallbackPath) {
-        if (Gdx.files.internal(path).exists()) {
-            return new Texture(Gdx.files.internal(path));
-        }
-        return new Texture(Gdx.files.internal(fallbackPath));
-    }
-
     @Override
     public void dispose() {
         super.dispose();
-        if (pauseTexture != null)
-            pauseTexture.dispose();
-        if (deathTexture != null)
-            deathTexture.dispose();
-        font.dispose();
         BlockPalette.dispose();
-        overlayTexture.dispose();
-        overlayFont.dispose();
-        if (healthTextures != null) {
-            for (Texture t : healthTextures) {
-                if (t != null)
-                    t.dispose();
-            }
-        }
-        if (hungerTextures != null) {
-            for (Texture t : hungerTextures) {
-                if (t != null)
-                    t.dispose();
-            }
-        }
-        if (hotbarTex != null)
-            hotbarTex.dispose();
-        if (selectorTex != null)
-            selectorTex.dispose();
-        if (xpBgTex != null)
-            xpBgTex.dispose();
-        if (xpFgTex != null)
-            xpFgTex.dispose();
-        if (blockBreakOverlay != null)
-            blockBreakOverlay.dispose();
-        if (droppedItemManager != null)
-            droppedItemManager.clear();
-        if (inventoryRenderer != null)
-            inventoryRenderer.dispose();
-
-        entityManager.dispose(); // DUOC-ENTITY: giải phóng tài nguyên player + mob
+        if (hudRenderer != null) hudRenderer.dispose();
+        if (overlayRenderer != null) overlayRenderer.dispose();
+        if (blockBreakOverlay != null) blockBreakOverlay.dispose();
+        if (droppedItemManager != null) droppedItemManager.clear();
+        if (inventoryRenderer != null) inventoryRenderer.dispose();
+        entityManager.dispose();
     }
 
     @Override
-    public ScreenId getScreenId() {
-        return ScreenId.GAME;
-    }
+    public ScreenId getScreenId() { return ScreenId.GAME; }
 }

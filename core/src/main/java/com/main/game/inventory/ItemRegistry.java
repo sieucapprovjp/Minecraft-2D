@@ -6,15 +6,49 @@ import com.main.game.world.BlockPalette;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public final class ItemRegistry {
 
     private static final Map<String, TextureRegion> TEXTURE_CACHE = new HashMap<>();
+    private static final Set<String> PLACEABLE_BLOCKS = Set.of(
+        "dirt",
+        "grass",
+        "stone",
+        "deepslate",
+        "sand",
+        "wood",
+        "planks",
+        "leaves",
+        "snow",
+        "ice",
+        "sandstone",
+        "cactus",
+        "coal_ore",
+        "iron_ore",
+        "gold_ore",
+        "diamond_ore",
+        "copper_ore",
+        "lapis_ore",
+        "redstone_ore",
+        "emerald_ore",
+        "deepslate_co",
+        "deepslate_io",
+        "deepslate_go",
+        "deepslate_do",
+        "deepslate_copper",
+        "ore_lapis_deepslate",
+        "deepslate_ro",
+        "deepslate_eo"
+    );
 
     private ItemRegistry() {
     }
 
     public static int getMaxStack(String itemId) {
+        if (ToolRegistry.isTool(itemId)) {
+            return 1;
+        }
         return 64;
     }
 
@@ -23,7 +57,13 @@ public final class ItemRegistry {
             return TEXTURE_CACHE.get(itemId);
         }
 
-        TextureRegion texture = TextureManager.getInstance().getTexture(toTextureName(itemId));
+        TextureRegion texture = getToolTexture(itemId);
+        if (texture != null) {
+            TEXTURE_CACHE.put(itemId, texture);
+            return texture;
+        }
+
+        texture = TextureManager.getInstance().getTexture(toTextureName(itemId));
         if (texture != null) {
             TEXTURE_CACHE.put(itemId, texture);
             return texture;
@@ -31,6 +71,10 @@ public final class ItemRegistry {
         texture = getBlockPaletteTexture(itemId);
         TEXTURE_CACHE.put(itemId, texture);
         return texture;
+    }
+
+    public static boolean isPlaceableBlock(String itemId) {
+        return itemId != null && !ToolRegistry.isTool(itemId) && PLACEABLE_BLOCKS.contains(itemId);
     }
 
     private static String toTextureName(String itemId) {
@@ -43,6 +87,14 @@ public final class ItemRegistry {
         if ("sandstone".equals(itemId)) return "sandstone";
         if ("cactus".equals(itemId)) return "cactus";
         return itemId;
+    }
+
+    private static TextureRegion getToolTexture(String itemId) {
+        ToolRegistry.ToolDefinition tool = ToolRegistry.get(itemId);
+        if (tool == null) {
+            return null;
+        }
+        return TextureManager.getInstance().getTexture(tool.getTextureName());
     }
 
     private static TextureRegion getBlockPaletteTexture(String itemId) {
