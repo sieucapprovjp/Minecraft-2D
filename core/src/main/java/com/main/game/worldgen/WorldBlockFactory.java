@@ -22,7 +22,7 @@ public final class WorldBlockFactory {
 
     private static float hardness(String id) {
         if ("bedrock".equals(id)) return 999f;
-        if (isOre(id)) return "diamond_ore".equals(id) ? 5f : 3f;
+        if (isOre(id)) return ("diamond_ore".equals(id) || "deepslate_do".equals(id)) ? 5f : 3f;
         if ("deepslate".equals(id)) return 1.8f;
         if ("stone".equals(id) || "sandstone".equals(id)) return 1.2f;
         if ("wood".equals(id) || "cactus".equals(id)) return 0.9f;
