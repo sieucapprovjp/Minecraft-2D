@@ -21,6 +21,7 @@ import com.main.game.inventory.Inventory;
 import com.main.game.inventory.InventoryController;
 import com.main.game.inventory.InventoryInteractionHandler;
 import com.main.game.inventory.InventoryRenderer;
+import com.main.game.inventory.ItemStack;
 import com.main.game.items.BlockDropFactory;
 import com.main.game.items.DroppedItemManager;
 import com.main.game.navigation.ScreenId;
@@ -33,7 +34,7 @@ import com.main.game.worldgen.BiomeMobSpawner;
 
 public class GameScreen extends BaseScreen {
 
-    private static final float CAMERA_ZOOM = 0.65f;
+    private static final float CAMERA_ZOOM = 0.5f;
 
     private World world;
     private PhysicsEngine physics;
@@ -107,9 +108,11 @@ public class GameScreen extends BaseScreen {
         playerAttackController = new PlayerAttackController();
         droppedItemManager = new DroppedItemManager();
         inventory = new Inventory();
+        populateStarterTools();
         inventoryController = new InventoryController();
         inventoryRenderer = new InventoryRenderer();
         inventoryInteractionHandler = new InventoryInteractionHandler();
+        syncHeldItem();
         blockBreaker.setBlockBreakListener((block, worldRef) ->
             droppedItemManager.spawn(BlockDropFactory.createDrop(block, worldRef), worldRef));
 
@@ -159,6 +162,7 @@ public class GameScreen extends BaseScreen {
 
         inventoryController.update();
         if (inventoryController.wasJustClosed()) inventoryInteractionHandler.onCloseInventory(inventory);
+        syncHeldItem();
 
         if (paused) {
             player.setMining(false, player.getX() + player.getWidth() / 2f);
@@ -173,7 +177,10 @@ public class GameScreen extends BaseScreen {
                 spawnGuardTimer -= delta;
             }
             droppedItemManager.update(delta, world, player, inventory);
-            if (inventoryController.isInventoryOpen()) inventoryInteractionHandler.update(inventory, inventoryRenderer);
+            if (inventoryController.isInventoryOpen()) {
+                inventoryInteractionHandler.update(inventory, inventoryRenderer);
+                syncHeldItem();
+            }
         }
 
         if (player.getHealth() <= 0) dead = true;
@@ -217,12 +224,18 @@ public class GameScreen extends BaseScreen {
             camera.position.y = Math.max(halfH, camera.position.y);
         }
 
+        String heldItemId = getHeldItemId();
+        player.setHeldItemId(heldItemId);
         boolean attacked = playerAttackController.update(delta, player, entityManager,
-            camera, viewport, inventoryController.isInventoryOpen());
+            camera, viewport, inventoryController.isInventoryOpen(), heldItemId);
+        boolean brokeBlock = false;
         if (attacked || inventoryController.isInventoryOpen()) {
             blockBreaker.cancel();
         } else {
-            blockBreaker.update(delta, player, world, camera, viewport);
+            brokeBlock = blockBreaker.update(delta, player, world, camera, viewport, heldItemId);
+        }
+        if (attacked || brokeBlock) {
+            damageHeldTool();
         }
         float miningTargetX = blockBreaker.hasHoveredBlock()
             ? blockBreaker.getHoveredBlockX() + 0.5f
@@ -376,6 +389,77 @@ public class GameScreen extends BaseScreen {
             Vector2 spawn = world.getSpawnPoint();
             player.respawn(spawn.x, spawn.y);
         }
+    }
+
+    private void populateStarterTools() {
+        String[] starterTools = {
+            "wood_pickaxe",
+            "wood_axe",
+            "wood_shovel",
+            "wood_hoe",
+            "stone_pickaxe",
+            "stone_axe",
+            "stone_shovel",
+            "stone_sword",
+            "stone_hoe",
+            "copper_pickaxe",
+            "copper_axe",
+            "copper_shovel",
+            "copper_sword",
+            "copper_hoe",
+            "iron_pickaxe",
+            "iron_axe",
+            "iron_shovel",
+            "iron_sword",
+            "iron_hoe",
+            "gold_pickaxe",
+            "gold_axe",
+            "gold_shovel",
+            "gold_sword",
+            "gold_hoe",
+            "diamond_pickaxe",
+            "diamond_axe",
+            "diamond_shovel",
+            "diamond_sword",
+            "diamond_hoe",
+            "netherite_pickaxe",
+            "netherite_axe",
+            "netherite_shovel",
+            "netherite_sword",
+            "netherite_hoe"
+        };
+        for (int i = 0; i < starterTools.length && i < inventory.getTotalSize(); i++) {
+            inventory.setSlot(i, new ItemStack(starterTools[i], 1));
+        }
+    }
+
+    private String getHeldItemId() {
+        if (inventory == null || inventoryController == null) {
+            return null;
+        }
+        ItemStack stack = inventory.getSlot(inventoryController.getSelectedHotbarSlot());
+        return stack == null || stack.getCount() <= 0 ? null : stack.getItemId();
+    }
+
+    private void syncHeldItem() {
+        if (player != null) {
+            player.setHeldItemId(getHeldItemId());
+        }
+    }
+
+    private void damageHeldTool() {
+        if (inventory == null || inventoryController == null) {
+            return;
+        }
+        int slot = inventoryController.getSelectedHotbarSlot();
+        ItemStack stack = inventory.getSlot(slot);
+        if (stack == null || !stack.hasDurability()) {
+            return;
+        }
+        if (stack.damage(1)) {
+            inventory.setSlot(slot, null);
+        }
+        syncHeldItem();
     }
 
     private void drawPauseOverlay() {

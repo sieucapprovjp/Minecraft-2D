@@ -6,6 +6,8 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.main.game.entities.EntityState;
+import com.main.game.inventory.ItemRegistry;
+import com.main.game.inventory.ToolRegistry;
 
 class PlayerRenderer {
 
@@ -27,7 +29,8 @@ class PlayerRenderer {
         loadAssets();
     }
 
-    void render(SpriteBatch batch, Player player, EntityState state, float stateTime, boolean mining, float miningTime, boolean hurt) {
+    void render(SpriteBatch batch, Player player, EntityState state, float stateTime,
+                boolean mining, float miningTime, boolean hurt, String heldItemId) {
         float armFrontAngle = 0f;
         float armBackAngle = 0f;
         float legFrontAngle = 0f;
@@ -121,6 +124,7 @@ class PlayerRenderer {
         batch.draw(bootFront, cx - bootW / 2f, legY - bootH, bootW / 2f, legH + bootH, bootW, bootH, scaleX, 1f, legFrontRot);
         batch.draw(legFront, cx - legW / 2f, legY, legW / 2f, legH, legW, legH, scaleX, 1f, legFrontRot);
         batch.draw(armFront, cx - armW / 2f, armY - armH, armW / 2f, armH, armW, armH, scaleX, 1f, armFrontRot);
+        drawHeldTool(batch, player, state, heldItemId, cx, armY, armH, armFrontRot);
 
         batch.setColor(Color.WHITE);
     }
@@ -160,5 +164,44 @@ class PlayerRenderer {
         regHeadL = new TextureRegion(tHeadL);
         regBootL = new TextureRegion(tBootL);
         regBootR = new TextureRegion(tBootR);
+    }
+
+    private void drawHeldTool(SpriteBatch batch, Player player, EntityState state, String heldItemId,
+                              float shoulderX, float shoulderY, float armH, float armRotation) {
+        if (!ToolRegistry.isTool(heldItemId)) {
+            return;
+        }
+        TextureRegion texture = ItemRegistry.getTexture(heldItemId);
+        if (texture == null) {
+            return;
+        }
+
+        float renderRotation = armRotation;
+        if (state == EntityState.JUMP || state == EntityState.FALL) {
+            renderRotation = player.isFacingRight() ? 35f : -35f;
+        }
+
+        float handDistance = armH * 0.88f;
+        double radians = Math.toRadians(renderRotation);
+        float handX = shoulderX + (float) Math.sin(radians) * handDistance;
+        float handY = shoulderY - (float) Math.cos(radians) * handDistance;
+        float size = 0.682f;
+        float originX = size * 0.5f;
+        float originY = size * 0.08f;
+        float scaleX = player.isFacingRight() ? 1f : -1f;
+        float toolRotation = renderRotation + (player.isFacingRight() ? -45f : 45f);
+        float forwardOffset = player.isFacingRight() ? 0.16f : -0.16f;
+        float verticalOffset = (state == EntityState.JUMP || state == EntityState.FALL) ? -0.08f : -0.2f;
+
+        batch.draw(texture,
+            handX + forwardOffset - originX,
+            handY - originY + verticalOffset,
+            originX,
+            originY,
+            size,
+            size,
+            scaleX,
+            1f,
+            toolRotation);
     }
 }

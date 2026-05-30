@@ -43,6 +43,7 @@ public class Player extends Entity {
     private float       hurtTimer = 0f;
     private float       miningTime = 0f;
     private boolean     mining = false;
+    private String      heldItemId;
     private int         health    = 20;
     private int         maxHealth = 20;
     private boolean     isBanned  = false;
@@ -91,7 +92,7 @@ public class Player extends Entity {
     @Override
     public void render(SpriteBatch batch) {
         if (!isAlive) return;
-        renderer.render(batch, this, state, stateTime, mining, miningTime, isHurt());
+        renderer.render(batch, this, state, stateTime, mining, miningTime, isHurt(), heldItemId);
     }
 
     public void ban() {
@@ -192,6 +193,11 @@ public class Player extends Entity {
     public int         getHealth()    { return health;     }
     public int         getMaxHealth() { return maxHealth;  }
     public boolean     isHurt()       { return hurtTimer > 0; }
+    public String      getHeldItemId() { return heldItemId;   }
+
+    public void setHeldItemId(String heldItemId) {
+        this.heldItemId = heldItemId;
+    }
 
     public void setMining(boolean mining, float targetX) {
         this.mining = mining;

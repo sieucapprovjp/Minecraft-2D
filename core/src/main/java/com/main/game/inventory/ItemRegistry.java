@@ -15,6 +15,9 @@ public final class ItemRegistry {
     }
 
     public static int getMaxStack(String itemId) {
+        if (ToolRegistry.isTool(itemId)) {
+            return 1;
+        }
         return 64;
     }
 
@@ -23,7 +26,13 @@ public final class ItemRegistry {
             return TEXTURE_CACHE.get(itemId);
         }
 
-        TextureRegion texture = TextureManager.getInstance().getTexture(toTextureName(itemId));
+        TextureRegion texture = getToolTexture(itemId);
+        if (texture != null) {
+            TEXTURE_CACHE.put(itemId, texture);
+            return texture;
+        }
+
+        texture = TextureManager.getInstance().getTexture(toTextureName(itemId));
         if (texture != null) {
             TEXTURE_CACHE.put(itemId, texture);
             return texture;
@@ -43,6 +52,14 @@ public final class ItemRegistry {
         if ("sandstone".equals(itemId)) return "sandstone";
         if ("cactus".equals(itemId)) return "cactus";
         return itemId;
+    }
+
+    private static TextureRegion getToolTexture(String itemId) {
+        ToolRegistry.ToolDefinition tool = ToolRegistry.get(itemId);
+        if (tool == null) {
+            return null;
+        }
+        return TextureManager.getInstance().getTexture(tool.getTextureName());
     }
 
     private static TextureRegion getBlockPaletteTexture(String itemId) {
