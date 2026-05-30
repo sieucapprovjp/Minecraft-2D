@@ -29,11 +29,10 @@ import com.main.game.worldgen.BiomeType;
 import com.main.game.worldgen.WorldBlockFactory;
 import com.main.game.worldgen.cave.CaveGenerator;
 import com.main.game.utils.Constants;
-import com.badlogic.gdx.math.GridPoint2;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.Random;
 
 /**
@@ -50,8 +49,9 @@ public class World {
     private static final int INITIAL_SPAWN_PLATFORM_SURFACE_GAP = 3;
 
     private final long seed;
-    private final Map<GridPoint2, Chunk> chunks;
-    private final GridPoint2 reusableChunkLookup;
+    private final Chunk[][] chunks;
+    private final int chunkColumns;
+    private final int chunkRows;
     private final Map<Integer, BiomeType> biomes;
     private final int[] surfaceByX;
     private int initialSpawnPlatformMinX = -1;
@@ -65,32 +65,27 @@ public class World {
         this.seed = seed;
         this.width = Constants.WORLD_WIDTH;
         this.height = Constants.WORLD_HEIGHT;
-        this.chunks = new HashMap<>();
-        this.reusableChunkLookup = new GridPoint2();
+        this.chunkColumns = Math.floorDiv(width - 1, Constants.CHUNK_SIZE) + 1;
+        this.chunkRows = Math.floorDiv(height - 1, Constants.CHUNK_SIZE) + 1;
+        this.chunks = new Chunk[chunkColumns][chunkRows];
         this.biomes = new HashMap<>();
         this.surfaceByX = new int[width];
         Arrays.fill(surfaceByX, -1);
     }
 
-    private GridPoint2 getChunkCoord(int worldX, int worldY) {
-        int cx = Math.floorDiv(worldX, Constants.CHUNK_SIZE);
-        int cy = Math.floorDiv(worldY, Constants.CHUNK_SIZE);
-        return new GridPoint2(cx, cy);
-    }
-
     public AbstractBlock getBlock(int x, int y) {
         if (!isInBounds(x, y)) return null;
-        reusableChunkLookup.set(Math.floorDiv(x, Constants.CHUNK_SIZE), Math.floorDiv(y, Constants.CHUNK_SIZE));
-        Chunk chunk = chunks.get(reusableChunkLookup);
+        Chunk chunk = chunks[x / Constants.CHUNK_SIZE][y / Constants.CHUNK_SIZE];
         if (chunk == null) return null;
-        return chunk.getBlock(Math.floorMod(x, Constants.CHUNK_SIZE), Math.floorMod(y, Constants.CHUNK_SIZE));
+        return chunk.getBlock(x % Constants.CHUNK_SIZE, y % Constants.CHUNK_SIZE);
     }
 
     public void setBlock(int x, int y, AbstractBlock block) {
         if (!isInBounds(x, y)) return;
-        GridPoint2 chunkPos = getChunkCoord(x, y);
-        Chunk chunk = chunks.computeIfAbsent(chunkPos, k -> new Chunk(chunkPos.x, chunkPos.y));
-        chunk.setBlock(Math.floorMod(x, Constants.CHUNK_SIZE), Math.floorMod(y, Constants.CHUNK_SIZE), block);
+        int chunkX = x / Constants.CHUNK_SIZE;
+        int chunkY = y / Constants.CHUNK_SIZE;
+        Chunk chunk = getOrCreateChunk(chunkX, chunkY);
+        chunk.setBlock(x % Constants.CHUNK_SIZE, y % Constants.CHUNK_SIZE, block);
     }
 
     public void setBiome(int x, BiomeType biome) {
@@ -115,10 +110,8 @@ public class World {
     public void generate() {
         if (generated) return;
 
-        int maxChunkX = Math.floorDiv(width - 1, Constants.CHUNK_SIZE);
-        int maxChunkY = Math.floorDiv(height - 1, Constants.CHUNK_SIZE);
-        for (int cx = 0; cx <= maxChunkX; cx++) {
-            for (int cy = 0; cy <= maxChunkY; cy++) {
+        for (int cx = 0; cx < chunkColumns; cx++) {
+            for (int cy = 0; cy < chunkRows; cy++) {
                 generateChunk(cx, cy);
             }
         }
@@ -145,15 +138,14 @@ public class World {
         int camChunkY = Math.floorDiv((int) camera.position.y, Constants.CHUNK_SIZE);
         int loadRadius = 4;
         int minChunkX = 0;
-        int maxChunkX = Math.floorDiv(width - 1, Constants.CHUNK_SIZE);
+        int maxChunkX = chunkColumns - 1;
         int minChunkY = 0;
-        int maxChunkY = Math.floorDiv(height - 1, Constants.CHUNK_SIZE);
+        int maxChunkY = chunkRows - 1;
 
         for (int cx = Math.max(minChunkX, camChunkX - loadRadius); cx <= Math.min(maxChunkX, camChunkX + loadRadius); cx++) {
             for (int cy = Math.max(minChunkY, camChunkY - loadRadius); cy <= Math.min(maxChunkY, camChunkY + loadRadius); cy++) {
-                GridPoint2 pos = new GridPoint2(cx, cy);
-                if (!chunks.containsKey(pos)) {
-                    chunks.put(pos, new Chunk(cx, cy));
+                if (chunks[cx][cy] == null) {
+                    chunks[cx][cy] = new Chunk(cx, cy);
                     generateChunk(cx, cy);
                 }
             }
@@ -312,6 +304,15 @@ public class World {
                 }
             }
         }
+    }
+
+    private Chunk getOrCreateChunk(int chunkX, int chunkY) {
+        Chunk chunk = chunks[chunkX][chunkY];
+        if (chunk == null) {
+            chunk = new Chunk(chunkX, chunkY);
+            chunks[chunkX][chunkY] = chunk;
+        }
+        return chunk;
     }
 
     private float getSmoothNoise1D(float x, long seed) {
