@@ -80,12 +80,14 @@ public class World {
         return chunk.getBlock(x % Constants.CHUNK_SIZE, y % Constants.CHUNK_SIZE);
     }
 
-    public void setBlock(int x, int y, AbstractBlock block) {
-        if (!isInBounds(x, y)) return;
+    public AbstractBlock setBlock(int x, int y, AbstractBlock block) {
+        if (!isInBounds(x, y)) return null;
         int chunkX = x / Constants.CHUNK_SIZE;
         int chunkY = y / Constants.CHUNK_SIZE;
         Chunk chunk = getOrCreateChunk(chunkX, chunkY);
+        AbstractBlock old = chunk.getBlock(x % Constants.CHUNK_SIZE, y % Constants.CHUNK_SIZE);
         chunk.setBlock(x % Constants.CHUNK_SIZE, y % Constants.CHUNK_SIZE, block);
+        return old;
     }
 
     public void setBiome(int x, BiomeType biome) {

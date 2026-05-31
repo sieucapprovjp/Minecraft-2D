@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import com.main.game.blocks.AbstractBlock;
 import com.main.game.entities.player.Player;
 import com.main.game.inventory.ItemRegistry;
 import com.main.game.world.World;
@@ -76,9 +77,13 @@ public class BlockPlacementController {
 
     private boolean isValidPlacement(Player player, World world, int x, int y) {
         if (!world.isInBounds(x, y)
-            || world.getBlock(x, y) != null
             || overlapsPlayer(player, x, y)
             || !isWithinReach(player, x, y)) {
+            return false;
+        }
+        // Cho phép đặt block đè lên nước (water có thể bị thay thế)
+        AbstractBlock existing = world.getBlock(x, y);
+        if (existing != null && !existing.isWater()) {
             return false;
         }
         return world.isSolid(x - 1, y)
