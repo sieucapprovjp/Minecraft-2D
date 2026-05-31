@@ -19,7 +19,7 @@ public class InventoryInteractionHandler {
 
         float mouseX = Gdx.input.getX();
         float mouseY = Gdx.graphics.getHeight() - Gdx.input.getY();
-        int slot = renderer.findHoveredSlot(mouseX, mouseY);
+        int slot = renderer.findHoveredSlot(mouseX, mouseY, craftingController);
         if (slot < 0) {
             return;
         }
@@ -43,7 +43,7 @@ public class InventoryInteractionHandler {
 
         carriedStack = returnStackToInventory(inventory, carriedStack);
         if (craftingController != null) {
-            craftingController.returnInputsToInventory(inventory);
+            craftingController.closeCrafting(inventory);
         }
     }
 
@@ -161,14 +161,15 @@ public class InventoryInteractionHandler {
         if (slotIndex >= 0 && slotIndex < inventory.getTotalSize()) {
             return true;
         }
-        return craftingController != null && InventoryLayout.isCraftInputSlot(slotIndex);
+        return craftingController != null
+            && InventoryLayout.isCraftInputSlot(slotIndex, craftingController.getGrid());
     }
 
     private ItemStack getSlot(Inventory inventory, CraftingController craftingController, int slotIndex) {
         if (slotIndex >= 0 && slotIndex < inventory.getTotalSize()) {
             return inventory.getSlot(slotIndex);
         }
-        if (craftingController != null && InventoryLayout.isCraftInputSlot(slotIndex)) {
+        if (craftingController != null && InventoryLayout.isCraftInputSlot(slotIndex, craftingController.getGrid())) {
             return craftingController.getGrid().getSlot(InventoryLayout.toCraftInputIndex(slotIndex));
         }
         return null;
@@ -179,7 +180,7 @@ public class InventoryInteractionHandler {
             inventory.setSlot(slotIndex, stack);
             return;
         }
-        if (craftingController != null && InventoryLayout.isCraftInputSlot(slotIndex)) {
+        if (craftingController != null && InventoryLayout.isCraftInputSlot(slotIndex, craftingController.getGrid())) {
             craftingController.getGrid().setSlot(InventoryLayout.toCraftInputIndex(slotIndex), stack);
         }
     }

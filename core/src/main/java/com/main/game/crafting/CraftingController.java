@@ -6,18 +6,43 @@ import com.main.game.inventory.ItemStack;
 
 public class CraftingController {
 
-    private final CraftingGrid grid;
+    private CraftingMode mode;
+    private CraftingGrid grid;
 
     public CraftingController() {
-        this(new CraftingGrid());
+        this(CraftingMode.PLAYER_2X2);
     }
 
-    public CraftingController(CraftingGrid grid) {
-        this.grid = grid;
+    public CraftingController(CraftingMode mode) {
+        this.mode = mode;
+        this.grid = new CraftingGrid(mode);
+    }
+
+    public CraftingMode getMode() {
+        return mode;
+    }
+
+    public boolean isTableCrafting() {
+        return mode == CraftingMode.TABLE_3X3;
     }
 
     public CraftingGrid getGrid() {
         return grid;
+    }
+
+    public void openPlayerCrafting(Inventory inventory) {
+        setMode(CraftingMode.PLAYER_2X2, inventory);
+    }
+
+    public void openTableCrafting(Inventory inventory) {
+        setMode(CraftingMode.TABLE_3X3, inventory);
+    }
+
+    public void closeCrafting(Inventory inventory) {
+        returnInputsToInventory(inventory);
+        if (isGridEmpty()) {
+            setMode(CraftingMode.PLAYER_2X2, null);
+        }
     }
 
     public ItemStack getResult() {
@@ -58,7 +83,7 @@ public class CraftingController {
         if (inventory == null) {
             return;
         }
-        for (int i = 0; i < CraftingGrid.SIZE; i++) {
+        for (int i = 0; i < grid.getSize(); i++) {
             ItemStack stack = grid.getSlot(i);
             if (stack == null || stack.getCount() <= 0) {
                 grid.setSlot(i, null);
@@ -67,6 +92,28 @@ public class CraftingController {
             ItemStack remaining = inventory.addStack(stack);
             grid.setSlot(i, remaining);
         }
+    }
+
+    private void setMode(CraftingMode nextMode, Inventory inventory) {
+        if (nextMode == null || nextMode == mode) {
+            return;
+        }
+        returnInputsToInventory(inventory);
+        if (!isGridEmpty()) {
+            return;
+        }
+        mode = nextMode;
+        grid = new CraftingGrid(mode);
+    }
+
+    private boolean isGridEmpty() {
+        for (int i = 0; i < grid.getSize(); i++) {
+            ItemStack stack = grid.getSlot(i);
+            if (stack != null && stack.getCount() > 0) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private void consume(CraftingMatch match, int craftCount) {
