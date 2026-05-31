@@ -8,6 +8,54 @@
 - Future Codex sessions should read this file first to understand the current system state before planning or implementing new work.
 - This file does not replace `README.md`, is not a detailed design document, and should not store unfinished plans.
 
+## Working Rules For Codex
+
+### Scope And Architecture
+- Do not make large architecture changes unless explicitly requested.
+- When adding a new feature, prefer creating a focused class/file in the appropriate module.
+- Integration files such as `GameScreen` should only call short APIs such as `update`, `render`, and `dispose`; they should not absorb full feature logic.
+- Keep changes small and within the requested scope.
+- Prioritize gameplay blockers first, especially physics, input, and state bugs.
+
+### Required Change Report
+- Every change report must include the files changed.
+- Every change report must explain which mechanism or behavior was affected.
+- Every change report must include how to verify the change in game, including input steps or scene setup and the expected result.
+
+### Code Comment Rules
+- Comments should explain why a decision exists or what trade-off is being made.
+- Do not write comments that merely restate obvious code behavior.
+- In game loop or physics logic, use short comments to document assumptions.
+- TODO comments must include:
+  - The scope of work.
+  - The completion condition.
+  - The owner when known.
+- Example:
+  ```java
+  // Why: resolve Y before X to avoid corner snagging while falling onto blocks.
+  // TODO(lhung): add left/right AABB collision before merging the physics branch.
+  ```
+
+### PR And Review Comment Rules
+- Use severity levels: `blocker`, `major`, `minor`, and `nit`.
+- Each review comment should include:
+  - The observed issue.
+  - The gameplay or bug risk.
+  - A concrete fix suggestion.
+- Prioritize review focus on crashes, incorrect collision, incorrect state, resource leaks, and broken screen lifecycle.
+
+### Screen And Resource Rules
+- Do not call `setScreen()` directly from gameplay modules.
+- Do not dispose the shared `SpriteBatch` or `AssetManager` inside a `Screen`.
+- To change screens, call `game.getScreenRouter().request(...)`.
+
+### Task Checklist
+- Restate the task and the affected module, such as world, player, physics, screen, or assets.
+- Read the related files under `core/src/main/java/com/main/game/...` before editing.
+- Make a small, scoped change.
+- Run `lwjgl3:run` or the relevant tests when applicable.
+- Report the result and include manual in-game verification steps.
+
 ## Completed Features
 
 ### Screens And Navigation
