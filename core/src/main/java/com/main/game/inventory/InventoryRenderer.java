@@ -165,11 +165,12 @@ public class InventoryRenderer {
         if (texture == null) {
             return;
         }
-        batch.draw(texture, x, y, size, size);
-        drawDurabilityBar(batch, stack, x, y - size * 0.08f, size);
+        float renderX = x + ItemRenderOffset.xOffset(stack.getItemId(), size);
+        batch.draw(texture, renderX, y, size, size);
+        drawDurabilityBar(batch, stack, renderX, y - size * 0.08f, size);
         if (stack.getCount() > 1) {
             font.setColor(Color.WHITE);
-            font.draw(batch, String.valueOf(stack.getCount()), x + size * 0.48f, y + size * 0.36f);
+            font.draw(batch, String.valueOf(stack.getCount()), renderX + size * 0.48f, y + size * 0.36f);
         }
     }
 

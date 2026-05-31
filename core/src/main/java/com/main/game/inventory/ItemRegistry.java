@@ -26,6 +26,8 @@ public final class ItemRegistry {
         "sandstone",
         "cactus",
         "crafting_table",
+        "furnace",
+        "chest",
         "coal_ore",
         "iron_ore",
         "gold_ore",
@@ -104,8 +106,11 @@ public final class ItemRegistry {
         if ("ice".equals(itemId)) return "ice";
         if ("sandstone".equals(itemId)) return "sandstone";
         if ("cactus".equals(itemId)) return "cactus";
+        if ("cobblestone".equals(itemId)) return "cobble_stone";
         if ("stick".equals(itemId)) return "stick";
         if ("crafting_table".equals(itemId)) return "crafting_table";
+        if ("furnace".equals(itemId)) return "furnace_off";
+        if ("chest".equals(itemId)) return "chest_closed";
         return itemId;
     }
 
@@ -138,6 +143,7 @@ public final class ItemRegistry {
         if ("ice".equals(itemId)) return BlockPalette.getIce();
         if ("sandstone".equals(itemId)) return BlockPalette.getSandstone();
         if ("cactus".equals(itemId)) return BlockPalette.getCactus();
+        if ("cobblestone".equals(itemId)) return BlockPalette.getStone();
         return null;
     }
 }

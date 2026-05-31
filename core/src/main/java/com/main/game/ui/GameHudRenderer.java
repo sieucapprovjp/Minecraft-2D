@@ -9,6 +9,12 @@ import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.main.game.crafting.CraftingController;
 import com.main.game.entities.player.Player;
+import com.main.game.utilityblock.chest.ChestInteractionHandler;
+import com.main.game.utilityblock.chest.ChestRenderer;
+import com.main.game.utilityblock.chest.ChestState;
+import com.main.game.utilityblock.furnace.FurnaceInteractionHandler;
+import com.main.game.utilityblock.furnace.FurnaceRenderer;
+import com.main.game.utilityblock.furnace.FurnaceState;
 import com.main.game.inventory.Inventory;
 import com.main.game.inventory.InventoryController;
 import com.main.game.inventory.InventoryInteractionHandler;
@@ -47,7 +53,11 @@ public class GameHudRenderer {
     public void render(SpriteBatch batch, Viewport viewport, Inventory inventory,
                        InventoryController inventoryController, InventoryRenderer inventoryRenderer,
                        InventoryInteractionHandler inventoryInteractionHandler,
-                       CraftingController craftingController, Player player) {
+                       CraftingController craftingController, FurnaceRenderer furnaceRenderer,
+                       FurnaceInteractionHandler furnaceInteractionHandler, FurnaceState openFurnaceState,
+                       ChestRenderer chestRenderer, ChestInteractionHandler chestInteractionHandler,
+                       ChestState openChestState,
+                       Player player) {
         batch.setProjectionMatrix(viewport.getCamera().combined);
         batch.begin();
         drawDebugPalette(batch);
@@ -65,8 +75,16 @@ public class GameHudRenderer {
 
         inventoryRenderer.renderHotbar(batch, inventory, inventoryController, hotbarTex, selectorTex, sw, scale);
         if (inventoryController.isInventoryOpen()) {
-            inventoryRenderer.renderInventory(batch, inventory, craftingController, sw, sh, scale);
-            inventoryRenderer.renderCarriedStack(batch, inventoryInteractionHandler.getCarriedStack());
+            if (openChestState != null) {
+                chestRenderer.renderChest(batch, inventory, openChestState, sw, sh);
+                chestRenderer.renderCarriedStack(batch, chestInteractionHandler.getCarriedStack());
+            } else if (openFurnaceState != null) {
+                furnaceRenderer.renderFurnace(batch, inventory, openFurnaceState, sw, sh);
+                furnaceRenderer.renderCarriedStack(batch, furnaceInteractionHandler.getCarriedStack());
+            } else {
+                inventoryRenderer.renderInventory(batch, inventory, craftingController, sw, sh, scale);
+                inventoryRenderer.renderCarriedStack(batch, inventoryInteractionHandler.getCarriedStack());
+            }
         }
 
         drawExperienceBar(batch, hbX, hbY, hbW, hbH, scale);

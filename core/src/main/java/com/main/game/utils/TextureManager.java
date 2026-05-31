@@ -56,10 +56,11 @@ public class TextureManager {
         nameMap.put("oak_leaves", "leaves");
         nameMap.put("oak_planks", "planks");
         nameMap.put("dirt", "dirt");
-        nameMap.put("snow", "snow");
-        nameMap.put("ice", "ice");
-        nameMap.put("sandstone", "sandstone");
-        nameMap.put("cactus", "cactus");
+        nameMap.put("snow", "tiles/snowy/snow/snow");
+        nameMap.put("ice", "tiles/snowy/ice/ice");
+        nameMap.put("sand", "tiles/desert/sand/sand");
+        nameMap.put("sandstone", "tiles/desert/sand/sandstone");
+        nameMap.put("cactus", "tiles/desert/cactus/cactus");
         nameMap.put("nether_quartz", "quartz_ore");
         nameMap.put("deepslate", "tiles/cave/natural/deepslate");
         nameMap.put("deepslate_co", "tiles/cave/ores_deepslate/deepslate_co");
