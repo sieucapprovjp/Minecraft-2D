@@ -14,10 +14,16 @@ public class InventoryLayout {
     public static final int CRAFT_INPUT_BASE_SLOT = Inventory.TOTAL_SIZE;
     public static final int CRAFT_MAX_INPUT_SLOTS = CraftingGrid.MAX_SIZE;
     public static final int CRAFT_RESULT_SLOT = CRAFT_INPUT_BASE_SLOT + CRAFT_MAX_INPUT_SLOTS;
+    public static final int ARMOR_BASE_SLOT = CRAFT_RESULT_SLOT + 1;
+    public static final int ARMOR_SLOT_COUNT = ArmorSlot.COUNT;
     public static final float CRAFT_GRID_ORIGIN_X = 196f;
     public static final float CRAFT_GRID_TOP_Y = 272f;
     public static final float CRAFT_RESULT_X = 316f;
     public static final float CRAFT_RESULT_Y = 252f;
+    public static final float ARMOR_LEFT_X = 16f;
+    public static final float ARMOR_RIGHT_X = 136f;
+    public static final float ARMOR_TOP_Y = 272f;
+    public static final float ARMOR_BOTTOM_Y = 232f;
 
     private static final float TABLE_SLOT_ORIGIN_X = 34f;
     private static final float TABLE_MAIN_TOP_Y = 309f;
@@ -45,6 +51,11 @@ public class InventoryLayout {
         int craftingSlot = findCraftingSlot(screenX, screenY, panel, grid);
         if (craftingSlot >= 0) {
             return craftingSlot;
+        }
+
+        int armorSlot = findArmorSlot(screenX, screenY, panel, grid);
+        if (armorSlot >= 0) {
+            return armorSlot;
         }
 
         for (int row = 0; row < 3; row++) {
@@ -85,6 +96,14 @@ public class InventoryLayout {
 
     public static boolean isCraftResultSlot(int slot) {
         return slot == CRAFT_RESULT_SLOT;
+    }
+
+    public static boolean isArmorSlot(int slot) {
+        return slot >= ARMOR_BASE_SLOT && slot < ARMOR_BASE_SLOT + ARMOR_SLOT_COUNT;
+    }
+
+    public static ArmorSlot toArmorSlot(int slot) {
+        return isArmorSlot(slot) ? ArmorSlot.fromIndex(slot - ARMOR_BASE_SLOT) : null;
     }
 
     public static int toCraftInputIndex(int slot) {
@@ -148,6 +167,24 @@ public class InventoryLayout {
         return craftResultSlotY(panel, null);
     }
 
+    public static boolean shouldShowArmorSlots(CraftingGrid grid) {
+        return !isTableGrid(grid);
+    }
+
+    public static float armorSlotX(PanelRect panel, ArmorSlot slot) {
+        if (slot == ArmorSlot.LEGGINGS || slot == ArmorSlot.BOOTS) {
+            return panel.x + ARMOR_RIGHT_X * panel.scale;
+        }
+        return panel.x + ARMOR_LEFT_X * panel.scale;
+    }
+
+    public static float armorSlotY(PanelRect panel, ArmorSlot slot) {
+        if (slot == ArmorSlot.CHESTPLATE || slot == ArmorSlot.BOOTS) {
+            return panel.y + ARMOR_BOTTOM_Y * panel.scale;
+        }
+        return panel.y + ARMOR_TOP_Y * panel.scale;
+    }
+
     public static float slotSize(PanelRect panel, CraftingGrid grid) {
         return (isTableGrid(grid) ? TABLE_SLOT_SIZE_PX : INV_SLOT_SIZE_PX) * panel.scale;
     }
@@ -169,6 +206,21 @@ public class InventoryLayout {
             craftResultSlotY(panel, grid),
             slotSize(panel, grid))) {
             return CRAFT_RESULT_SLOT;
+        }
+        return -1;
+    }
+
+    private static int findArmorSlot(float screenX, float screenY, PanelRect panel, CraftingGrid grid) {
+        if (!shouldShowArmorSlots(grid)) {
+            return -1;
+        }
+        for (ArmorSlot slot : ArmorSlot.values()) {
+            if (insideSlot(screenX, screenY,
+                armorSlotX(panel, slot),
+                armorSlotY(panel, slot),
+                slotSize(panel, grid))) {
+                return ARMOR_BASE_SLOT + slot.getIndex();
+            }
         }
         return -1;
     }

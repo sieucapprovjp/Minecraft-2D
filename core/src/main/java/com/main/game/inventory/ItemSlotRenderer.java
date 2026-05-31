@@ -11,6 +11,7 @@ import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 
 public class ItemSlotRenderer {
 
+    private static final float ICON_DRAW_SCALE = 0.85f;
     private static final float SLOT_ITEM_SIZE_RATIO = 26f / InventoryLayout.INV_SLOT_SIZE_PX;
     private static final float SLOT_ITEM_Y_OFFSET_PX = -2f;
     private static final float CARRIED_ITEM_SIZE_PX = 42f;
@@ -52,12 +53,15 @@ public class ItemSlotRenderer {
         if (texture == null) {
             return;
         }
-        float renderX = x + ItemRenderOffset.xOffset(stack.getItemId(), size);
-        batch.draw(texture, renderX, y, size, size);
-        drawDurabilityBar(batch, stack, renderX, y - size * 0.08f, size);
+        float renderSize = size * ICON_DRAW_SCALE;
+        float renderY = y + (size - renderSize) / 2f;
+        float renderX = x + (size - renderSize) / 2f
+            + ItemRenderOffset.xOffset(stack.getItemId(), renderSize);
+        batch.draw(texture, renderX, renderY, renderSize, renderSize);
+        drawDurabilityBar(batch, stack, renderX, renderY - renderSize * 0.08f, renderSize);
         if (stack.getCount() > 1) {
             font.setColor(Color.WHITE);
-            font.draw(batch, String.valueOf(stack.getCount()), renderX + size * 0.48f, y + size * 0.36f);
+            font.draw(batch, String.valueOf(stack.getCount()), renderX + renderSize * 0.48f, renderY + renderSize * 0.36f);
         }
     }
 

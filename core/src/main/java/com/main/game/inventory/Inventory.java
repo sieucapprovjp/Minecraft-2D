@@ -8,6 +8,7 @@ public class Inventory {
     public static final int TOTAL_SIZE = PICKUP_SLOT_COUNT;
 
     private final ItemStack[] slots = new ItemStack[TOTAL_SIZE];
+    private final ArmorLoadout armorLoadout = new ArmorLoadout();
 
     public int add(String itemId, int count) {
         int remaining = count;
@@ -76,5 +77,17 @@ public class Inventory {
 
     public int getTotalSize() {
         return slots.length;
+    }
+
+    public ArmorLoadout getArmorLoadout() {
+        return armorLoadout;
+    }
+
+    public ItemStack getArmorSlot(ArmorSlot slot) {
+        return armorLoadout.getSlot(slot);
+    }
+
+    public void setArmorSlot(ArmorSlot slot, ItemStack stack) {
+        armorLoadout.setSlot(slot, stack);
     }
 }

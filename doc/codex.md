@@ -199,6 +199,7 @@
 - Left/right click supports pick, place, swap, stack, and split-stack behavior.
 - Item textures and stack counts render in the hotbar/inventory.
 - Tool stack size is `1`; block stack size defaults to `64`.
+- Starter inventory has been removed; the player no longer receives test items at spawn.
 - Related files:
   - `core/src/main/java/com/main/game/inventory/Inventory.java`
   - `core/src/main/java/com/main/game/inventory/InventoryController.java`
@@ -209,11 +210,42 @@
   - `core/src/main/java/com/main/game/inventory/ItemStack.java`
   - `assets/images/gui_invrow/inventory.png`
 
+### Crafting System V1
+- Player 2x2 crafting is available from the inventory.
+- Crafting table 3x3 crafting opens when pressing `E` while the cursor is over a reachable `crafting_table`.
+- Players can move inventory items into crafting slots and take the output result.
+- Crafting inputs are returned to inventory when closing crafting when inventory space allows it.
+- Implemented recipes include planks, sticks, crafting table, furnace, chest, wood tools, stone tools, copper tools, iron tools, gold tools, and diamond tools.
+- Stone now drops `cobblestone`, and stone tool recipes use `cobblestone`.
+- Related files:
+  - `core/src/main/java/com/main/game/crafting/CraftingController.java`
+  - `core/src/main/java/com/main/game/crafting/CraftingGrid.java`
+  - `core/src/main/java/com/main/game/crafting/CraftingMode.java`
+  - `core/src/main/java/com/main/game/crafting/CraftingRecipe.java`
+  - `core/src/main/java/com/main/game/crafting/CraftingMatch.java`
+  - `core/src/main/java/com/main/game/crafting/RecipeRegistry.java`
+  - `core/src/main/java/com/main/game/utilityblock/craftingtable/CraftingTableInteractionController.java`
+  - `core/src/main/java/com/main/game/inventory/InventoryLayout.java`
+  - `core/src/main/java/com/main/game/inventory/InventoryRenderer.java`
+  - `core/src/main/java/com/main/game/inventory/InventoryInteractionHandler.java`
+
+### Shared Slot UI
+- Slot item rendering is centralized in `ItemSlotRenderer`.
+- Inventory, crafting, furnace, and chest all use the same item icon, stack count, durability bar, and carried-stack rendering path.
+- Left/right slot click behavior is centralized in `ItemSlotInteractionController`.
+- `ItemSlotAccess` lets each GUI keep its own slot mapping and special take slots, such as crafting results and furnace output.
+- Related files:
+  - `core/src/main/java/com/main/game/inventory/ItemSlotRenderer.java`
+  - `core/src/main/java/com/main/game/inventory/ItemSlotInteractionController.java`
+  - `core/src/main/java/com/main/game/inventory/ItemSlotAccess.java`
+  - `core/src/main/java/com/main/game/inventory/InventoryInteractionHandler.java`
+  - `core/src/main/java/com/main/game/utilityblock/furnace/FurnaceInteractionHandler.java`
+  - `core/src/main/java/com/main/game/utilityblock/chest/ChestInteractionHandler.java`
+
 ### Tool System V1
 - `ToolRegistry` is implemented as the central tool metadata API.
 - Tool types are registered: pickaxe, axe, shovel, sword, and hoe.
 - Tool materials are registered: wood, stone, copper, iron, gold, diamond, and netherite.
-- Starter inventory gives all tools for testing.
 - Tool textures load through metadata before falling back to block textures.
 - Axes support two texture variants:
   - `*_axe_v1` for hotbar/inventory rendering.
@@ -221,7 +253,6 @@
 - Related files:
   - `core/src/main/java/com/main/game/inventory/ToolRegistry.java`
   - `core/src/main/java/com/main/game/inventory/ItemRegistry.java`
-  - `core/src/main/java/com/main/game/inventory/StarterInventoryFactory.java`
   - `core/src/main/java/com/main/game/inventory/ItemStack.java`
   - `core/src/main/java/com/main/game/entities/player/PlayerRenderer.java`
   - `assets/tools/wood/`
@@ -259,6 +290,77 @@
   - `core/src/main/java/com/main/game/inventory/ItemRegistry.java`
   - `core/src/main/java/com/main/game/inventory/ToolRegistry.java`
   - `core/src/main/java/com/main/game/screens/GameScreen.java`
+
+### Utility Blocks
+- Utility block interaction is grouped under the `utilityblock` package.
+- `UtilityBlockInteractionController` provides shared reachable-hover checks for utility blocks.
+- Crafting table, furnace, and chest each keep their own focused subpackage.
+- `GameScreen` wires utility blocks through short calls for open, update, render, drop, clear, and dispose behavior.
+- Related files:
+  - `core/src/main/java/com/main/game/utilityblock/UtilityBlockInteractionController.java`
+  - `core/src/main/java/com/main/game/utilityblock/craftingtable/CraftingTableInteractionController.java`
+  - `core/src/main/java/com/main/game/utilityblock/furnace/FurnaceInteractionController.java`
+  - `core/src/main/java/com/main/game/utilityblock/chest/ChestInteractionController.java`
+  - `core/src/main/java/com/main/game/screens/GameScreen.java`
+  - `core/src/main/java/com/main/game/ui/GameHudRenderer.java`
+
+### Ore Drops And Furnace V1
+- Ore drops now distinguish direct resource ores from raw metal ores.
+- Coal, diamond, lapis, redstone, and emerald ores drop their resource item directly.
+- Iron, gold, and copper ores drop `raw_iron`, `raw_gold`, and `raw_copper`.
+- Deepslate ore variants drop the equivalent items as their normal ore variants.
+- Furnace is a placeable utility block crafted from 8 `cobblestone`.
+- Pressing `E` while the cursor is over a reachable furnace opens the furnace GUI.
+- Furnace state is stored per tile with one input slot, one fuel slot, one output slot, burn timer, and cook progress.
+- Fuel supports `coal`, `wood`, `planks`, and `stick`.
+- Smelting supports `raw_iron -> iron_ingot`, `raw_gold -> gold_ingot`, and `raw_copper -> copper_ingot`.
+- Furnace GUI uses provided progress arrow and flame sprites; flame animation was corrected to burn down from the full flame frames.
+- Breaking a furnace drops its stored input, fuel, output, and the furnace block item.
+- Related files:
+  - `core/src/main/java/com/main/game/utilityblock/furnace/FurnaceState.java`
+  - `core/src/main/java/com/main/game/utilityblock/furnace/FurnaceManager.java`
+  - `core/src/main/java/com/main/game/utilityblock/furnace/FurnaceRenderer.java`
+  - `core/src/main/java/com/main/game/utilityblock/furnace/FurnaceLayout.java`
+  - `core/src/main/java/com/main/game/utilityblock/furnace/FurnaceInteractionHandler.java`
+  - `core/src/main/java/com/main/game/utilityblock/furnace/FurnaceInteractionController.java`
+  - `core/src/main/java/com/main/game/utilityblock/furnace/FuelRegistry.java`
+  - `core/src/main/java/com/main/game/utilityblock/furnace/SmeltingRecipeRegistry.java`
+  - `core/src/main/java/com/main/game/items/BlockDropFactory.java`
+  - `assets/util_block/furnace_off.png`
+  - `assets/util_block/furnace_lit.png`
+  - `assets/util_block/gui/furnace.png`
+  - `assets/util_block/process/`
+
+### Chest V1
+- Chest is a single-block utility block with 27 storage slots.
+- Chest uses `chest_closed.png` in-world with no open animation or lid state.
+- Chest is crafted from 8 `planks` in a 3x3 ring recipe.
+- Pressing `E` while the cursor is over a reachable chest opens the chest GUI.
+- Chest contents persist per placed tile while the game screen is alive.
+- Adjacent chests stay separate; no double chest behavior exists.
+- Breaking a chest drops stored contents and then the chest block item.
+- Related files:
+  - `core/src/main/java/com/main/game/utilityblock/chest/ChestState.java`
+  - `core/src/main/java/com/main/game/utilityblock/chest/ChestManager.java`
+  - `core/src/main/java/com/main/game/utilityblock/chest/ChestRenderer.java`
+  - `core/src/main/java/com/main/game/utilityblock/chest/ChestLayout.java`
+  - `core/src/main/java/com/main/game/utilityblock/chest/ChestInteractionHandler.java`
+  - `core/src/main/java/com/main/game/utilityblock/chest/ChestInteractionController.java`
+  - `assets/util_block/chest_closed.png`
+  - `assets/util_block/gui/chest.png`
+
+### Block Metadata Registry
+- Block metadata is centralized in `BlockRegistry` and `BlockDefinition`.
+- Metadata covers block hardness, texture name, palette fallback, solidity, breakability, placeability, drop item, harvest level, and ore flags.
+- `WorldBlockFactory`, `BlockHarvestRules`, `BlockDropFactory`, and `ItemRegistry` read block behavior from the registry instead of maintaining separate if-chains.
+- Registered drops include `stone -> cobblestone`, direct ore resources, and raw metal ore drops.
+- Related files:
+  - `core/src/main/java/com/main/game/blocks/metadata/BlockDefinition.java`
+  - `core/src/main/java/com/main/game/blocks/metadata/BlockRegistry.java`
+  - `core/src/main/java/com/main/game/worldgen/WorldBlockFactory.java`
+  - `core/src/main/java/com/main/game/interaction/BlockHarvestRules.java`
+  - `core/src/main/java/com/main/game/items/BlockDropFactory.java`
+  - `core/src/main/java/com/main/game/inventory/ItemRegistry.java`
 
 ### Block Placement V1
 - `BlockPlacementController` is implemented.
@@ -308,3 +410,5 @@
 ## Latest Verification
 - `.\gradlew.bat classes` passed.
 - `.\gradlew.bat test` passed.
+- `git diff --check` passed.
+- Manual gameplay verification was reported working for crafting, furnace, chest, block metadata behavior, and shared slot interaction/rendering.
