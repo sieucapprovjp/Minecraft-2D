@@ -30,6 +30,7 @@ import com.main.game.world.BlockPalette;
 import com.main.game.world.DemoBlockViewer;
 import com.main.game.world.SpawnSafetyController;
 import com.main.game.world.World;
+import com.main.game.world.WaterFlowController;
 import com.main.game.worldgen.BiomeMobSpawner;
 
 public class GameScreen extends BaseScreen {
@@ -53,6 +54,7 @@ public class GameScreen extends BaseScreen {
     private GameHudRenderer hudRenderer;
     private GameOverlayRenderer overlayRenderer;
     private SpawnSafetyController spawnSafetyController;
+    private WaterFlowController waterFlowController;
     private boolean paused;
     private boolean dead;
 
@@ -109,6 +111,10 @@ public class GameScreen extends BaseScreen {
         // Test: tạo vùng nước 3x2 cạnh spawn để test vật lý nước
         createTestWaterPool(world, spawnX, (int) spawnY);
 
+        // Khởi tạo WaterFlowController sau khi world đã có nước
+        waterFlowController = new WaterFlowController();
+        waterFlowController.buildWaterList(world);
+
         paused = false;
         dead = false;
         camera.zoom = CAMERA_ZOOM;
@@ -157,6 +163,11 @@ public class GameScreen extends BaseScreen {
                 }
             }
             return;
+        }
+
+        // Water flow: nước chảy xuống 1 block mỗi giây nếu không có block bên dưới
+        if (waterFlowController != null) {
+            waterFlowController.update(delta, world);
         }
 
         // KIEN: Cập nhật chunk trong phạm vi map khi di chuyển
