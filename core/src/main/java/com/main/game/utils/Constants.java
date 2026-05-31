@@ -29,6 +29,14 @@ public final class Constants {
 
     // ─── Player ──────────────────────────────────────────────────
     public static final float PLAYER_SPEED          = 5f;       // tile/s (synced with Player.MOVE_SPEED)
+
+    // ─── Water Physics ──────────────────────────────────────────────
+    public static final float WATER_BUOYANCY_STRENGTH = 0.85f; // reduces gravity by up to 85%
+    public static final float WATER_HORIZONTAL_DRAG   = 0.90f; // per-second multiplier
+    public static final float WATER_VERTICAL_DRAG     = 0.85f; // per-second multiplier
+    public static final float SWIM_UP_FORCE           = 10f;   // tile/s²
+    public static final float MAX_SWIM_UP_SPEED       = 5f;    // tile/s cap
+    public static final float WATER_MOVE_SPEED        = 2.5f;  // tile/s horizontal
     public static final float PLAYER_JUMP_FORCE     = 12f;      // tile/s
     public static final float PLAYER_WIDTH          = 0.8f;     // tile (synced with Player.PLAYER_W)
     public static final float PLAYER_HEIGHT         = 1.8f;     // tile (synced with Player.PLAYER_H)

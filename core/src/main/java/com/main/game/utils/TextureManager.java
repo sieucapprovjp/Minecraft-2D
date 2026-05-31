@@ -61,6 +61,7 @@ public class TextureManager {
         nameMap.put("sandstone", "sandstone");
         nameMap.put("cactus", "cactus");
         nameMap.put("nether_quartz", "quartz_ore");
+        nameMap.put("water", "water/waterblock");
         nameMap.put("deepslate", "tiles/cave/natural/deepslate");
         nameMap.put("deepslate_co", "tiles/cave/ores_deepslate/deepslate_co");
         nameMap.put("deepslate_io", "tiles/cave/ores_deepslate/deepslate_io");

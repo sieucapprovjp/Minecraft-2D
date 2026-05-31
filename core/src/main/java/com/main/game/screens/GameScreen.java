@@ -24,6 +24,8 @@ import com.main.game.physics.PhysicsEngine;
 import com.main.game.ui.GameCameraController;
 import com.main.game.ui.GameHudRenderer;
 import com.main.game.ui.GameOverlayRenderer;
+import com.main.game.blocks.SimpleBlock;
+import com.main.game.blocks.types.UtilityBlocks;
 import com.main.game.world.BlockPalette;
 import com.main.game.world.DemoBlockViewer;
 import com.main.game.world.SpawnSafetyController;
@@ -103,6 +105,9 @@ public class GameScreen extends BaseScreen {
 
         // Spawner của team sử dụng seed hiện tại
         BiomeMobSpawner.spawnInitialMobs(world, player, physics, entityManager, currentSeed);
+
+        // Test: tạo vùng nước 3x2 cạnh spawn để test vật lý nước
+        createTestWaterPool(world, spawnX, (int) spawnY);
 
         paused = false;
         dead = false;
@@ -214,6 +219,19 @@ public class GameScreen extends BaseScreen {
         if (paused) overlayRenderer.renderPause(batch);
         else if (dead) overlayRenderer.renderDeath(batch);
         overlayRenderer.renderBrightness(batch, game.getGameState());
+    }
+
+    // ─── Water Test Pool ─────────────────────────────────────────────
+    /** Tạo vùng nước 3x2 (rộng 3, cao 2) ở bên phải spawn để test vật lý nước. */
+    private void createTestWaterPool(World world, float spawnX, int spawnY) {
+        int poolStartX = (int) spawnX + 6;
+        int poolFloorY = spawnY - 2;
+        for (int x = poolStartX; x < poolStartX + 3; x++) {
+            if (!world.isInBounds(x, poolFloorY)) continue;
+            world.setBlock(x, poolFloorY, new SimpleBlock(x, poolFloorY, "dirt", true, true, 0.7f, BlockPalette.getDirt()));
+            world.setBlock(x, poolFloorY + 1, new UtilityBlocks.WaterBlock(x, poolFloorY + 1));
+            world.setBlock(x, poolFloorY + 2, new UtilityBlocks.WaterBlock(x, poolFloorY + 2));
+        }
     }
 
     private void handlePauseClick(float mx, float my) {

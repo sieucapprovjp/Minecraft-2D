@@ -36,6 +36,7 @@ public final class BlockPalette {
     private static TextureRegion ice;
     private static TextureRegion sandstone;
     private static TextureRegion cactus;
+    private static TextureRegion water;
     private static final List<Texture> generatedTextures = new ArrayList<>();
     private static boolean initialized = false;
 
@@ -57,6 +58,7 @@ public final class BlockPalette {
         ice = textureOrGenerated(tm, "ice", new Color(0.55f, 0.85f, 1f, 1f));
         sandstone = textureOrGenerated(tm, "sandstone", new Color(0.78f, 0.67f, 0.38f, 1f));
         cactus = textureOrGenerated(tm, "cactus", new Color(0.1f, 0.55f, 0.18f, 1f));
+        water = textureOrGenerated(tm, "water", new Color(0.2f, 0.4f, 0.9f, 0.75f));
         initialized = true;
     }
 
@@ -73,6 +75,7 @@ public final class BlockPalette {
     public static TextureRegion getIce()     { ensureInitialized(); return ice;     }
     public static TextureRegion getSandstone() { ensureInitialized(); return sandstone; }
     public static TextureRegion getCactus()  { ensureInitialized(); return cactus;  }
+    public static TextureRegion getWater()   { ensureInitialized(); return water;   }
 
     // ─── Compat: giữ tên field cũ dưới dạng getter ───────────────
     // Để code cũ dùng BlockPalette.GRASS vẫn compile, ta giữ public static fields
@@ -104,7 +107,7 @@ public final class BlockPalette {
     public static void dispose() {
         initialized = false;
         grass = dirt = stone = bedrock = sand = wood = leaves = planks = null;
-        snow = ice = sandstone = cactus = null;
+        snow = ice = sandstone = cactus = water = null;
         for (Texture texture : generatedTextures) {
             texture.dispose();
         }

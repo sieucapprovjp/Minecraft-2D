@@ -33,6 +33,7 @@ public abstract class Entity {
     protected boolean onGround    = false;
     protected boolean isAlive     = true;
     protected boolean facingRight = true;
+    protected float   submergedRatio = 0f; // 0-1, fraction of hitbox in water (set by PhysicsEngine)
 
     public Entity(float x, float y, float width, float height) {
         this.position = new Vector2(x, y);
@@ -79,4 +80,6 @@ public abstract class Entity {
 
     public void setOnGround(boolean v) { this.onGround = v; }
     public void setAlive(boolean v)    { this.isAlive  = v; }
+    public float getSubmergedRatio()   { return submergedRatio; }
+    public void setSubmergedRatio(float v) { this.submergedRatio = Math.max(0f, Math.min(1f, v)); }
 }
