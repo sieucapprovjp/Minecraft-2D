@@ -8,6 +8,10 @@ public interface ItemSlotAccess {
 
     void setSlot(int slotIndex, ItemStack stack);
 
+    default boolean canPlaceSlot(int slotIndex, ItemStack stack) {
+        return true;
+    }
+
     default boolean isSpecialTakeSlot(int slotIndex) {
         return false;
     }

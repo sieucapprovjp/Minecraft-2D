@@ -17,10 +17,18 @@ public final class ItemRegistry {
     }
 
     public static int getMaxStack(String itemId) {
-        if (ToolRegistry.isTool(itemId)) {
+        if (ToolRegistry.isTool(itemId) || ArmorRegistry.isArmor(itemId)) {
             return 1;
         }
         return 64;
+    }
+
+    public static int getMaxDurability(String itemId) {
+        int toolDurability = ToolRegistry.getMaxDurability(itemId);
+        if (toolDurability > 0) {
+            return toolDurability;
+        }
+        return ArmorRegistry.getMaxDurability(itemId);
     }
 
     public static TextureRegion getTexture(String itemId) {
@@ -29,6 +37,12 @@ public final class ItemRegistry {
         }
 
         TextureRegion texture = getToolTexture(itemId);
+        if (texture != null) {
+            TEXTURE_CACHE.put(itemId, texture);
+            return texture;
+        }
+
+        texture = getArmorTexture(itemId);
         if (texture != null) {
             TEXTURE_CACHE.put(itemId, texture);
             return texture;
@@ -86,6 +100,15 @@ public final class ItemRegistry {
             return null;
         }
         return TextureManager.getInstance().getTexture(tool.getHeldTextureName());
+    }
+
+    private static TextureRegion getArmorTexture(String itemId) {
+        String textureName = ArmorRegistry.getTextureName(itemId);
+        if (textureName == null) {
+            return null;
+        }
+        TextureRegion texture = TextureManager.getInstance().getTexture(textureName);
+        return texture != null ? texture : TextureManager.getInstance().getTexture("armor/" + itemId);
     }
 
     private static TextureRegion getBlockPaletteTexture(String itemId) {

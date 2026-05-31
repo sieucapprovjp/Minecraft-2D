@@ -74,6 +74,9 @@ public class InventoryInteractionHandler {
 
         @Override
         public boolean isWritableSlot(int slotIndex) {
+            if (InventoryLayout.isArmorSlot(slotIndex)) {
+                return canUseArmorSlots();
+            }
             if (slotIndex >= 0 && slotIndex < inventory.getTotalSize()) {
                 return true;
             }
@@ -83,6 +86,9 @@ public class InventoryInteractionHandler {
 
         @Override
         public ItemStack getSlot(int slotIndex) {
+            if (InventoryLayout.isArmorSlot(slotIndex) && canUseArmorSlots()) {
+                return inventory.getArmorSlot(InventoryLayout.toArmorSlot(slotIndex));
+            }
             if (slotIndex >= 0 && slotIndex < inventory.getTotalSize()) {
                 return inventory.getSlot(slotIndex);
             }
@@ -94,6 +100,10 @@ public class InventoryInteractionHandler {
 
         @Override
         public void setSlot(int slotIndex, ItemStack stack) {
+            if (InventoryLayout.isArmorSlot(slotIndex) && canUseArmorSlots()) {
+                inventory.setArmorSlot(InventoryLayout.toArmorSlot(slotIndex), stack);
+                return;
+            }
             if (slotIndex >= 0 && slotIndex < inventory.getTotalSize()) {
                 inventory.setSlot(slotIndex, stack);
                 return;
@@ -101,6 +111,21 @@ public class InventoryInteractionHandler {
             if (craftingController != null && InventoryLayout.isCraftInputSlot(slotIndex, craftingController.getGrid())) {
                 craftingController.getGrid().setSlot(InventoryLayout.toCraftInputIndex(slotIndex), stack);
             }
+        }
+
+        @Override
+        public boolean canPlaceSlot(int slotIndex, ItemStack stack) {
+            if (!InventoryLayout.isArmorSlot(slotIndex)) {
+                return true;
+            }
+            if (!canUseArmorSlots()) {
+                return false;
+            }
+            return inventory.getArmorLoadout().canPlace(InventoryLayout.toArmorSlot(slotIndex), stack);
+        }
+
+        private boolean canUseArmorSlots() {
+            return InventoryLayout.shouldShowArmorSlots(craftingController == null ? null : craftingController.getGrid());
         }
     }
 }

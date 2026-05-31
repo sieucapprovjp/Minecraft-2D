@@ -26,17 +26,26 @@ public class ItemSlotInteractionController {
         }
 
         if (slotStack == null || slotStack.getCount() <= 0) {
+            if (!slotAccess.canPlaceSlot(slotIndex, carriedStack)) {
+                return;
+            }
             slotAccess.setSlot(slotIndex, carriedStack);
             carriedStack = null;
             return;
         }
 
         if (!slotStack.getItemId().equals(carriedStack.getItemId())) {
+            if (!slotAccess.canPlaceSlot(slotIndex, carriedStack)) {
+                return;
+            }
             slotAccess.setSlot(slotIndex, carriedStack);
             carriedStack = slotStack;
             return;
         }
 
+        if (!slotAccess.canPlaceSlot(slotIndex, carriedStack)) {
+            return;
+        }
         int maxStack = ItemRegistry.getMaxStack(carriedStack.getItemId());
         int room = Math.max(0, maxStack - slotStack.getCount());
         if (room <= 0) {
@@ -80,6 +89,9 @@ public class ItemSlotInteractionController {
         if (slotStack == null || slotStack.getCount() <= 0) {
             ItemStack placed = carriedStack.copy();
             placed.setCount(1);
+            if (!slotAccess.canPlaceSlot(slotIndex, placed)) {
+                return;
+            }
             slotAccess.setSlot(slotIndex, placed);
             carriedStack.subtract(1);
             if (carriedStack.getCount() <= 0) {
@@ -89,6 +101,9 @@ public class ItemSlotInteractionController {
         }
 
         if (!slotStack.getItemId().equals(carriedStack.getItemId())) {
+            return;
+        }
+        if (!slotAccess.canPlaceSlot(slotIndex, carriedStack)) {
             return;
         }
         int maxStack = ItemRegistry.getMaxStack(carriedStack.getItemId());

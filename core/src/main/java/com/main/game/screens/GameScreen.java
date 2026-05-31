@@ -29,6 +29,7 @@ import com.main.game.inventory.InventoryController;
 import com.main.game.inventory.InventoryInteractionHandler;
 import com.main.game.inventory.InventoryRenderer;
 import com.main.game.inventory.ItemStack;
+import com.main.game.inventory.StarterArmorKit;
 import com.main.game.items.BlockDropFactory;
 import com.main.game.items.DroppedItemManager;
 import com.main.game.navigation.ScreenId;
@@ -119,6 +120,8 @@ public class GameScreen extends BaseScreen {
         playerAttackController = new PlayerAttackController();
         droppedItemManager = new DroppedItemManager();
         inventory = new Inventory();
+        StarterArmorKit.grantAllArmor(inventory);
+        player.setArmorLoadout(inventory.getArmorLoadout());
         inventoryController = new InventoryController();
         inventoryRenderer = new InventoryRenderer();
         inventoryInteractionHandler = new InventoryInteractionHandler();

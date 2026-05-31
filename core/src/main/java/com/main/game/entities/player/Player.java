@@ -5,6 +5,9 @@ import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.main.game.entities.Entity;
 import com.main.game.entities.EntityState;
+import com.main.game.inventory.ArmorLoadout;
+import com.main.game.inventory.ArmorSlot;
+import com.main.game.inventory.ItemStack;
 import com.main.game.physics.PhysicsEngine;
 import com.main.game.world.World;
 
@@ -51,6 +54,7 @@ public class Player extends Entity {
     private int         health    = 20;
     private int         maxHealth = 20;
     private boolean     isBanned  = false;
+    private ArmorLoadout armorLoadout;
 
     // ─── Dependency ────────────────────────────────────────────
     private final PhysicsEngine physics;
@@ -181,8 +185,9 @@ public class Player extends Entity {
     // ─── Damage / Health ───────────────────────────────────────
 
     public void takeDamage(int amount) {
-        if (hurtTimer > 0 || !isAlive) return;
-        health -= amount;
+        if (hurtTimer > 0 || !isAlive || amount <= 0) return;
+        int finalDamage = calculateArmorReducedDamage(amount);
+        health -= finalDamage;
         if (health <= 0) {
             health  = 0;
             isAlive = false;
@@ -208,9 +213,23 @@ public class Player extends Entity {
     public int         getMaxHealth() { return maxHealth;  }
     public boolean     isHurt()       { return hurtTimer > 0; }
     public String      getHeldItemId() { return heldItemId;   }
+    public int         getArmorDefensePoints() {
+        return armorLoadout == null ? 0 : armorLoadout.getTotalDefensePoints();
+    }
+    public String      getEquippedArmorItemId(ArmorSlot slot) {
+        if (armorLoadout == null) {
+            return null;
+        }
+        ItemStack stack = armorLoadout.getSlot(slot);
+        return stack == null || stack.getCount() <= 0 ? null : stack.getItemId();
+    }
 
     public void setHeldItemId(String heldItemId) {
         this.heldItemId = heldItemId;
+    }
+
+    public void setArmorLoadout(ArmorLoadout armorLoadout) {
+        this.armorLoadout = armorLoadout;
     }
 
     public void setMining(boolean mining, float targetX) {
@@ -240,5 +259,14 @@ public class Player extends Entity {
         this.placeSwingTimer = 0;
         this.placeSwingTime = 0;
         this.placeSwingItemId = null;
+    }
+
+    private int calculateArmorReducedDamage(int rawDamage) {
+        if (armorLoadout == null) {
+            return rawDamage;
+        }
+        int defensePoints = armorLoadout.applyDamageAndGetDefense(rawDamage);
+        float multiplier = Math.max(0.4f, 1f - defensePoints * 0.03f);
+        return Math.max(1, (int) Math.ceil(rawDamage * multiplier));
     }
 }

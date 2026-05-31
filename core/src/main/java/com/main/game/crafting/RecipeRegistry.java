@@ -288,6 +288,166 @@ public final class RecipeRegistry {
             new String[] {"diamond", "diamond", null, "stick", null, "stick"},
             "diamond_hoe",
             1
+        ),
+        CraftingRecipe.shaped(
+            "copper helmet",
+            3,
+            2,
+            new String[] {"copper_ingot", "copper_ingot", "copper_ingot", "copper_ingot", null, "copper_ingot"},
+            "copper_helmet",
+            1
+        ),
+        CraftingRecipe.shaped(
+            "copper chestplate",
+            3,
+            3,
+            new String[] {"copper_ingot", null, "copper_ingot", "copper_ingot", "copper_ingot", "copper_ingot", "copper_ingot", "copper_ingot", "copper_ingot"},
+            "copper_chestplate",
+            1
+        ),
+        CraftingRecipe.shaped(
+            "copper leggings",
+            3,
+            3,
+            new String[] {"copper_ingot", "copper_ingot", "copper_ingot", "copper_ingot", null, "copper_ingot", "copper_ingot", null, "copper_ingot"},
+            "copper_leggings",
+            1
+        ),
+        CraftingRecipe.shaped(
+            "copper boots",
+            3,
+            2,
+            new String[] {"copper_ingot", null, "copper_ingot", "copper_ingot", null, "copper_ingot"},
+            "copper_boots",
+            1
+        ),
+        CraftingRecipe.shaped(
+            "iron helmet",
+            3,
+            2,
+            new String[] {"iron_ingot", "iron_ingot", "iron_ingot", "iron_ingot", null, "iron_ingot"},
+            "iron_helmet",
+            1
+        ),
+        CraftingRecipe.shaped(
+            "iron chestplate",
+            3,
+            3,
+            new String[] {"iron_ingot", null, "iron_ingot", "iron_ingot", "iron_ingot", "iron_ingot", "iron_ingot", "iron_ingot", "iron_ingot"},
+            "iron_chestplate",
+            1
+        ),
+        CraftingRecipe.shaped(
+            "iron leggings",
+            3,
+            3,
+            new String[] {"iron_ingot", "iron_ingot", "iron_ingot", "iron_ingot", null, "iron_ingot", "iron_ingot", null, "iron_ingot"},
+            "iron_leggings",
+            1
+        ),
+        CraftingRecipe.shaped(
+            "iron boots",
+            3,
+            2,
+            new String[] {"iron_ingot", null, "iron_ingot", "iron_ingot", null, "iron_ingot"},
+            "iron_boots",
+            1
+        ),
+        CraftingRecipe.shaped(
+            "gold helmet",
+            3,
+            2,
+            new String[] {"gold_ingot", "gold_ingot", "gold_ingot", "gold_ingot", null, "gold_ingot"},
+            "gold_helmet",
+            1
+        ),
+        CraftingRecipe.shaped(
+            "gold chestplate",
+            3,
+            3,
+            new String[] {"gold_ingot", null, "gold_ingot", "gold_ingot", "gold_ingot", "gold_ingot", "gold_ingot", "gold_ingot", "gold_ingot"},
+            "gold_chestplate",
+            1
+        ),
+        CraftingRecipe.shaped(
+            "gold leggings",
+            3,
+            3,
+            new String[] {"gold_ingot", "gold_ingot", "gold_ingot", "gold_ingot", null, "gold_ingot", "gold_ingot", null, "gold_ingot"},
+            "gold_leggings",
+            1
+        ),
+        CraftingRecipe.shaped(
+            "gold boots",
+            3,
+            2,
+            new String[] {"gold_ingot", null, "gold_ingot", "gold_ingot", null, "gold_ingot"},
+            "gold_boots",
+            1
+        ),
+        CraftingRecipe.shaped(
+            "diamond helmet",
+            3,
+            2,
+            new String[] {"diamond", "diamond", "diamond", "diamond", null, "diamond"},
+            "diamond_helmet",
+            1
+        ),
+        CraftingRecipe.shaped(
+            "diamond chestplate",
+            3,
+            3,
+            new String[] {"diamond", null, "diamond", "diamond", "diamond", "diamond", "diamond", "diamond", "diamond"},
+            "diamond_chestplate",
+            1
+        ),
+        CraftingRecipe.shaped(
+            "diamond leggings",
+            3,
+            3,
+            new String[] {"diamond", "diamond", "diamond", "diamond", null, "diamond", "diamond", null, "diamond"},
+            "diamond_leggings",
+            1
+        ),
+        CraftingRecipe.shaped(
+            "diamond boots",
+            3,
+            2,
+            new String[] {"diamond", null, "diamond", "diamond", null, "diamond"},
+            "diamond_boots",
+            1
+        ),
+        CraftingRecipe.shaped(
+            "netherite helmet",
+            3,
+            2,
+            new String[] {"netherite_ingot", "netherite_ingot", "netherite_ingot", "netherite_ingot", null, "netherite_ingot"},
+            "netherite_helmet",
+            1
+        ),
+        CraftingRecipe.shaped(
+            "netherite chestplate",
+            3,
+            3,
+            new String[] {"netherite_ingot", null, "netherite_ingot", "netherite_ingot", "netherite_ingot", "netherite_ingot", "netherite_ingot", "netherite_ingot", "netherite_ingot"},
+            "netherite_chestplate",
+            1
+        ),
+        CraftingRecipe.shaped(
+            "netherite leggings",
+            3,
+            3,
+            new String[] {"netherite_ingot", "netherite_ingot", "netherite_ingot", "netherite_ingot", null, "netherite_ingot", "netherite_ingot", null, "netherite_ingot"},
+            "netherite_leggings",
+            1
+        ),
+        CraftingRecipe.shaped(
+            "netherite boots",
+            3,
+            2,
+            new String[] {"netherite_ingot", null, "netherite_ingot", "netherite_ingot", null, "netherite_ingot"},
+            "netherite_boots",
+            1
         )
     );
 

@@ -99,6 +99,9 @@ public class TextureManager {
             return getTexture(base.substring(0, base.length() - 6));
         }
 
+        TextureRegion generatedArmor = generatedArmorFallback(name);
+        if (generatedArmor != null) return generatedArmor;
+
         TextureRegion generatedOre = generatedOreFallback(name);
         if (generatedOre != null) return generatedOre;
 
@@ -137,6 +140,61 @@ public class TextureManager {
         TextureRegion region = new TextureRegion(texture);
         generatedFallbacks.put(name, region);
         return region;
+    }
+
+    private TextureRegion generatedArmorFallback(String name) {
+        if (name == null || !name.startsWith("armor/")) return null;
+        if (generatedFallbacks.containsKey(name)) return generatedFallbacks.get(name);
+
+        String itemId = name.substring("armor/".length());
+        Color color = armorColor(itemId);
+        if (color == null) return null;
+
+        Pixmap pixmap = new Pixmap(16, 16, Pixmap.Format.RGBA8888);
+        pixmap.setColor(0f, 0f, 0f, 0f);
+        pixmap.fill();
+        pixmap.setColor(color);
+        drawArmorShape(pixmap, itemId);
+
+        Texture texture = new Texture(pixmap);
+        texture.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+        pixmap.dispose();
+        ownedTextures.add(texture);
+
+        TextureRegion region = new TextureRegion(texture);
+        generatedFallbacks.put(name, region);
+        return region;
+    }
+
+    private void drawArmorShape(Pixmap pixmap, String itemId) {
+        if (itemId.endsWith("_helmet")) {
+            pixmap.fillRectangle(4, 3, 8, 3);
+            pixmap.fillRectangle(3, 6, 10, 4);
+            pixmap.fillRectangle(5, 9, 2, 2);
+            pixmap.fillRectangle(9, 9, 2, 2);
+        } else if (itemId.endsWith("_chestplate")) {
+            pixmap.fillRectangle(4, 4, 8, 9);
+            pixmap.fillRectangle(2, 5, 3, 5);
+            pixmap.fillRectangle(11, 5, 3, 5);
+            pixmap.fillRectangle(6, 3, 4, 2);
+        } else if (itemId.endsWith("_leggings")) {
+            pixmap.fillRectangle(4, 4, 8, 3);
+            pixmap.fillRectangle(4, 7, 3, 7);
+            pixmap.fillRectangle(9, 7, 3, 7);
+        } else if (itemId.endsWith("_boots")) {
+            pixmap.fillRectangle(3, 8, 4, 5);
+            pixmap.fillRectangle(9, 8, 4, 5);
+            pixmap.fillRectangle(2, 12, 5, 2);
+            pixmap.fillRectangle(9, 12, 5, 2);
+        }
+    }
+
+    private Color armorColor(String itemId) {
+        if (itemId.startsWith("copper_")) return new Color(0.86f, 0.42f, 0.2f, 1f);
+        if (itemId.startsWith("iron_")) return new Color(0.78f, 0.82f, 0.84f, 1f);
+        if (itemId.startsWith("gold_")) return new Color(1f, 0.78f, 0.18f, 1f);
+        if (itemId.startsWith("diamond_")) return new Color(0.16f, 0.86f, 0.95f, 1f);
+        return null;
     }
 
     private Color oreColor(String name) {

@@ -77,6 +77,15 @@ public class InventoryRenderer {
                 InventoryLayout.slotSize(panel, grid));
         }
 
+        if (InventoryLayout.shouldShowArmorSlots(grid)) {
+            for (ArmorSlot slot : ArmorSlot.values()) {
+                itemSlotRenderer.drawInSlot(batch, inventory.getArmorSlot(slot),
+                    InventoryLayout.armorSlotX(panel, slot),
+                    InventoryLayout.armorSlotY(panel, slot),
+                    InventoryLayout.slotSize(panel, grid));
+            }
+        }
+
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < Inventory.HOTBAR_SIZE; col++) {
                 int slotIndex = Inventory.HOTBAR_SIZE + row * Inventory.HOTBAR_SIZE + col;
