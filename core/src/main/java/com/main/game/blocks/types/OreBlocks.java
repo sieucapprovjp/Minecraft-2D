@@ -8,7 +8,7 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
  * Tất cả block quặng trong game.
  * Mỗi loại ore là public static class để dùng được từ ngoài package.
  */
-public class `OreBlocks {
+public class OreBlocks {
 
     public static class CoalOreBlock extends AbstractBlock {
         public CoalOreBlock(int x, int y) { super(x, y, "coal_ore", true, true, 3f); }

@@ -147,9 +147,11 @@ public class Player extends Entity {
             if (Gdx.input.isKeyPressed(Keys.SPACE)
                 || Gdx.input.isKeyPressed(Keys.W)
                 || Gdx.input.isKeyPressed(Keys.UP)) {
-                velocity.y -= Constants.SWIM_UP_FORCE * delta;
-                if (velocity.y > 0f) velocity.y = 0f;
-                velocity.y = Math.max(velocity.y, -Constants.MAX_SWIM_UP_SPEED);
+                // Lực bơi lên tỉ lệ với mức ngập nước — càng lên gần mặt nước,
+                // lực đẩy càng giảm, trọng lực kéo xuống tạo hiệu ứng nhún nửa người.
+                velocity.y += Constants.SWIM_UP_FORCE * delta * submergedRatio;
+                // Giới hạn tốc độ bơi lên để tránh bay khỏi nước
+                velocity.y = Math.min(velocity.y, Constants.MAX_SWIM_UP_SPEED);
             }
         } else if (onGround &&
             (Gdx.input.isKeyJustPressed(Keys.SPACE)
