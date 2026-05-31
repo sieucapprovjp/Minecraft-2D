@@ -3,12 +3,14 @@ package com.main.game.utilityblock.furnace;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.main.game.inventory.Inventory;
+import com.main.game.inventory.ItemSlotAccess;
+import com.main.game.inventory.ItemSlotInteractionController;
 import com.main.game.inventory.ItemRegistry;
 import com.main.game.inventory.ItemStack;
 
 public class FurnaceInteractionHandler {
 
-    private ItemStack carriedStack;
+    private final ItemSlotInteractionController slotInteraction = new ItemSlotInteractionController();
 
     public void update(Inventory inventory, FurnaceState furnaceState, FurnaceRenderer renderer) {
         if (inventory == null || furnaceState == null || renderer == null) {
@@ -23,140 +25,98 @@ public class FurnaceInteractionHandler {
         }
 
         if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
-            onLeftClick(inventory, furnaceState, slot);
+            slotInteraction.onLeftClick(new FurnaceSlotAccess(inventory, furnaceState), slot);
         } else if (Gdx.input.isButtonJustPressed(Input.Buttons.RIGHT)) {
-            onRightClick(inventory, furnaceState, slot);
+            slotInteraction.onRightClick(new FurnaceSlotAccess(inventory, furnaceState), slot);
         }
     }
 
     public void onCloseInventory(Inventory inventory) {
-        if (inventory == null) {
-            carriedStack = null;
-            return;
-        }
-        carriedStack = returnStackToInventory(inventory, carriedStack);
+        slotInteraction.returnCarriedStackToInventory(inventory);
     }
 
     public ItemStack getCarriedStack() {
-        return carriedStack;
+        return slotInteraction.getCarriedStack();
     }
 
-    private void onLeftClick(Inventory inventory, FurnaceState furnaceState, int slotIndex) {
-        if (FurnaceLayout.isOutputSlot(slotIndex)) {
-            takeOutput(furnaceState, false);
-            return;
-        }
-        if (!isWritableSlot(inventory, slotIndex)) {
-            return;
+    private static class FurnaceSlotAccess implements ItemSlotAccess {
+        private final Inventory inventory;
+        private final FurnaceState furnaceState;
+
+        FurnaceSlotAccess(Inventory inventory, FurnaceState furnaceState) {
+            this.inventory = inventory;
+            this.furnaceState = furnaceState;
         }
 
-        ItemStack slotStack = getSlot(inventory, furnaceState, slotIndex);
-        if (carriedStack == null) {
-            if (slotStack != null && slotStack.getCount() > 0) {
-                carriedStack = slotStack;
-                setSlot(inventory, furnaceState, slotIndex, null);
+        @Override
+        public boolean isSpecialTakeSlot(int slotIndex) {
+            return FurnaceLayout.isOutputSlot(slotIndex);
+        }
+
+        @Override
+        public ItemStack takeSpecialSlot(int slotIndex, ItemStack carriedStack, boolean singleItem) {
+            return takeOutput(furnaceState, carriedStack, singleItem);
+        }
+
+        @Override
+        public boolean isWritableSlot(int slotIndex) {
+            return slotIndex >= 0 && slotIndex < inventory.getTotalSize()
+                || FurnaceLayout.isInputSlot(slotIndex)
+                || FurnaceLayout.isFuelSlot(slotIndex);
+        }
+
+        @Override
+        public ItemStack getSlot(int slotIndex) {
+            if (slotIndex >= 0 && slotIndex < inventory.getTotalSize()) {
+                return inventory.getSlot(slotIndex);
             }
-            return;
+            if (FurnaceLayout.isInputSlot(slotIndex)) {
+                return furnaceState.getInput();
+            }
+            if (FurnaceLayout.isFuelSlot(slotIndex)) {
+                return furnaceState.getFuel();
+            }
+            return null;
         }
 
-        if (slotStack == null || slotStack.getCount() <= 0) {
-            setSlot(inventory, furnaceState, slotIndex, carriedStack);
-            carriedStack = null;
-            return;
-        }
-
-        if (!slotStack.getItemId().equals(carriedStack.getItemId())) {
-            setSlot(inventory, furnaceState, slotIndex, carriedStack);
-            carriedStack = slotStack;
-            return;
-        }
-
-        int maxStack = ItemRegistry.getMaxStack(carriedStack.getItemId());
-        int room = Math.max(0, maxStack - slotStack.getCount());
-        if (room <= 0) {
-            return;
-        }
-        int moved = Math.min(room, carriedStack.getCount());
-        slotStack.add(moved);
-        carriedStack.subtract(moved);
-        if (carriedStack.getCount() <= 0) {
-            carriedStack = null;
-        }
-    }
-
-    private void onRightClick(Inventory inventory, FurnaceState furnaceState, int slotIndex) {
-        if (FurnaceLayout.isOutputSlot(slotIndex)) {
-            takeOutput(furnaceState, true);
-            return;
-        }
-        if (!isWritableSlot(inventory, slotIndex)) {
-            return;
-        }
-
-        ItemStack slotStack = getSlot(inventory, furnaceState, slotIndex);
-        if (carriedStack == null) {
-            if (slotStack == null || slotStack.getCount() <= 0) {
+        @Override
+        public void setSlot(int slotIndex, ItemStack stack) {
+            if (slotIndex >= 0 && slotIndex < inventory.getTotalSize()) {
+                inventory.setSlot(slotIndex, stack);
                 return;
             }
-            int take = (slotStack.getCount() + 1) / 2;
-            carriedStack = slotStack.copy();
-            carriedStack.setCount(take);
-            slotStack.subtract(take);
-            if (slotStack.getCount() <= 0) {
-                setSlot(inventory, furnaceState, slotIndex, null);
+            if (FurnaceLayout.isInputSlot(slotIndex)) {
+                furnaceState.setInput(stack);
+            } else if (FurnaceLayout.isFuelSlot(slotIndex)) {
+                furnaceState.setFuel(stack);
             }
-            return;
-        }
-
-        if (slotStack == null || slotStack.getCount() <= 0) {
-            ItemStack placed = carriedStack.copy();
-            placed.setCount(1);
-            setSlot(inventory, furnaceState, slotIndex, placed);
-            carriedStack.subtract(1);
-            if (carriedStack.getCount() <= 0) {
-                carriedStack = null;
-            }
-            return;
-        }
-
-        if (!slotStack.getItemId().equals(carriedStack.getItemId())) {
-            return;
-        }
-        int maxStack = ItemRegistry.getMaxStack(carriedStack.getItemId());
-        if (slotStack.getCount() >= maxStack) {
-            return;
-        }
-        slotStack.add(1);
-        carriedStack.subtract(1);
-        if (carriedStack.getCount() <= 0) {
-            carriedStack = null;
         }
     }
 
-    private void takeOutput(FurnaceState furnaceState, boolean singleItem) {
+    private static ItemStack takeOutput(FurnaceState furnaceState, ItemStack carriedStack, boolean singleItem) {
         ItemStack output = furnaceState.getOutput();
         if (output == null || output.getCount() <= 0) {
             furnaceState.setOutput(null);
-            return;
+            return carriedStack;
         }
 
         int moved = singleItem ? 1 : output.getCount();
         if (carriedStack == null) {
-            carriedStack = output.copy();
-            carriedStack.setCount(moved);
+            ItemStack nextCarriedStack = output.copy();
+            nextCarriedStack.setCount(moved);
             output.subtract(moved);
             if (output.getCount() <= 0) {
                 furnaceState.setOutput(null);
             }
-            return;
+            return nextCarriedStack;
         }
 
         if (!carriedStack.getItemId().equals(output.getItemId())) {
-            return;
+            return carriedStack;
         }
         int room = ItemRegistry.getMaxStack(carriedStack.getItemId()) - carriedStack.getCount();
         if (room <= 0) {
-            return;
+            return carriedStack;
         }
         moved = Math.min(room, moved);
         carriedStack.add(moved);
@@ -164,43 +124,6 @@ public class FurnaceInteractionHandler {
         if (output.getCount() <= 0) {
             furnaceState.setOutput(null);
         }
-    }
-
-    private ItemStack returnStackToInventory(Inventory inventory, ItemStack stack) {
-        if (stack == null || stack.getCount() <= 0) {
-            return null;
-        }
-        return inventory.addStack(stack);
-    }
-
-    private boolean isWritableSlot(Inventory inventory, int slotIndex) {
-        return slotIndex >= 0 && slotIndex < inventory.getTotalSize()
-            || FurnaceLayout.isInputSlot(slotIndex)
-            || FurnaceLayout.isFuelSlot(slotIndex);
-    }
-
-    private ItemStack getSlot(Inventory inventory, FurnaceState furnaceState, int slotIndex) {
-        if (slotIndex >= 0 && slotIndex < inventory.getTotalSize()) {
-            return inventory.getSlot(slotIndex);
-        }
-        if (FurnaceLayout.isInputSlot(slotIndex)) {
-            return furnaceState.getInput();
-        }
-        if (FurnaceLayout.isFuelSlot(slotIndex)) {
-            return furnaceState.getFuel();
-        }
-        return null;
-    }
-
-    private void setSlot(Inventory inventory, FurnaceState furnaceState, int slotIndex, ItemStack stack) {
-        if (slotIndex >= 0 && slotIndex < inventory.getTotalSize()) {
-            inventory.setSlot(slotIndex, stack);
-            return;
-        }
-        if (FurnaceLayout.isInputSlot(slotIndex)) {
-            furnaceState.setInput(stack);
-        } else if (FurnaceLayout.isFuelSlot(slotIndex)) {
-            furnaceState.setFuel(stack);
-        }
+        return carriedStack;
     }
 }

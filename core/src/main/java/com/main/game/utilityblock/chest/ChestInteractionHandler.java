@@ -3,12 +3,13 @@ package com.main.game.utilityblock.chest;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.main.game.inventory.Inventory;
-import com.main.game.inventory.ItemRegistry;
+import com.main.game.inventory.ItemSlotAccess;
+import com.main.game.inventory.ItemSlotInteractionController;
 import com.main.game.inventory.ItemStack;
 
 public class ChestInteractionHandler {
 
-    private ItemStack carriedStack;
+    private final ItemSlotInteractionController slotInteraction = new ItemSlotInteractionController();
 
     public void update(Inventory inventory, ChestState chestState, ChestRenderer renderer) {
         if (inventory == null || chestState == null || renderer == null) {
@@ -23,137 +24,55 @@ public class ChestInteractionHandler {
         }
 
         if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
-            onLeftClick(inventory, chestState, slot);
+            slotInteraction.onLeftClick(new ChestSlotAccess(inventory, chestState), slot);
         } else if (Gdx.input.isButtonJustPressed(Input.Buttons.RIGHT)) {
-            onRightClick(inventory, chestState, slot);
+            slotInteraction.onRightClick(new ChestSlotAccess(inventory, chestState), slot);
         }
     }
 
     public void onCloseInventory(Inventory inventory) {
-        if (inventory == null) {
-            carriedStack = null;
-            return;
-        }
-        carriedStack = returnStackToInventory(inventory, carriedStack);
+        slotInteraction.returnCarriedStackToInventory(inventory);
     }
 
     public ItemStack getCarriedStack() {
-        return carriedStack;
+        return slotInteraction.getCarriedStack();
     }
 
-    private void onLeftClick(Inventory inventory, ChestState chestState, int slotIndex) {
-        if (!isWritableSlot(inventory, slotIndex)) {
-            return;
+    private static class ChestSlotAccess implements ItemSlotAccess {
+        private final Inventory inventory;
+        private final ChestState chestState;
+
+        ChestSlotAccess(Inventory inventory, ChestState chestState) {
+            this.inventory = inventory;
+            this.chestState = chestState;
         }
 
-        ItemStack slotStack = getSlot(inventory, chestState, slotIndex);
-        if (carriedStack == null) {
-            if (slotStack != null && slotStack.getCount() > 0) {
-                carriedStack = slotStack;
-                setSlot(inventory, chestState, slotIndex, null);
+        @Override
+        public boolean isWritableSlot(int slotIndex) {
+            return slotIndex >= 0 && slotIndex < inventory.getTotalSize()
+                || ChestLayout.isChestSlot(slotIndex);
+        }
+
+        @Override
+        public ItemStack getSlot(int slotIndex) {
+            if (slotIndex >= 0 && slotIndex < inventory.getTotalSize()) {
+                return inventory.getSlot(slotIndex);
             }
-            return;
-        }
-
-        if (slotStack == null || slotStack.getCount() <= 0) {
-            setSlot(inventory, chestState, slotIndex, carriedStack);
-            carriedStack = null;
-            return;
-        }
-
-        if (!slotStack.getItemId().equals(carriedStack.getItemId())) {
-            setSlot(inventory, chestState, slotIndex, carriedStack);
-            carriedStack = slotStack;
-            return;
-        }
-
-        int maxStack = ItemRegistry.getMaxStack(carriedStack.getItemId());
-        int room = Math.max(0, maxStack - slotStack.getCount());
-        if (room <= 0) {
-            return;
-        }
-        int moved = Math.min(room, carriedStack.getCount());
-        slotStack.add(moved);
-        carriedStack.subtract(moved);
-        if (carriedStack.getCount() <= 0) {
-            carriedStack = null;
-        }
-    }
-
-    private void onRightClick(Inventory inventory, ChestState chestState, int slotIndex) {
-        if (!isWritableSlot(inventory, slotIndex)) {
-            return;
-        }
-
-        ItemStack slotStack = getSlot(inventory, chestState, slotIndex);
-        if (carriedStack == null) {
-            if (slotStack == null || slotStack.getCount() <= 0) {
-                return;
+            if (ChestLayout.isChestSlot(slotIndex)) {
+                return chestState.getSlot(ChestLayout.toChestIndex(slotIndex));
             }
-            int take = (slotStack.getCount() + 1) / 2;
-            carriedStack = slotStack.copy();
-            carriedStack.setCount(take);
-            slotStack.subtract(take);
-            if (slotStack.getCount() <= 0) {
-                setSlot(inventory, chestState, slotIndex, null);
-            }
-            return;
-        }
-
-        if (slotStack == null || slotStack.getCount() <= 0) {
-            ItemStack placed = carriedStack.copy();
-            placed.setCount(1);
-            setSlot(inventory, chestState, slotIndex, placed);
-            carriedStack.subtract(1);
-            if (carriedStack.getCount() <= 0) {
-                carriedStack = null;
-            }
-            return;
-        }
-
-        if (!slotStack.getItemId().equals(carriedStack.getItemId())) {
-            return;
-        }
-        int maxStack = ItemRegistry.getMaxStack(carriedStack.getItemId());
-        if (slotStack.getCount() >= maxStack) {
-            return;
-        }
-        slotStack.add(1);
-        carriedStack.subtract(1);
-        if (carriedStack.getCount() <= 0) {
-            carriedStack = null;
-        }
-    }
-
-    private ItemStack returnStackToInventory(Inventory inventory, ItemStack stack) {
-        if (stack == null || stack.getCount() <= 0) {
             return null;
         }
-        return inventory.addStack(stack);
-    }
 
-    private boolean isWritableSlot(Inventory inventory, int slotIndex) {
-        return slotIndex >= 0 && slotIndex < inventory.getTotalSize()
-            || ChestLayout.isChestSlot(slotIndex);
-    }
-
-    private ItemStack getSlot(Inventory inventory, ChestState chestState, int slotIndex) {
-        if (slotIndex >= 0 && slotIndex < inventory.getTotalSize()) {
-            return inventory.getSlot(slotIndex);
-        }
-        if (ChestLayout.isChestSlot(slotIndex)) {
-            return chestState.getSlot(ChestLayout.toChestIndex(slotIndex));
-        }
-        return null;
-    }
-
-    private void setSlot(Inventory inventory, ChestState chestState, int slotIndex, ItemStack stack) {
-        if (slotIndex >= 0 && slotIndex < inventory.getTotalSize()) {
-            inventory.setSlot(slotIndex, stack);
-            return;
-        }
-        if (ChestLayout.isChestSlot(slotIndex)) {
-            chestState.setSlot(ChestLayout.toChestIndex(slotIndex), stack);
+        @Override
+        public void setSlot(int slotIndex, ItemStack stack) {
+            if (slotIndex >= 0 && slotIndex < inventory.getTotalSize()) {
+                inventory.setSlot(slotIndex, stack);
+                return;
+            }
+            if (ChestLayout.isChestSlot(slotIndex)) {
+                chestState.setSlot(ChestLayout.toChestIndex(slotIndex), stack);
+            }
         }
     }
 }
