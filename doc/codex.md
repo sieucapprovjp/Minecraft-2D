@@ -3,8 +3,8 @@
 ## File Purpose
 - Record a concise summary of completed project features.
 - Provide a quick progress snapshot before starting new work.
-- Canonical path for future sessions: `D:\Project OOP\doc\codex.md`.
-- Project root for all paths below: `D:\Project OOP`.
+- Canonical path for future sessions: `doc/codex.md`.
+- Project root for all paths below: repository root.
 - Future Codex sessions should read this file first to understand the current system state before planning or implementing new work.
 - This file does not replace `README.md`, is not a detailed design document, and should not store unfinished plans.
 
