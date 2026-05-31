@@ -59,7 +59,6 @@ Crafting slots dùng `_INV` với index cố định:
 | Craft 8 (bot-mid)      | 44 | _INV[87] | _INV[88] |
 | Craft 9 (bot-right)    | 45 | _INV[89] | _INV[90] |
 | **Output**             | **46** | **_INV[91]** | **_INV[92]** |
-
 ---
 
 ## 3. `Check Recipe(dir)` — So khớp pattern
