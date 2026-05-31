@@ -120,7 +120,7 @@ public final class ToolRegistry {
         register("gold_axe", ToolType.AXE, ToolMaterial.GOLD, "tools/gold/gold_axe_v1", "tools/gold/gold_axe_v2", 3.5f, 5, 24);
         register("gold_shovel", ToolType.SHOVEL, ToolMaterial.GOLD, "tools/gold/gold_shovel", 3.5f, 3, 24);
         register("gold_sword", ToolType.SWORD, ToolMaterial.GOLD, "tools/gold/gold_sword", 1.0f, 5, 24);
-        register("gold_hoe", ToolType.HOE, ToolMaterial.GOLD, "tools/gold/gold_hoe", 1.0f, 3, 24);
+        register("gold_hoe", ToolType.HOE, ToolMaterial.GOLD, "tools/gold/gold__hoe", 1.0f, 3, 24);
 
         register("diamond_pickaxe", ToolType.PICKAXE, ToolMaterial.DIAMOND, "tools/diamond/diamond_pickaxe", 4.0f, 6, 110);
         register("diamond_axe", ToolType.AXE, ToolMaterial.DIAMOND, "tools/diamond/diamond_axe_v1", "tools/diamond/diamond_axe_v2", 4.0f, 7, 110);
@@ -164,6 +164,16 @@ public final class ToolRegistry {
         return tool == null ? 0 : tool.getMaxDurability();
     }
 
+    public static int getHarvestLevel(String itemId) {
+        ToolDefinition tool = get(itemId);
+        return tool == null ? 0 : harvestLevel(tool.getMaterial());
+    }
+
+    public static boolean isPickaxe(String itemId) {
+        ToolDefinition tool = get(itemId);
+        return tool != null && tool.getType() == ToolType.PICKAXE;
+    }
+
     private static void register(String itemId, ToolType type, ToolMaterial material,
                                  String textureName, float miningMultiplier, int attackDamage,
                                  int maxDurability) {
@@ -182,5 +192,14 @@ public final class ToolRegistry {
         if (type == ToolType.AXE) return AXE_BLOCKS.contains(blockId);
         if (type == ToolType.SHOVEL) return SHOVEL_BLOCKS.contains(blockId);
         return false;
+    }
+
+    private static int harvestLevel(ToolMaterial material) {
+        if (material == ToolMaterial.WOOD) return 1;
+        if (material == ToolMaterial.STONE || material == ToolMaterial.COPPER || material == ToolMaterial.GOLD) return 2;
+        if (material == ToolMaterial.IRON) return 3;
+        if (material == ToolMaterial.DIAMOND) return 4;
+        if (material == ToolMaterial.NETHERITE) return 5;
+        return 0;
     }
 }

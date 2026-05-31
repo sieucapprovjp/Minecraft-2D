@@ -25,7 +25,8 @@ public final class WorldBlockFactory {
         if (isOre(id)) return ("diamond_ore".equals(id) || "deepslate_do".equals(id)) ? 5f : 3f;
         if ("deepslate".equals(id)) return 1.8f;
         if ("stone".equals(id) || "sandstone".equals(id)) return 1.2f;
-        if ("wood".equals(id) || "cactus".equals(id) || "crafting_table".equals(id)) return 0.9f;
+        if ("furnace".equals(id)) return 3.5f;
+        if ("wood".equals(id) || "cactus".equals(id) || "crafting_table".equals(id) || "chest".equals(id)) return 0.9f;
         if ("ice".equals(id)) return 0.4f;
         if ("snow".equals(id) || "leaves".equals(id)) return 0.2f;
         return 0.6f;
@@ -47,6 +48,12 @@ public final class WorldBlockFactory {
         if ("crafting_table".equals(id)) {
             TextureRegion texture = TextureManager.getInstance().getTexture(id);
             return texture != null ? texture : BlockPalette.getPlanks();
+        }
+        if ("furnace".equals(id)) {
+            return TextureManager.getInstance().getTexture("furnace_off");
+        }
+        if ("chest".equals(id)) {
+            return TextureManager.getInstance().getTexture("chest_closed");
         }
         if ("deepslate".equals(id)) {
             TextureRegion texture = TextureManager.getInstance().getTexture(id);

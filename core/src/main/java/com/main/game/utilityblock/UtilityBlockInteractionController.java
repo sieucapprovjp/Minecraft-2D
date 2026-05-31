@@ -1,4 +1,4 @@
-package com.main.game.interaction;
+package com.main.game.utilityblock;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -8,15 +8,19 @@ import com.main.game.blocks.AbstractBlock;
 import com.main.game.entities.player.Player;
 import com.main.game.world.World;
 
-public class CraftingTableInteractionController {
+public class UtilityBlockInteractionController {
 
-    private static final String CRAFTING_TABLE_ID = "crafting_table";
     private static final float OPEN_REACH = 4.5f;
 
     private final Vector2 mouseWorld = new Vector2();
+    private int hoveredTileX = -1;
+    private int hoveredTileY = -1;
 
-    public boolean canOpen(Player player, World world, OrthographicCamera camera, Viewport viewport) {
-        if (player == null
+    public boolean canOpen(String blockId, Player player, World world, OrthographicCamera camera, Viewport viewport) {
+        hoveredTileX = -1;
+        hoveredTileY = -1;
+        if (blockId == null
+            || player == null
             || world == null
             || camera == null
             || viewport == null
@@ -31,9 +35,23 @@ public class CraftingTableInteractionController {
         int tileX = (int) Math.floor(mouseWorld.x);
         int tileY = (int) Math.floor(mouseWorld.y);
         AbstractBlock block = world.getBlock(tileX, tileY);
-        return block != null
-            && CRAFTING_TABLE_ID.equals(block.getBlockId())
-            && isWithinReach(player, tileX, tileY);
+        if (block == null
+            || !blockId.equals(block.getBlockId())
+            || !isWithinReach(player, tileX, tileY)) {
+            return false;
+        }
+
+        hoveredTileX = tileX;
+        hoveredTileY = tileY;
+        return true;
+    }
+
+    public int getHoveredTileX() {
+        return hoveredTileX;
+    }
+
+    public int getHoveredTileY() {
+        return hoveredTileY;
     }
 
     private boolean isWithinReach(Player player, int tileX, int tileY) {
