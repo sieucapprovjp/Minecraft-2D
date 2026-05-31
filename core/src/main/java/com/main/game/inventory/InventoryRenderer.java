@@ -21,13 +21,16 @@ public class InventoryRenderer {
     private static final float INV_ITEM_Y_OFFSET_PX = -2f;
     private static final float CRAFT_ITEM_X_OFFSET_PX = 4f;
     private static final float CRAFT_ITEM_Y_OFFSET_PX = -4f;
+    private static final float TABLE_CRAFT_ITEM_Y_OFFSET_PX = 2f;
 
     private final BitmapFont font;
     private final Texture inventoryTexture;
+    private final Texture craftingTableTexture;
     private final Texture durabilityTexture;
 
     public InventoryRenderer() {
         inventoryTexture = new Texture(Gdx.files.internal("images/gui_invrow/inventory.png"));
+        craftingTableTexture = new Texture(Gdx.files.internal("images/gui_invrow/crafting_table.png"));
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
         pixmap.setColor(Color.WHITE);
         pixmap.fill();
@@ -69,39 +72,45 @@ public class InventoryRenderer {
 
     public void renderInventory(SpriteBatch batch, Inventory inventory, CraftingController craftingController,
                                 float sw, float sh, float scale) {
-        InventoryLayout.PanelRect panel = InventoryLayout.computePanel(sw, sh, inventoryTexture.getWidth(), inventoryTexture.getHeight());
+        CraftingGrid grid = craftingController == null ? null : craftingController.getGrid();
+        Texture panelTexture = craftingController != null && craftingController.isTableCrafting()
+            ? craftingTableTexture
+            : inventoryTexture;
+        float craftItemYOffset = craftingController != null && craftingController.isTableCrafting()
+            ? TABLE_CRAFT_ITEM_Y_OFFSET_PX
+            : CRAFT_ITEM_Y_OFFSET_PX;
+        InventoryLayout.PanelRect panel = InventoryLayout.computePanel(sw, sh, panelTexture.getWidth(), panelTexture.getHeight());
 
         batch.setColor(Color.WHITE);
-        batch.draw(inventoryTexture, panel.x, panel.y, panel.width, panel.height);
+        batch.draw(panelTexture, panel.x, panel.y, panel.width, panel.height);
 
-        if (craftingController != null) {
-            CraftingGrid grid = craftingController.getGrid();
-            for (int i = 0; i < CraftingGrid.SIZE; i++) {
+        if (craftingController != null && grid != null) {
+            for (int i = 0; i < grid.getSize(); i++) {
                 drawSlotItemInSlot(batch, grid.getSlot(i),
-                    InventoryLayout.craftInputSlotX(panel, i) + CRAFT_ITEM_X_OFFSET_PX * panel.scale,
-                    InventoryLayout.craftInputSlotY(panel, i) + CRAFT_ITEM_Y_OFFSET_PX * panel.scale,
-                    panel.scale);
+                    InventoryLayout.craftInputSlotX(panel, grid, i) + CRAFT_ITEM_X_OFFSET_PX * panel.scale,
+                    InventoryLayout.craftInputSlotY(panel, grid, i) + craftItemYOffset * panel.scale,
+                    InventoryLayout.slotSize(panel, grid));
             }
             drawSlotItemInSlot(batch, craftingController.getResult(),
-                InventoryLayout.craftResultSlotX(panel) + CRAFT_ITEM_X_OFFSET_PX * panel.scale,
-                InventoryLayout.craftResultSlotY(panel) + CRAFT_ITEM_Y_OFFSET_PX * panel.scale,
-                panel.scale);
+                InventoryLayout.craftResultSlotX(panel, grid) + CRAFT_ITEM_X_OFFSET_PX * panel.scale,
+                InventoryLayout.craftResultSlotY(panel, grid) + craftItemYOffset * panel.scale,
+                InventoryLayout.slotSize(panel, grid));
         }
 
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < Inventory.HOTBAR_SIZE; col++) {
                 int slotIndex = Inventory.HOTBAR_SIZE + row * Inventory.HOTBAR_SIZE + col;
                 drawSlotItemInSlot(batch, inventory.getSlot(slotIndex),
-                    panel.x + (InventoryLayout.INV_SLOT_ORIGIN_X + col * InventoryLayout.INV_SLOT_STEP_PX) * panel.scale,
-                    panel.y + (InventoryLayout.INV_MAIN_ORIGIN_Y + (2 - row) * InventoryLayout.INV_SLOT_STEP_PX) * panel.scale,
-                    panel.scale);
+                    InventoryLayout.inventorySlotX(panel, grid, col),
+                    InventoryLayout.inventoryMainSlotY(panel, grid, row),
+                    InventoryLayout.slotSize(panel, grid));
             }
         }
         for (int col = 0; col < Inventory.HOTBAR_SIZE; col++) {
             drawSlotItemInSlot(batch, inventory.getSlot(col),
-                panel.x + (InventoryLayout.INV_SLOT_ORIGIN_X + col * InventoryLayout.INV_SLOT_STEP_PX) * panel.scale,
-                panel.y + InventoryLayout.INV_HOTBAR_ORIGIN_Y * panel.scale,
-                panel.scale);
+                InventoryLayout.inventorySlotX(panel, grid, col),
+                InventoryLayout.hotbarSlotY(panel, grid),
+                InventoryLayout.slotSize(panel, grid));
         }
     }
 
@@ -120,23 +129,31 @@ public class InventoryRenderer {
     }
 
     public int findHoveredSlot(float screenX, float screenY) {
+        return findHoveredSlot(screenX, screenY, null);
+    }
+
+    public int findHoveredSlot(float screenX, float screenY, CraftingController craftingController) {
         float sw = Gdx.graphics.getWidth();
         float sh = Gdx.graphics.getHeight();
-        InventoryLayout.PanelRect panel = InventoryLayout.computePanel(sw, sh, inventoryTexture.getWidth(), inventoryTexture.getHeight());
-        return InventoryLayout.findInventorySlot(screenX, screenY, panel);
+        CraftingGrid grid = craftingController == null ? null : craftingController.getGrid();
+        Texture panelTexture = craftingController != null && craftingController.isTableCrafting()
+            ? craftingTableTexture
+            : inventoryTexture;
+        InventoryLayout.PanelRect panel = InventoryLayout.computePanel(sw, sh, panelTexture.getWidth(), panelTexture.getHeight());
+        return InventoryLayout.findInventorySlot(screenX, screenY, panel, grid);
     }
 
     public void dispose() {
         font.dispose();
         inventoryTexture.dispose();
+        craftingTableTexture.dispose();
         durabilityTexture.dispose();
     }
 
-    private void drawSlotItemInSlot(SpriteBatch batch, ItemStack stack, float slotX, float slotY, float panelScale) {
-        float slotSize = InventoryLayout.INV_SLOT_SIZE_PX * panelScale;
-        float itemSize = INV_ITEM_SIZE_PX * panelScale;
+    private void drawSlotItemInSlot(SpriteBatch batch, ItemStack stack, float slotX, float slotY, float slotSize) {
+        float itemSize = slotSize * (INV_ITEM_SIZE_PX / InventoryLayout.INV_SLOT_SIZE_PX);
         float itemX = slotX + (slotSize - itemSize) / 2f;
-        float itemY = slotY + (slotSize - itemSize) / 2f + INV_ITEM_Y_OFFSET_PX * panelScale;
+        float itemY = slotY + (slotSize - itemSize) / 2f + INV_ITEM_Y_OFFSET_PX * (slotSize / InventoryLayout.INV_SLOT_SIZE_PX);
         drawSlotItem(batch, stack, itemX, itemY, itemSize);
     }
 

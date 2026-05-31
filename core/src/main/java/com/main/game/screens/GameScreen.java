@@ -12,12 +12,12 @@ import com.main.game.entities.player.Player;
 import com.main.game.interaction.BlockBreakOverlay;
 import com.main.game.interaction.BlockBreaker;
 import com.main.game.interaction.BlockPlacementController;
+import com.main.game.interaction.CraftingTableInteractionController;
 import com.main.game.inventory.Inventory;
 import com.main.game.inventory.InventoryController;
 import com.main.game.inventory.InventoryInteractionHandler;
 import com.main.game.inventory.InventoryRenderer;
 import com.main.game.inventory.ItemStack;
-import com.main.game.inventory.StarterInventoryFactory;
 import com.main.game.items.BlockDropFactory;
 import com.main.game.items.DroppedItemManager;
 import com.main.game.navigation.ScreenId;
@@ -41,6 +41,7 @@ public class GameScreen extends BaseScreen {
     private EntityManager entityManager;
     private BlockBreaker blockBreaker;
     private BlockPlacementController blockPlacementController;
+    private CraftingTableInteractionController craftingTableInteractionController;
     private BlockBreakOverlay blockBreakOverlay;
     private PlayerAttackController playerAttackController;
     private DroppedItemManager droppedItemManager;
@@ -90,11 +91,11 @@ public class GameScreen extends BaseScreen {
         entityManager.setPlayer(player);
         blockBreaker = new BlockBreaker();
         blockPlacementController = new BlockPlacementController();
+        craftingTableInteractionController = new CraftingTableInteractionController();
         blockBreakOverlay = new BlockBreakOverlay();
         playerAttackController = new PlayerAttackController();
         droppedItemManager = new DroppedItemManager();
         inventory = new Inventory();
-        StarterInventoryFactory.populateStarterTools(inventory);
         inventoryController = new InventoryController();
         inventoryRenderer = new InventoryRenderer();
         inventoryInteractionHandler = new InventoryInteractionHandler();
@@ -122,7 +123,8 @@ public class GameScreen extends BaseScreen {
         if (Gdx.input.isKeyJustPressed(Input.Keys.K)) player.kill();
         if (Gdx.input.isKeyJustPressed(Input.Keys.B)) player.ban();
 
-        inventoryController.update();
+        boolean inventoryKeyPressed = inventoryController.update();
+        if (inventoryKeyPressed) handleInventoryKey();
         if (inventoryController.wasJustClosed()) inventoryInteractionHandler.onCloseInventory(inventory, craftingController);
         syncHeldItem();
 
@@ -234,6 +236,22 @@ public class GameScreen extends BaseScreen {
     private void handleDeathClick() {
         spawnSafetyController.respawn(world, player);
         dead = false;
+    }
+
+    private void handleInventoryKey() {
+        if (inventoryController.isInventoryOpen()) {
+            inventoryController.close();
+            return;
+        }
+        if (paused || dead) {
+            return;
+        }
+        if (craftingTableInteractionController.canOpen(player, world, camera, viewport)) {
+            craftingController.openTableCrafting(inventory);
+        } else {
+            craftingController.openPlayerCrafting(inventory);
+        }
+        inventoryController.open();
     }
 
     private String getHeldItemId() {

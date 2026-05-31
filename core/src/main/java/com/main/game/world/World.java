@@ -26,6 +26,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.main.game.blocks.AbstractBlock;
 import com.main.game.blocks.SimpleBlock;
 import com.main.game.worldgen.BiomeType;
+import com.main.game.worldgen.WorldGenerator;
 import com.main.game.worldgen.WorldBlockFactory;
 import com.main.game.worldgen.cave.CaveGenerator;
 import com.main.game.utils.Constants;
@@ -110,14 +111,14 @@ public class World {
     public void generate() {
         if (generated) return;
 
-        for (int cx = 0; cx < chunkColumns; cx++) {
-            for (int cy = 0; cy < chunkRows; cy++) {
-                generateChunk(cx, cy);
-            }
-        }
-
+        WorldGenerator.generate(this, seed);
         CaveGenerator.generate(this, seed);
         generated = true;
+    }
+
+    public void setSurfaceY(int x, int y) {
+        if (x < 0 || x >= width) return;
+        surfaceByX[x] = y;
     }
 
     public int getSurfaceY(int x) {
@@ -144,10 +145,7 @@ public class World {
 
         for (int cx = Math.max(minChunkX, camChunkX - loadRadius); cx <= Math.min(maxChunkX, camChunkX + loadRadius); cx++) {
             for (int cy = Math.max(minChunkY, camChunkY - loadRadius); cy <= Math.min(maxChunkY, camChunkY + loadRadius); cy++) {
-                if (chunks[cx][cy] == null) {
-                    chunks[cx][cy] = new Chunk(cx, cy);
-                    generateChunk(cx, cy);
-                }
+                if (chunks[cx][cy] == null) chunks[cx][cy] = new Chunk(cx, cy);
             }
         }
     }

@@ -27,6 +27,7 @@ public final class WorldGenerator {
             int biomeOffset = biome == BiomeType.SNOW ? 3 : biome == BiomeType.DESERT ? -2 : 0;
             int surface = baseGround + biomeOffset + (int) ((terrainNoise + detailNoise) * 12f);
             surface = Math.max(8, Math.min(world.height - 8, surface));
+            world.setSurfaceY(x, surface);
 
             fillColumn(world, x, surface, profile);
             decorateSurface(world, x, surface, biome, profile, random, seed);
@@ -45,8 +46,10 @@ public final class WorldGenerator {
     private static void fillColumn(World world, int x, int surface, BiomeProfile profile) {
         for (int y = 0; y <= surface; y++) {
             String blockId;
-            if (y == 0) {
+            if (y <= World.BEDROCK_TOP_Y) {
                 blockId = "bedrock";
+            } else if (y <= World.DEEPSLATE_TOP_Y) {
+                blockId = "deepslate";
             } else if (y == surface) {
                 blockId = profile.surfaceBlock;
             } else if (y >= surface - FILLER_LAYER_DEPTH && y < surface) {

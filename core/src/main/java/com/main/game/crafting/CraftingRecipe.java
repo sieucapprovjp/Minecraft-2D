@@ -10,36 +10,51 @@ import java.util.List;
 public class CraftingRecipe {
 
     public enum Type {
-        NORMAL,
+        SHAPED,
         SHAPELESS
     }
 
     private final String name;
     private final Type type;
+    private final int width;
+    private final int height;
     private final String[] input;
     private final String outputItemId;
     private final int outputCount;
 
-    private CraftingRecipe(String name, Type type, String[] input, String outputItemId, int outputCount) {
+    private CraftingRecipe(String name, Type type, int width, int height,
+                           String[] input, String outputItemId, int outputCount) {
         this.name = name;
         this.type = type;
+        this.width = width;
+        this.height = height;
         this.input = input;
         this.outputItemId = outputItemId;
         this.outputCount = outputCount;
     }
 
     public static CraftingRecipe shaped(String name, String[] pattern, String outputItemId, int outputCount) {
-        if (pattern == null || pattern.length != CraftingGrid.SIZE) {
-            throw new IllegalArgumentException("2x2 shaped recipes require exactly 4 input slots.");
+        return shaped(name, CraftingGrid.PLAYER_WIDTH, CraftingGrid.PLAYER_HEIGHT, pattern, outputItemId, outputCount);
+    }
+
+    public static CraftingRecipe shaped(String name, int width, int height,
+                                        String[] pattern, String outputItemId, int outputCount) {
+        if (width <= 0 || height <= 0 || width > CraftingGrid.TABLE_WIDTH || height > CraftingGrid.TABLE_HEIGHT) {
+            throw new IllegalArgumentException("Shaped recipes must fit inside the 3x3 crafting table.");
         }
-        return new CraftingRecipe(name, Type.NORMAL, Arrays.copyOf(pattern, pattern.length), outputItemId, outputCount);
+        if (pattern == null || pattern.length != width * height) {
+            throw new IllegalArgumentException("Shaped recipe pattern must match width * height.");
+        }
+        return new CraftingRecipe(name, Type.SHAPED, width, height,
+            Arrays.copyOf(pattern, pattern.length), outputItemId, outputCount);
     }
 
     public static CraftingRecipe shapeless(String name, String[] ingredients, String outputItemId, int outputCount) {
-        if (ingredients == null || ingredients.length == 0 || ingredients.length > CraftingGrid.SIZE) {
-            throw new IllegalArgumentException("2x2 shapeless recipes require 1-4 ingredients.");
+        if (ingredients == null || ingredients.length == 0 || ingredients.length > CraftingGrid.MAX_SIZE) {
+            throw new IllegalArgumentException("Shapeless recipes require 1-9 ingredients.");
         }
-        return new CraftingRecipe(name, Type.SHAPELESS, Arrays.copyOf(ingredients, ingredients.length), outputItemId, outputCount);
+        return new CraftingRecipe(name, Type.SHAPELESS, 0, 0,
+            Arrays.copyOf(ingredients, ingredients.length), outputItemId, outputCount);
     }
 
     public String getName() {
@@ -59,6 +74,9 @@ public class CraftingRecipe {
     }
 
     CraftingMatch match(CraftingGrid grid) {
+        if (grid == null) {
+            return null;
+        }
         if (type == Type.SHAPELESS) {
             return matchShapeless(grid);
         }
@@ -66,17 +84,21 @@ public class CraftingRecipe {
     }
 
     private CraftingMatch matchShaped(CraftingGrid grid) {
-        SlotRef[] normalized = normalize(readSlots(grid));
-        int[] slots = matchedSlots(normalized, input);
+        Bounds bounds = findBounds(grid);
+        if (bounds == null || bounds.width() != width || bounds.height() != height) {
+            return null;
+        }
+
+        int[] slots = matchedSlots(grid, bounds, false);
         if (slots == null) {
-            slots = matchedSlots(mirror(normalized), input);
+            slots = matchedSlots(grid, bounds, true);
         }
         return createMatch(grid, slots);
     }
 
     private CraftingMatch matchShapeless(CraftingGrid grid) {
         List<Integer> remainingSlots = new ArrayList<>();
-        for (int i = 0; i < CraftingGrid.SIZE; i++) {
+        for (int i = 0; i < grid.getSize(); i++) {
             ItemStack stack = grid.getSlot(i);
             if (stack != null && stack.getCount() > 0) {
                 remainingSlots.add(i);
@@ -133,21 +155,26 @@ public class CraftingRecipe {
         return new CraftingMatch(this, ingredientSlots, craftCount);
     }
 
-    private int[] matchedSlots(SlotRef[] candidate, String[] pattern) {
+    private int[] matchedSlots(CraftingGrid grid, Bounds bounds, boolean mirrored) {
         List<Integer> slots = new ArrayList<>();
-        for (int i = 0; i < CraftingGrid.SIZE; i++) {
-            String expected = pattern[i];
-            String actual = candidate[i] == null ? null : candidate[i].itemId;
-            if (expected == null) {
-                if (actual != null) {
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
+                int recipeCol = mirrored ? width - 1 - col : col;
+                String expected = input[row * width + recipeCol];
+                int gridSlot = grid.toIndex(bounds.minCol + col, bounds.minRow + row);
+                ItemStack stack = grid.getSlot(gridSlot);
+                String actual = stack == null || stack.getCount() <= 0 ? null : stack.getItemId();
+                if (expected == null) {
+                    if (actual != null) {
+                        return null;
+                    }
+                    continue;
+                }
+                if (!expected.equals(actual)) {
                     return null;
                 }
-                continue;
+                slots.add(gridSlot);
             }
-            if (!expected.equals(actual)) {
-                return null;
-            }
-            slots.add(candidate[i].slotIndex);
         }
         int[] result = new int[slots.size()];
         for (int i = 0; i < slots.size(); i++) {
@@ -156,50 +183,50 @@ public class CraftingRecipe {
         return result;
     }
 
-    private SlotRef[] readSlots(CraftingGrid grid) {
-        SlotRef[] slots = new SlotRef[CraftingGrid.SIZE];
-        for (int i = 0; i < CraftingGrid.SIZE; i++) {
-            ItemStack stack = grid.getSlot(i);
-            if (stack != null && stack.getCount() > 0) {
-                slots[i] = new SlotRef(stack.getItemId(), i);
+    private Bounds findBounds(CraftingGrid grid) {
+        int minCol = grid.getWidth();
+        int minRow = grid.getHeight();
+        int maxCol = -1;
+        int maxRow = -1;
+
+        for (int row = 0; row < grid.getHeight(); row++) {
+            for (int col = 0; col < grid.getWidth(); col++) {
+                ItemStack stack = grid.getSlot(grid.toIndex(col, row));
+                if (stack == null || stack.getCount() <= 0) {
+                    continue;
+                }
+                minCol = Math.min(minCol, col);
+                minRow = Math.min(minRow, row);
+                maxCol = Math.max(maxCol, col);
+                maxRow = Math.max(maxRow, row);
             }
         }
-        return slots;
+
+        if (maxCol < 0 || maxRow < 0) {
+            return null;
+        }
+        return new Bounds(minCol, minRow, maxCol, maxRow);
     }
 
-    private SlotRef[] normalize(SlotRef[] source) {
-        SlotRef[] normalized = Arrays.copyOf(source, source.length);
-        boolean topRowEmpty = normalized[0] == null && normalized[1] == null;
-        boolean bottomRowHasItem = normalized[2] != null || normalized[3] != null;
-        if (topRowEmpty && bottomRowHasItem) {
-            normalized[0] = normalized[2];
-            normalized[1] = normalized[3];
-            normalized[2] = null;
-            normalized[3] = null;
+    private static final class Bounds {
+        private final int minCol;
+        private final int minRow;
+        private final int maxCol;
+        private final int maxRow;
+
+        private Bounds(int minCol, int minRow, int maxCol, int maxRow) {
+            this.minCol = minCol;
+            this.minRow = minRow;
+            this.maxCol = maxCol;
+            this.maxRow = maxRow;
         }
 
-        boolean leftColumnEmpty = normalized[0] == null && normalized[2] == null;
-        boolean rightColumnHasItem = normalized[1] != null || normalized[3] != null;
-        if (leftColumnEmpty && rightColumnHasItem) {
-            normalized[0] = normalized[1];
-            normalized[2] = normalized[3];
-            normalized[1] = null;
-            normalized[3] = null;
+        private int width() {
+            return maxCol - minCol + 1;
         }
-        return normalized;
-    }
 
-    private SlotRef[] mirror(SlotRef[] source) {
-        return new SlotRef[] {source[1], source[0], source[3], source[2]};
-    }
-
-    private static final class SlotRef {
-        private final String itemId;
-        private final int slotIndex;
-
-        private SlotRef(String itemId, int slotIndex) {
-            this.itemId = itemId;
-            this.slotIndex = slotIndex;
+        private int height() {
+            return maxRow - minRow + 1;
         }
     }
 }

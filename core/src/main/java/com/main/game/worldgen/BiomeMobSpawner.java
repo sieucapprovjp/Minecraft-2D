@@ -22,14 +22,14 @@ public final class BiomeMobSpawner {
         int playerX = Math.round(player.getX());
         int spawned = 0;
 
-        for (int i = 0; i < 18 && spawned < 12; i++) {
+        for (int i = 0; i < 24 && spawned < 10; i++) {
             int side = i % 2 == 0 ? -1 : 1;
-            int distance = 12 + i * 7 + random.nextInt(5);
+            int distance = 9 + (i / 2) * 5 + random.nextInt(4);
             int targetX = playerX + side * distance;
             Mob.MobType type = chooseMobForBiome(world.getBiome(targetX), random);
             int spawnWidth = Mob.getRequiredSpawnWidth(type);
             int spawnHeight = Mob.getRequiredSpawnHeight(type);
-            Vector2 spawn = SpawnSafety.findSurfaceSpawn(world, targetX, 10, spawnWidth, spawnHeight);
+            Vector2 spawn = SpawnSafety.findSurfaceSpawn(world, targetX, 16, spawnWidth, spawnHeight);
             if (spawn == null) continue;
 
             entityManager.addMob(new Mob(spawn.x, spawn.y, type, player, physics, world));
