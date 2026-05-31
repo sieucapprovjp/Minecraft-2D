@@ -69,4 +69,5 @@ public abstract class AbstractBlock {
     public String    getBlockId()     { return blockId;     }
     public Rectangle getBounds()      { return bounds;      }
     public boolean   isAir()          { return !isSolid && blockId.equals("air"); }
+    public boolean   isWater()        { return blockId.equals("water"); }
 }

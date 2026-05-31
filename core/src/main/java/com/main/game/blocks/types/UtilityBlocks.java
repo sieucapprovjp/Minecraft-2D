@@ -16,6 +16,6 @@ public class UtilityBlocks {
         public WaterBlock(int x, int y) {
             super(x, y, "water", false, false, 0f);
         }
-        @Override public TextureRegion getTexture() { return null; }
+        @Override public TextureRegion getTexture() { return com.main.game.world.BlockPalette.getWater(); }
     }
 }

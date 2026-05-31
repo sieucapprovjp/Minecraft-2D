@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.main.game.entities.Entity;
 import com.main.game.entities.EntityState;
 import com.main.game.physics.PhysicsEngine;
+import com.main.game.utils.Constants;
 import com.main.game.world.World;
 
 /**
@@ -91,9 +92,11 @@ public class Player extends Entity {
         physics.update(this, world, delta);
 
         if (!wasOnGround && onGround && lastVy < -14f) {
-            // Rơi quá nhanh -> mất máu
-            int fallDamage = (int) (-lastVy - 13f);
-            if (fallDamage > 0) takeDamage(fallDamage);
+            // Rơi quá nhanh -> mất máu (trừ khi đang ở trong nước)
+            if (submergedRatio <= 0f) {
+                int fallDamage = (int) (-lastVy - 13f);
+                if (fallDamage > 0) takeDamage(fallDamage);
+            }
         }
 
         updateState(delta);
@@ -125,24 +128,36 @@ public class Player extends Entity {
     // ─── Input ─────────────────────────────────────────────────
 
     private void handleInput(float delta) {
+        boolean inWater = submergedRatio > 0f;
+        float speed = inWater ? Constants.WATER_MOVE_SPEED : MOVE_SPEED;
+
         float moveX = 0;
         if (Gdx.input.isKeyPressed(Keys.A) || Gdx.input.isKeyPressed(Keys.LEFT)) {
-            moveX       = -MOVE_SPEED;
+            moveX       = -speed;
             facingRight = false;
         }
         if (Gdx.input.isKeyPressed(Keys.D) || Gdx.input.isKeyPressed(Keys.RIGHT)) {
-            moveX       = MOVE_SPEED;
+            moveX       = speed;
             facingRight = true;
         }
         velocity.x = moveX;
 
-        if (onGround &&
+        // Bơi trong nước: giữ phím nhảy để bơi lên
+        if (inWater) {
+            if (Gdx.input.isKeyPressed(Keys.SPACE)
+                || Gdx.input.isKeyPressed(Keys.W)
+                || Gdx.input.isKeyPressed(Keys.UP)) {
+                velocity.y -= Constants.SWIM_UP_FORCE * delta;
+                if (velocity.y > 0f) velocity.y = 0f;
+                velocity.y = Math.max(velocity.y, -Constants.MAX_SWIM_UP_SPEED);
+            }
+        } else if (onGround &&
             (Gdx.input.isKeyJustPressed(Keys.SPACE)
                 || Gdx.input.isKeyJustPressed(Keys.W)
                 || Gdx.input.isKeyJustPressed(Keys.UP))) {
             velocity.y = JUMP_IMPULSE;
             onGround   = false;
-            stateTime  = 0f; // reset để jump animation bắt đầu từ đầu
+            stateTime  = 0f;
         }
     }
 
