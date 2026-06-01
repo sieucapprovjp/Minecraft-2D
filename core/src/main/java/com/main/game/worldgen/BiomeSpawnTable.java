@@ -25,20 +25,30 @@ public final class BiomeSpawnTable {
      * Không phải random selection; dùng Random object để maintain seed consistency.
      */
     public Mob.MobType selectMobForBiome(BiomeType biome, Random random) {
-        List<MobEntry> entries = biomeTables.getOrDefault(biome, biomeTables.get(BiomeType.FOREST));
+        if (random == null) {
+            throw new IllegalArgumentException("random must not be null");
+        }
+
+        BiomeType key = (biome != null) ? biome : BiomeType.FOREST;
+        List<MobEntry> entries = biomeTables.getOrDefault(key, biomeTables.get(BiomeType.FOREST));
         if (entries == null || entries.isEmpty()) {
             return Mob.MobType.ZOMBIE; // Fallback
         }
 
-        // Tính tổng weight
         int totalWeight = 0;
         for (MobEntry e : entries) {
-            totalWeight += e.weight;
+            if (e.weight > 0) {
+                totalWeight += e.weight;
+            }
+        }
+        if (totalWeight <= 0) {
+            return entries.get(0).type;
         }
 
         int pick = random.nextInt(totalWeight);
         int acc = 0;
         for (MobEntry e : entries) {
+            if (e.weight <= 0) continue;
             acc += e.weight;
             if (pick < acc) {
                 return e.type;
