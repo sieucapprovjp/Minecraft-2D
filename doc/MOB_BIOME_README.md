@@ -39,10 +39,10 @@ Key points:
 - If biome missing → fallback FOREST table.
 
 ### BiomeMobSpawner
-- Entry: spawnInitialMobs(World world, Player player, PhysicsEngine physics, EntityManager em, Random rng)
+- Entry: spawnInitialMobs(World world, Player player, PhysicsEngine physics, EntityManager em, long seed)
 - Vòng lặp spawn: maxAttempts (18), goalSpawned (12).
-- Steps: compute position → world.getBiome(x) → select MobType → SpawnSafety.findSurfaceSpawn(...) → new Mob(...) → entityManager.addMob(mob).
-- Gọi ISpawnHelper / SpawnSafety trước khi tạo mob (dependency point).
+- Steps: compute position → world.getBiome(x) → select MobType → SpawnSafety.findSurfaceSpawn(world, startX, searchRadius, mobWidth, mobHeight) → new Mob(...) → entityManager.addMob(mob).
+- Gọi SpawnSafety trước khi tạo mob (dependency point).
 
 ### Mob & AI
 - Mob constructor nhận dependencies và MobProfile.
