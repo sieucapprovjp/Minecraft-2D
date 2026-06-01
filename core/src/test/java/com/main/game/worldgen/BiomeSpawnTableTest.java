@@ -15,7 +15,7 @@ public class BiomeSpawnTableTest {
         BiomeSpawnTable table = new BiomeSpawnTable();
         Random rand = new Random(12345L);
 
-        int cow=0,pig=0,chicken=0,sheep=0,zombie=0;
+        int cow=0,pig=0,chicken=0,sheep=0;
         for (int i = 0; i < 20; i++) {
             Mob.MobType type = table.selectMobForBiome(BiomeType.FOREST, rand);
             switch (type) {
@@ -23,11 +23,10 @@ public class BiomeSpawnTableTest {
                 case PIG: pig++; break;
                 case CHICKEN: chicken++; break;
                 case SHEEP: sheep++; break;
-                case ZOMBIE: zombie++; break;
                 default: fail("Unexpected mob in FOREST: " + type);
             }
         }
-        assertEquals(20, cow+pig+chicken+sheep+zombie);
+        assertEquals(20, cow+pig+chicken+sheep);
         assertTrue("At least one passive should spawn", cow+pig+chicken+sheep > 0);
     }
 
@@ -44,7 +43,7 @@ public class BiomeSpawnTableTest {
         rand = new Random(54321L);
         for (int i = 0; i < 10; i++) {
             Mob.MobType t = table.selectMobForBiome(BiomeType.SNOW, rand);
-            assertTrue("SNOW should only spawn STRAY or SHEEP", t == Mob.MobType.STRAY || t == Mob.MobType.SHEEP);
+            assertTrue("SNOW should only spawn STRAY or SKELETON", t == Mob.MobType.STRAY || t == Mob.MobType.SKELETON);
         }
     }
 }
