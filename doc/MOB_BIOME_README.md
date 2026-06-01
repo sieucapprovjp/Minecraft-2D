@@ -61,8 +61,8 @@ SNOW: SHEEP(15), STRAY(12)
 ---
 
 ## 5. Integration points (chỗ cần team inject code)
-- World.getBiome(float x, float y): trả về BiomeType tại vị trí.
-- SpawnSafety.findSurfaceSpawn(World, x, y, mobWidth, mobHeight): trả về Vector2 safe position hoặc null.
+- World.getBiome(int x): trả về BiomeType tại vị trí (theo cột x).
+- SpawnSafety.findSurfaceSpawn(World, startX, searchRadius, mobWidth, mobHeight): trả về Vector2 safe position hoặc null.
 - EntityManager.addMob(Mob): đăng ký entity vào hệ thống update/render.
 
 Chú ý: Trong code đã có chỗ comment rõ "// TODO: inject SpawnSafety/ISpawnHelper here" — team cần cung cấp implementation.
