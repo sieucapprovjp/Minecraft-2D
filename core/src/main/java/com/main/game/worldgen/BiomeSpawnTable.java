@@ -23,17 +23,43 @@ public final class BiomeSpawnTable {
     /**
      * Chọn mob type cho biome dựa trên weighted distribution.
      * Không phải random selection; dùng Random object để maintain seed consistency.
+     *
+     * @param biome BiomeType để spawn mob (null → FOREST fallback)
+     * @param random Random instance (required)
+     * @return MobType được chọn theo weighted distribution
+     * @throws NullPointerException nếu random là null
+     * @throws IllegalArgumentException nếu biome hoặc weights không hợp lệ
      */
     public Mob.MobType selectMobForBiome(BiomeType biome, Random random) {
-        List<MobEntry> entries = biomeTables.getOrDefault(biome, biomeTables.get(BiomeType.FOREST));
+        if (random == null) {
+            throw new NullPointerException("Random instance cannot be null");
+        }
+        
+        // Handle null biome → fallback FOREST
+        if (biome == null) {
+            biome = BiomeType.FOREST;
+        }
+
+        List<MobEntry> entries = biomeTables.get(biome);
         if (entries == null || entries.isEmpty()) {
-            return Mob.MobType.ZOMBIE; // Fallback
+            // Fallback: use FOREST if biome not configured
+            entries = biomeTables.get(BiomeType.FOREST);
+            if (entries == null || entries.isEmpty()) {
+                return Mob.MobType.ZOMBIE; // Last resort
+            }
         }
 
         // Tính tổng weight
         int totalWeight = 0;
         for (MobEntry e : entries) {
+            if (e.weight < 0) {
+                throw new IllegalArgumentException("Negative weight not allowed: " + e.type + " weight=" + e.weight);
+            }
             totalWeight += e.weight;
+        }
+
+        if (totalWeight <= 0) {
+            throw new IllegalArgumentException("Total weight must be positive. Biome=" + biome + " total=" + totalWeight);
         }
 
         int pick = random.nextInt(totalWeight);
