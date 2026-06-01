@@ -1,12 +1,11 @@
 package com.main.game.screens;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.math.MathUtils;
 import com.main.game.MainGame;
+import com.main.game.audio.AudioId;
 import com.main.game.navigation.ScreenId;
 
 /**
@@ -43,13 +42,7 @@ public class MenuScreen extends BaseScreen {
     @Override
     public void show() {
         // Background stage layer (pick any single file from stage folder)
-        FileHandle[] stageFiles = Gdx.files.internal("stage").list();
-        if (stageFiles.length > 0) {
-            int index = MathUtils.random(stageFiles.length - 1);
-            stageTexture = new Texture(stageFiles[index]);
-        } else {
-            stageTexture = new Texture(Gdx.files.internal("stage/sky.png"));
-        }
+        stageTexture = new Texture(StageBackgrounds.random());
 
         // Layer 2 sprite
         layer2Texture = new Texture(Gdx.files.internal("images/stage_sprite/splash-worldoptions.png"));
@@ -63,6 +56,7 @@ public class MenuScreen extends BaseScreen {
 
         btnScales = new float[BTN_COUNT];
         for (int i = 0; i < BTN_COUNT; i++) btnScales[i] = 1.0f;
+        game.getAudioManager().playMusic(AudioId.MENU_MUSIC);
     }
 
     @Override
@@ -94,6 +88,7 @@ public class MenuScreen extends BaseScreen {
 
             // Handle click
             if (hover && clicked) {
+                game.getAudioManager().play(AudioId.UI_CLICK);
                 switch (i) {
                     case 0: // New Game
                         game.getScreenRouter().request(ScreenId.MODE_SELECT);

@@ -10,6 +10,11 @@ public class DroppedItemManager {
 
     private final Array<DroppedItem> items = new Array<>();
     private float currentTime = 0f;
+    private Runnable pickupListener;
+
+    public void setPickupListener(Runnable pickupListener) {
+        this.pickupListener = pickupListener;
+    }
 
     public void spawn(HarvestEntry entry, World world) {
         if (entry != null && entry.getTexture() != null) {
@@ -23,6 +28,9 @@ public class DroppedItemManager {
             DroppedItem item = items.get(i);
             if (item.update(delta, world, player, inventory, currentTime)) {
                 items.removeIndex(i);
+                if (pickupListener != null) {
+                    pickupListener.run();
+                }
             }
         }
     }

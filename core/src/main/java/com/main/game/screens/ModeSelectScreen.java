@@ -1,13 +1,12 @@
 package com.main.game.screens;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.math.MathUtils;
 import com.main.game.GameState;
 import com.main.game.MainGame;
+import com.main.game.audio.AudioId;
 import com.main.game.navigation.ScreenId;
 
 /**
@@ -61,13 +60,7 @@ public class ModeSelectScreen extends BaseScreen {
 
     @Override
     public void show() {
-        FileHandle[] stageFiles = Gdx.files.internal("stage").list();
-        if (stageFiles.length > 0) {
-            int bgIndex = MathUtils.random(stageFiles.length - 1);
-            bgTexture = new Texture(stageFiles[bgIndex]);
-        } else {
-            bgTexture = new Texture(Gdx.files.internal("images/stage_sprite/empty2.png"));
-        }
+        bgTexture = new Texture(StageBackgrounds.random());
         logoTexture = new Texture(Gdx.files.internal("images/stage_sprite/splash-worldoptions.png"));
         panelTexture = new Texture(Gdx.files.internal("images/menu/world-options2.png"));
         labelsTexture = new Texture(Gdx.files.internal("images/menu2/world-options-text.png"));
@@ -94,6 +87,7 @@ public class ModeSelectScreen extends BaseScreen {
         boolean doneHover = mx >= doneX && mx <= doneX + doneW && my >= doneY && my <= doneY + doneH;
         doneScale += ((doneHover ? 1.05f : 1.0f) - doneScale) * 0.2f;
         if (doneHover && clicked) {
+            game.getAudioManager().play(AudioId.UI_CLICK);
             applyMenuChoices();
             game.getScreenRouter().request(ScreenId.GAME);
         }
@@ -102,6 +96,7 @@ public class ModeSelectScreen extends BaseScreen {
         boolean backHover = mx >= backX && mx <= backX + backW && my >= backY && my <= backY + backH;
         backScale += ((backHover ? 1.05f : 1.0f) - backScale) * 0.2f;
         if (backHover && clicked) {
+            game.getAudioManager().play(AudioId.UI_CLICK);
             game.getScreenRouter().request(ScreenId.MENU);
         }
 
@@ -109,6 +104,7 @@ public class ModeSelectScreen extends BaseScreen {
         boolean settingsHover = mx >= settingsX && mx <= settingsX + settingsW && my >= settingsY && my <= settingsY + settingsH;
         settingsScale += ((settingsHover ? 1.05f : 1.0f) - settingsScale) * 0.2f;
         if (settingsHover && clicked) {
+            game.getAudioManager().play(AudioId.UI_CLICK);
             game.getScreenRouter().request(ScreenId.SETTINGS);
         }
 
@@ -202,6 +198,7 @@ public class ModeSelectScreen extends BaseScreen {
         }
 
         menuChoices[optID - 1] = choiceID;
+        game.getAudioManager().play(AudioId.UI_CLICK);
     }
 
     private void updateLayout() {
