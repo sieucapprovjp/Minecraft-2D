@@ -88,7 +88,14 @@ public final class ToolRegistry {
         "deepslate_co", "deepslate_io", "deepslate_go", "deepslate_do",
         "deepslate_copper", "ore_lapis_deepslate", "deepslate_ro", "deepslate_eo"
     );
-    private static final Set<String> AXE_BLOCKS = Set.of("wood", "planks", "leaves");
+    private static final Set<String> AXE_BLOCKS = Set.of(
+        "wood", "planks", "leaves",
+        "natural_wood",
+        "desert_oak_leaves", "desert_oak_leaves_2",
+        "spruce_log", "natural_spruce_log", "spruce_planks", "spruce_leaves",
+        "cherry_log", "natural_cherry_log", "cherry_planks",
+        "cherry_leaves", "cherry_leaves_2", "cherry_leaves_5", "cherry_leaves_6"
+    );
     private static final Set<String> SHOVEL_BLOCKS = Set.of("dirt", "grass", "sand", "snow");
 
     static {
@@ -172,6 +179,11 @@ public final class ToolRegistry {
     public static boolean isPickaxe(String itemId) {
         ToolDefinition tool = get(itemId);
         return tool != null && tool.getType() == ToolType.PICKAXE;
+    }
+
+    public static boolean isSword(String itemId) {
+        ToolDefinition tool = get(itemId);
+        return tool != null && tool.getType() == ToolType.SWORD;
     }
 
     private static void register(String itemId, ToolType type, ToolMaterial material,

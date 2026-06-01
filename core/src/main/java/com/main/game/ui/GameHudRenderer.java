@@ -154,7 +154,7 @@ public class GameHudRenderer {
         batch.draw(hpTex, hbX, hpY, hpW, hpH);
         drawArmorBar(batch, player, hbX, hpY + hpH + 4f * scale, scale);
 
-        int hunger = 20;
+        int hunger = player == null ? 20 : Math.max(0, Math.min(20, player.getFoodLevel()));
         Texture hungerTex = hungerTextures[hunger];
         float hgW = hungerTex.getWidth() * (scale * 2f);
         float hgH = hungerTex.getHeight() * (scale * 2f);

@@ -43,7 +43,7 @@ class PlayerRenderer {
     }
 
     void render(SpriteBatch batch, Player player, EntityState state, float stateTime,
-                boolean mining, float miningTime, boolean hurt, String heldItemId) {
+                boolean actionSwinging, float actionSwingTime, boolean hurt, String heldItemId) {
         float armFrontAngle = 0f;
         float armBackAngle = 0f;
         float legFrontAngle = 0f;
@@ -80,8 +80,8 @@ class PlayerRenderer {
             headTilt = 0f;
         }
 
-        if (mining && state != EntityState.HURT && state != EntityState.DEAD) {
-            float swing = Math.abs(((miningTime * MINING_ARM_SPEED) % 2f) - 1f);
+        if (actionSwinging && state != EntityState.HURT && state != EntityState.DEAD) {
+            float swing = Math.abs(((actionSwingTime * MINING_ARM_SPEED) % 2f) - 1f);
             armFrontAngle = 35f + swing * 70f;
             armBackAngle = 5f;
         }

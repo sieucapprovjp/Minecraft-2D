@@ -29,9 +29,12 @@ import com.main.game.inventory.InventoryController;
 import com.main.game.inventory.InventoryInteractionHandler;
 import com.main.game.inventory.InventoryRenderer;
 import com.main.game.inventory.ItemStack;
-import com.main.game.inventory.StarterArmorKit;
+import com.main.game.inventory.StarterInventoryKit;
+import com.main.game.inventory.ToolRegistry;
 import com.main.game.items.BlockDropFactory;
 import com.main.game.items.DroppedItemManager;
+import com.main.game.items.HarvestEntry;
+import com.main.game.items.MobDropFactory;
 import com.main.game.navigation.ScreenId;
 import com.main.game.physics.PhysicsEngine;
 import com.main.game.time.DayNightCycle;
@@ -42,7 +45,9 @@ import com.main.game.world.BlockPalette;
 import com.main.game.world.DemoBlockViewer;
 import com.main.game.world.SpawnSafetyController;
 import com.main.game.world.World;
+import com.main.game.entities.mob.Mob;
 import com.main.game.worldgen.BiomeMobSpawner;
+import java.util.Random;
 
 public class GameScreen extends BaseScreen {
 
@@ -79,6 +84,7 @@ public class GameScreen extends BaseScreen {
     private SpawnSafetyController spawnSafetyController;
     private BiomeMobSpawner mobSpawner;
     private DayNightCycle dayNightCycle;
+    private Random mobDropRandom;
     private boolean paused;
     private boolean dead;
 
@@ -121,9 +127,11 @@ public class GameScreen extends BaseScreen {
         furnaceInteractionController = new FurnaceInteractionController();
         blockBreakOverlay = new BlockBreakOverlay();
         playerAttackController = new PlayerAttackController();
+        playerAttackController.setMobDeathListener(this::handleMobKilled);
         droppedItemManager = new DroppedItemManager();
+        mobDropRandom = new Random(currentSeed + 7717L);
         inventory = new Inventory();
-        StarterArmorKit.grantAllArmor(inventory);
+        StarterInventoryKit.grant(inventory);
         player.setArmorLoadout(inventory.getArmorLoadout());
         inventoryController = new InventoryController();
         inventoryRenderer = new InventoryRenderer();
@@ -214,18 +222,22 @@ public class GameScreen extends BaseScreen {
 
         String heldItemId = getHeldItemId();
         player.setHeldItemId(heldItemId);
+        boolean consumedFood = tryConsumeHeldFood(heldItemId);
         boolean placedBlock = false;
-        if (blockPlacementController.update(player, world, camera, viewport, heldItemId,
+        if (!consumedFood && blockPlacementController.update(player, world, camera, viewport, heldItemId,
             inventoryController.isInventoryOpen())) {
             player.playPlaceAnimation(blockPlacementController.getHoveredPlaceX() + 0.5f, heldItemId);
-            reduceHeldBlockStack();
+            reduceHeldStack();
             blockBreaker.cancel();
             placedBlock = true;
         }
         boolean attacked = playerAttackController.update(delta, player, entityManager,
             camera, viewport, inventoryController.isInventoryOpen(), heldItemId);
+        if (shouldPlaySwordSlash(heldItemId)) {
+            player.playAttackAnimation(mouseWorldX(), heldItemId);
+        }
         boolean brokeBlock = false;
-        if (placedBlock || attacked || inventoryController.isInventoryOpen()) {
+        if (consumedFood || placedBlock || attacked || inventoryController.isInventoryOpen()) {
             blockBreaker.cancel();
         } else {
             brokeBlock = blockBreaker.update(delta, player, world, camera, viewport, heldItemId);
@@ -356,6 +368,15 @@ public class GameScreen extends BaseScreen {
         droppedItemManager.spawn(BlockDropFactory.createDrop(block, worldRef, getHeldItemId()), worldRef);
     }
 
+    private void handleMobKilled(Mob mob) {
+        if (mob == null || world == null || droppedItemManager == null || mobDropRandom == null) {
+            return;
+        }
+        for (HarvestEntry entry : MobDropFactory.createDrops(mob, world, mobDropRandom)) {
+            droppedItemManager.spawn(entry, world);
+        }
+    }
+
     private String getHeldItemId() {
         if (inventory == null || inventoryController == null) {
             return null;
@@ -385,7 +406,31 @@ public class GameScreen extends BaseScreen {
         syncHeldItem();
     }
 
-    private void reduceHeldBlockStack() {
+    private boolean shouldPlaySwordSlash(String heldItemId) {
+        return inventoryController != null
+            && !inventoryController.isInventoryOpen()
+            && ToolRegistry.isSword(heldItemId)
+            && Gdx.input.isButtonJustPressed(Input.Buttons.LEFT);
+    }
+
+    private float mouseWorldX() {
+        Vector2 mouseWorld = new Vector2(Gdx.input.getX(), Gdx.input.getY());
+        viewport.unproject(mouseWorld);
+        return mouseWorld.x;
+    }
+
+    private boolean tryConsumeHeldFood(String heldItemId) {
+        if (player == null || inventory == null || inventoryController == null
+            || inventoryController.isInventoryOpen()
+            || !Gdx.input.isButtonJustPressed(Input.Buttons.RIGHT)
+            || !player.eat(heldItemId)) {
+            return false;
+        }
+        reduceHeldStack();
+        return true;
+    }
+
+    private void reduceHeldStack() {
         if (inventory == null || inventoryController == null) {
             return;
         }

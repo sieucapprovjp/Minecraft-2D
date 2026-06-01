@@ -11,6 +11,18 @@ public final class RecipeRegistry {
             "planks",
             4
         ),
+        CraftingRecipe.shapeless(
+            "cherry planks",
+            new String[] {"cherry_log"},
+            "cherry_planks",
+            4
+        ),
+        CraftingRecipe.shapeless(
+            "spruce planks",
+            new String[] {"spruce_log"},
+            "spruce_planks",
+            4
+        ),
         CraftingRecipe.shaped(
             "sticks",
             1,
