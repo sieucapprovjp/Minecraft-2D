@@ -19,6 +19,7 @@ public final class BiomeMobSpawner {
             return;
         }
         Random random = new Random(seed + 404);
+        BiomeSpawnTable spawnTable = new BiomeSpawnTable();
         int playerX = Math.round(player.getX());
         int spawned = 0;
 
@@ -26,7 +27,7 @@ public final class BiomeMobSpawner {
             int side = i % 2 == 0 ? -1 : 1;
             int distance = 9 + (i / 2) * 5 + random.nextInt(4);
             int targetX = playerX + side * distance;
-            Mob.MobType type = chooseMobForBiome(world.getBiome(targetX), random);
+            Mob.MobType type = spawnTable.selectMobForBiome(world.getBiome(targetX), random);
             int spawnWidth = Mob.getRequiredSpawnWidth(type);
             int spawnHeight = Mob.getRequiredSpawnHeight(type);
             Vector2 spawn = SpawnSafety.findSurfaceSpawn(world, targetX, 16, spawnWidth, spawnHeight);
@@ -34,25 +35,6 @@ public final class BiomeMobSpawner {
 
             entityManager.addMob(new Mob(spawn.x, spawn.y, type, player, physics, world));
             spawned++;
-        }
-    }
-
-    private static Mob.MobType chooseMobForBiome(BiomeType biome, Random random) {
-        switch (biome) {
-            case DESERT:
-                return random.nextFloat() < 0.7f ? Mob.MobType.HUSK : Mob.MobType.SKELETON;
-            case SNOW:
-                return random.nextFloat() < 0.7f ? Mob.MobType.STRAY : Mob.MobType.SHEEP;
-            case FOREST:
-            default:
-                Mob.MobType[] forest = {
-                    Mob.MobType.COW,
-                    Mob.MobType.PIG,
-                    Mob.MobType.SHEEP,
-                    Mob.MobType.CHICKEN,
-                    Mob.MobType.ZOMBIE
-                };
-                return forest[random.nextInt(forest.length)];
         }
     }
 }
