@@ -34,6 +34,7 @@ import com.main.game.items.BlockDropFactory;
 import com.main.game.items.DroppedItemManager;
 import com.main.game.navigation.ScreenId;
 import com.main.game.physics.PhysicsEngine;
+import com.main.game.time.DayNightCycle;
 import com.main.game.ui.GameCameraController;
 import com.main.game.ui.GameHudRenderer;
 import com.main.game.ui.GameOverlayRenderer;
@@ -76,6 +77,8 @@ public class GameScreen extends BaseScreen {
     private GameHudRenderer hudRenderer;
     private GameOverlayRenderer overlayRenderer;
     private SpawnSafetyController spawnSafetyController;
+    private BiomeMobSpawner mobSpawner;
+    private DayNightCycle dayNightCycle;
     private boolean paused;
     private boolean dead;
 
@@ -136,8 +139,9 @@ public class GameScreen extends BaseScreen {
         syncHeldItem();
         blockBreaker.setBlockBreakListener(this::handleBlockBroken);
 
-        // Spawner của team sử dụng seed hiện tại
-        BiomeMobSpawner.spawnInitialMobs(world, player, physics, entityManager, currentSeed);
+        dayNightCycle = new DayNightCycle();
+        mobSpawner = new BiomeMobSpawner(currentSeed);
+        mobSpawner.spawnInitial(world, player, physics, entityManager, dayNightCycle.isNight());
 
         paused = false;
         dead = false;
@@ -165,8 +169,15 @@ public class GameScreen extends BaseScreen {
         }
 
         if (!dead) {
+            if (dayNightCycle != null) {
+                dayNightCycle.update(delta);
+            }
             furnaceManager.update(delta);
             entityManager.update(delta);
+            if (mobSpawner != null) {
+                mobSpawner.update(delta, world, player, physics, entityManager,
+                    dayNightCycle == null || dayNightCycle.isNight());
+            }
             spawnSafetyController.update(delta, world, player);
             droppedItemManager.update(delta, world, player, inventory);
             if (inventoryController.isInventoryOpen()) {
@@ -237,6 +248,11 @@ public class GameScreen extends BaseScreen {
         float r = (0.4f * lightRatio) + (0.02f * (1 - lightRatio));
         float g = (0.7f * lightRatio) + (0.02f * (1 - lightRatio));
         float b = (1.0f * lightRatio) + (0.05f * (1 - lightRatio));
+        int globalLight = dayNightCycle == null ? 0 : dayNightCycle.getGlobalLight();
+        float nightFactor = dayNightCycle == null ? 0f : dayNightCycle.getNightFactor();
+        r = lerp(r, 0.015f, nightFactor * 0.9f);
+        g = lerp(g, 0.025f, nightFactor * 0.9f);
+        b = lerp(b, 0.08f, nightFactor * 0.9f);
 
         Gdx.gl.glClearColor(r, g, b, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
@@ -251,6 +267,8 @@ public class GameScreen extends BaseScreen {
         entityManager.render(batch);
         blockBreakOverlay.render(batch, blockBreaker, blockPlacementController);
         batch.end();
+
+        overlayRenderer.renderWorldDarkness(batch, globalLight);
 
         hudRenderer.render(batch, viewport, inventory, inventoryController, inventoryRenderer,
             inventoryInteractionHandler, craftingController, furnaceRenderer, furnaceInteractionHandler,
@@ -390,6 +408,11 @@ public class GameScreen extends BaseScreen {
         deathBtnH = sh * 0.12f;
         deathBtnX = (sw - deathBtnW) / 2f;
         deathBtnY = sh * 0.38f;
+    }
+
+    private float lerp(float from, float to, float progress) {
+        float t = Math.max(0f, Math.min(1f, progress));
+        return from + (to - from) * t;
     }
 
     @Override

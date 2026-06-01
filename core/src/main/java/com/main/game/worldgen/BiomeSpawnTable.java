@@ -12,9 +12,9 @@ import java.util.Random;
  * Đảm bảo weighted selection deterministic khi sử dùng cùng Random seed.
  *
  * Ví dụ:
- *  - FOREST: [COW(weight=20), PIG(weight=15), CHICKEN(weight=15), ZOMBIE(weight=5)]
+ *  - FOREST: [COW(weight=20), PIG(weight=15), CHICKEN(weight=18), SHEEP(weight=12)]
  *  - DESERT: [HUSK(weight=15), SKELETON(weight=10)]
- *  - SNOW:   [STRAY(weight=12), SHEEP(weight=15)]
+ *  - SNOW:   [STRAY(weight=16), SKELETON(weight=8)]
  */
 public final class BiomeSpawnTable {
 
@@ -62,13 +62,12 @@ public final class BiomeSpawnTable {
     }
 
     private void initializeBiomes() {
-        // FOREST: nhiều passive, ít hostile
+        // FOREST: chỉ passive để giữ vùng spawn đầu game dễ thở hơn.
         List<MobEntry> forest = new ArrayList<>();
         forest.add(new MobEntry(Mob.MobType.COW, 20));
         forest.add(new MobEntry(Mob.MobType.PIG, 15));
         forest.add(new MobEntry(Mob.MobType.CHICKEN, 18));
         forest.add(new MobEntry(Mob.MobType.SHEEP, 12));
-        forest.add(new MobEntry(Mob.MobType.ZOMBIE, 5));
         biomeTables.put(BiomeType.FOREST, forest);
 
         // DESERT: chỉ hostile
@@ -77,10 +76,10 @@ public final class BiomeSpawnTable {
         desert.add(new MobEntry(Mob.MobType.SKELETON, 10));
         biomeTables.put(BiomeType.DESERT, desert);
 
-        // SNOW: hostile + ít passive
+        // SNOW: chỉ hostile theo cùng rule với các biome nguy hiểm.
         List<MobEntry> snow = new ArrayList<>();
-        snow.add(new MobEntry(Mob.MobType.STRAY, 12));
-        snow.add(new MobEntry(Mob.MobType.SHEEP, 15));
+        snow.add(new MobEntry(Mob.MobType.STRAY, 16));
+        snow.add(new MobEntry(Mob.MobType.SKELETON, 8));
         biomeTables.put(BiomeType.SNOW, snow);
     }
 
