@@ -1,170 +1,91 @@
-# Hệ Thống Mob Biome - Được Implementation
+# Hệ Thống Mob Biome — Tài liệu (Được)
 
-## Tóm tắt
-
-Được đã xây dựng hệ thống spawn mob theo biome cho Paper Minecraft game. Hệ thống sử dụng **weighted random selection** để chọn mob type phù hợp với từng biome (FOREST, DESERT, SNOW).
-
-## Files được tạo / sửa
-
-### 1. BiomeSpawnTable.java (MỚI)
-**Đường dẫn**: `core/src/main/java/com/main/game/worldgen/BiomeSpawnTable.java`
-
-**Mục đích**: Quản lý weighted spawn distribution cho từng biome.
-
-**Tính năng**:
-- Enum ánh xạ mob type -> spawn weight per biome
-- Method `selectMobForBiome(BiomeType, Random)` → lựa chọn mob type theo weighted distribution
-- Deterministic selection (cùng seed = cùng spawn sequence)
-- Fallback: nếu biome không định nghĩa, dùng FOREST
-
-**Spawn weights**:
-```
-FOREST:
-  - COW: 20 (cao nhất)
-  - CHICKEN: 18
-  - PIG: 15
-  - SHEEP: 12
-  - ZOMBIE: 5 (thấp nhất)
-
-DESERT:
-  - HUSK: 15
-  - SKELETON: 10
-
-SNOW:
-  - SHEEP: 15
-  - STRAY: 12
-```
-
-### 2. Mob.java (SỬA)
-**Đường dẫn**: `core/src/main/java/com/main/game/entities/Mob.java`
-
-**Thay đổi**:
-- Mở rộng enum `MobType` từ `{ZOMBIE, SKELETON}` → `{ZOMBIE, SKELETON, COW, PIG, SHEEP, CHICKEN, HUSK, STRAY}`
-- Thêm cases xử lý trong constructor cho các mob type mới
-- Mỗi mob type có stats riêng:
-  - Passive (COW, PIG, SHEEP, CHICKEN): aggroRadius = 0, attackDamage = 0
-  - Hostile (HUSK, STRAY): aggroRadius = 8, attackDamage = 3
-  - Varied health: COW(18), PIG(14), CHICKEN(8), HUSK(22), STRAY(22)
-
-### 3. BiomeMobSpawner.java (REFACTOR)
-**Đường dẫn**: `core/src/main/java/com/main/game/worldgen/BiomeMobSpawner.java`
-
-**Thay đổi**:
-- Refactor `chooseMobForBiome()` từ switch statement → dùng `BiomeSpawnTable.selectMobForBiome()`
-- Thêm comments và docstring chi tiết
-- Giữ nguyên API public: `spawnInitialMobs(world, player, physics, entityManager, seed)`
-
-## Cơ chế hoạt động
-
-```
-SpawnInitialMobs() entry point
-  ↓
-Iterate xung quanh player (left/right alternating)
-  ↓
-Lấy BiomeType tại vị trí target
-  ↓
-BiomeSpawnTable.selectMobForBiome(biome, random)
-  → Dùng weighted distribution để pick mob type
-  ↓
-SpawnSafety.findSurfaceSpawn()
-  → Kiểm tra vị trí an toàn (ground, không block, entity bounds clear)
-  ↓
-EntityManager.addMob()
-  → Thêm Mob vào thế giới
-```
-
-## Weighted Selection Algorithm
-
-```java
-// Ví dụ FOREST weights: COW(20) + PIG(15) + CHICKEN(18) + SHEEP(12) + ZOMBIE(5) = 70 total
-totalWeight = 70
-randomPick = random.nextInt(70)  // 0-69
-
-Weighted selection:
-- 0-19 (20%)   → COW
-- 20-34 (21%)  → PIG  
-- 35-52 (25%)  → CHICKEN
-- 53-64 (17%)  → SHEEP
-- 65-69 (7%)   → ZOMBIE
-```
-
-**Tính chất Deterministic**: Cùng seed → cùng sequence mobs.
-
-## Integration Points
-
-### Có sẵn (không cần sửa):
-- `BiomeType` enum (FOREST, DESERT, SNOW)
-- `SpawnSafety` class (kiểm tra vị trí an toàn)
-- `EntityManager` (quản lý entities)
-- `PhysicsEngine` (collision/gravity)
-
-### Được sử dụng bởi:
-- `GameScreen.show()` → gọi `BiomeMobSpawner.spawnInitialMobs()`
-- `World.getBiome(x)` → cung cấp biome type cho spawner
-
-## Testing
-
-### Unit Test: BiomeSpawnTableTest.java
-**Đường dẫn**: `core/src/test/java/com/main/game/worldgen/BiomeSpawnTableTest.java`
-
-**Test cases**:
-1. `testWeightedSelection()`: Spawn 20 mobs ở FOREST, verify distribution match weights
-2. `testBiomeDistribution()`: Verify DESERT chỉ spawn HUSK/SKELETON; SNOW chỉ spawn STRAY/SHEEP
-
-**Chạy test**:
-```bash
-./gradlew test
-```
-
-### Manual Smoke Test (Runtime)
-```bash
-./gradlew.bat lwjgl3:run
-# Game starts → walk xung quanh
-# FOREST: see COW, PIG, CHICKEN, SHEEP (ít ZOMBIE)
-# DESERT: see HUSK, SKELETON (no passive)
-# SNOW: see STRAY, SHEEP (no other passive/hostile)
-```
-
-## Acceptance Criteria (DONE)
-- ✅ FOREST spawn chủ yếu Passive (COW, PIG, CHICKEN) + ít Zombie
-- ✅ DESERT spawn chỉ Hostile (HUSK, SKELETON)
-- ✅ SNOW spawn Hostile (STRAY) + Passive (SHEEP)
-- ✅ Weighted selection deterministic (same seed = same order)
-- ✅ Mob types có stats riêng per type
-- ✅ Integration với BiomeMobSpawner đã refactor
-- ✅ Comments + docstrings rõ ràng
-
-## Known Limitations / TODO
-
-1. **Asset loading**: Hiện tất cả mobs dùng cow texture (hardcoded). Cần thêm mob-specific assets sau.
-   - TODO(duoc-asset): Load assets per MobType từ `mvp/mob/{type}/` folder
-
-2. **Aggressive mobs**: Chưa test fully khi player aggro hostile mobs. Passive mobs không attack (✓ ok).
-
-3. **Dynamic spawning**: Hiện chỉ spawn initial mobs lúc game start. Cần chunk-based spawner sau.
-   - TODO(duoc-spawn): Implement runtime spawn manager per chunk
-
-4. **Mob behavior**: Có thể tune patrol range / aggro distance per biome sau.
-   - TODO(duoc-ai): Add biome-specific behavior modifiers
-
-## Code Quality Notes
-
-- **Design Pattern**: Factory + Strategy (BiomeSpawnTable = strategy for selection)
-- **Maintainability**: Weights defined in one place (initializeBiomes), easy to adjust
-- **Determinism**: Uses provided Random instance → consistent with seed
-- **Fallback**: If biome undefined, defaults to FOREST spawn table
-
-## Files Modified Summary
-
-| File | Type | Lines Changed | Description |
-|------|------|---|---|
-| BiomeSpawnTable.java | NEW | 70 | Weighted spawn table per biome |
-| Mob.java | EDIT | +80 | Added 6 new MobTypes + stats |
-| BiomeMobSpawner.java | REFACTOR | -20 (switched logic) | Uses BiomeSpawnTable instead of switch |
-| BiomeSpawnTableTest.java | NEW | 50 | Unit test for weighted selection |
+Mục đích: mô tả ngắn gọn, rõ ràng các file đã triển khai cho Mob Biome System và hướng dẫn kiểm thử.
 
 ---
 
-**Implemented by**: Được (Mob Biome System)  
-**Date**: 2026-05-31  
-**Status**: Ready for review & manual testing
+## 1. Tổng quan
+Hệ thống spawn mob theo biome (FOREST, DESERT, SNOW) sử dụng bảng trọng số (weighted spawn table) để chọn MobType phù hợp tại vị trí spawn. Spawn được kiểm tra an toàn qua SpawnSafety trước khi khởi tạo entity.
+
+Key points:
+- Deterministic: sử dụng Random được truyền vào → cùng seed cho cùng sequence
+- Phân biệt Passive vs Hostile bằng MobProfile (aggroRadius, attackDamage)
+- Dependency injection: Mob nhận Player, PhysicsEngine, World để tách rời hệ thống
+
+---
+
+## 2. Vị trí file chính (absolute)
+- core/src/main/java/com/main/game/entities/mob/Mob.java
+- core/src/main/java/com/main/game/entities/mob/MobProfile.java
+- core/src/main/java/com/main/game/entities/mob/MobBrain.java
+- core/src/main/java/com/main/game/entities/mob/MobAssetPack.java
+- core/src/main/java/com/main/game/entities/mob/MobRenderer.java
+- core/src/main/java/com/main/game/worldgen/BiomeMobSpawner.java
+- core/src/main/java/com/main/game/worldgen/BiomeSpawnTable.java
+- core/src/main/java/com/main/game/screens/GameScreen.java (đã cập nhật import)
+
+---
+
+## 3. Nội dung chính đã triển khai
+### MobType & MobProfile
+- MobType mở rộng (22 types trong codebase; MVP focus 8 types): COW, PIG, SHEEP, CHICKEN, ZOMBIE, HUSK, SKELETON, STRAY.
+- MobProfile.forType(type) trả về cấu hình: health, speed, width/height, patrolRange, aggroRadius, attackDamage.
+  - Passive: aggroRadius=0, attackDamage=0
+  - Hostile: aggroRadius≈8f, attackDamage>0
+
+### BiomeSpawnTable
+- Cấu trúc: Map<BiomeType, List<MobEntry(MobType, weight)>>
+- Hàm selectMobForBiome(biome, random) trả về MobType theo cumulative weights.
+- If biome missing → fallback FOREST table.
+
+### BiomeMobSpawner
+- Entry: spawnInitialMobs(World world, Player player, PhysicsEngine physics, EntityManager em, Random rng)
+- Vòng lặp spawn: maxAttempts (18), goalSpawned (12).
+- Steps: compute position → world.getBiome(x) → select MobType → SpawnSafety.findSurfaceSpawn(...) → new Mob(...) → entityManager.addMob(mob).
+- Gọi ISpawnHelper / SpawnSafety trước khi tạo mob (dependency point).
+
+### Mob & AI
+- Mob constructor nhận dependencies và MobProfile.
+- Mob.update() gọi MobBrain để quyết định trạng thái AI (PATROL, CHASE, ATTACK).
+- Passive mobs: chỉ PATROL; Hostile: PATROL→CHASE→ATTACK dựa trên aggroRadius và khoảng cách tới player.
+
+---
+
+## 4. Cấu hình trọng số (hiện tại)
+FOREST: COW(20), CHICKEN(18), PIG(15), SHEEP(12), ZOMBIE(5)
+DESERT: HUSK(15), SKELETON(10)
+SNOW: SHEEP(15), STRAY(12)
+
+(Các số có thể điều chỉnh trong BiomeSpawnTable.initializeBiomes())
+
+---
+
+## 5. Integration points (chỗ cần team inject code)
+- World.getBiome(float x, float y): trả về BiomeType tại vị trí.
+- SpawnSafety.findSurfaceSpawn(World, x, y, mobWidth, mobHeight): trả về Vector2 safe position hoặc null.
+- EntityManager.addMob(Mob): đăng ký entity vào hệ thống update/render.
+
+Chú ý: Trong code đã có chỗ comment rõ "// TODO: inject SpawnSafety/ISpawnHelper here" — team cần cung cấp implementation.
+
+---
+
+## 6. Cách test (tóm tắt) — chi tiết trong doc/MOB_BIOME_TESTING.md
+- Build: `./gradlew :core:classes`
+- Run game: `./gradlew lwjgl3:run` → GameScreen gọi spawnInitialMobs
+- Manual: đi vào từng biome và quan sát mobs spawn
+- Unit tests: BiomeSpawnTableTest (core/src/test/...)
+
+---
+
+## 7. Known limitations & TODO
+1. Asset per-mob chưa đầy đủ (hiện fallback textures).
+2. Chỉ spawn initial tại game start; cần runtime chunk-based spawn.
+3. Tuning AI/behavior per-biome có thể cần điều chỉnh.
+
+---
+
+## 8. Liên hệ
+Implemented by: Được
+Date: 2026-05-31
+
+---
