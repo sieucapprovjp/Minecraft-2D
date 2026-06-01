@@ -8,6 +8,8 @@ dependencies {
   if(enableGraalNative == 'true') {
     implementation "io.github.berstanio:gdx-svmhelper-annotations:$graalHelperVersion"
   }
+  // Test framework
+  testImplementation 'junit:junit:4.13.2'
 }
 
 jar {
