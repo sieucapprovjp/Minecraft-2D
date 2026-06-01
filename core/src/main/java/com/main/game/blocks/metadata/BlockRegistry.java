@@ -25,12 +25,47 @@ public final class BlockRegistry {
         registerPalette("bedrock", BlockDefinition.PaletteFallback.BEDROCK, 999f, false);
         registerPalette("sand", BlockDefinition.PaletteFallback.SAND, 0.6f, true);
         registerPalette("wood", BlockDefinition.PaletteFallback.WOOD, 0.9f, true);
+        registerTexture("natural_wood", "wood", BlockDefinition.PaletteFallback.WOOD, 0.9f, false, "wood", 0, false, false);
         registerPalette("leaves", BlockDefinition.PaletteFallback.LEAVES, 0.2f, true, false);
+        registerTexture("apple_in_tree", "apple_in_tree", BlockDefinition.PaletteFallback.LEAVES, 0.2f, false, "apple", 0, false, false);
         registerPalette("planks", BlockDefinition.PaletteFallback.PLANKS, 0.6f, true);
         registerPalette("snow", BlockDefinition.PaletteFallback.SNOW, 0.2f, true);
         registerPalette("ice", BlockDefinition.PaletteFallback.ICE, 0.4f, true);
         registerPalette("sandstone", BlockDefinition.PaletteFallback.SANDSTONE, 1.2f, true, null, 1);
         registerPalette("cactus", BlockDefinition.PaletteFallback.CACTUS, 0.9f, true);
+        registerTexture("cactus_flower", "cactus_flower", BlockDefinition.PaletteFallback.NONE, 0.05f, true, null, 0, false, false);
+        registerTexture("grassin_desert", "grassin_desert", BlockDefinition.PaletteFallback.SAND, 0.6f, true, null, 0, false);
+        registerTexture("dead_bush", "dead_bush", BlockDefinition.PaletteFallback.NONE, 0.05f, true, null, 0, false, false);
+        registerTexture("dry_grass", "dry_grass", BlockDefinition.PaletteFallback.NONE, 0.05f, true, null, 0, false, false);
+        registerTexture("short_dry_grass", "short_dry_grass", BlockDefinition.PaletteFallback.NONE, 0.05f, true, null, 0, false, false);
+        registerTexture("desert_oak_leaves", "desert_oak_leaves", BlockDefinition.PaletteFallback.LEAVES, 0.2f, true, null, 0, false, false);
+        registerTexture("desert_oak_leaves_2", "desert_oak_leaves_2", BlockDefinition.PaletteFallback.LEAVES, 0.2f, true, null, 0, false, false);
+        registerTexture("grassin_snow", "grassin_snow", BlockDefinition.PaletteFallback.SNOW, 0.4f, true, null, 0, false);
+        registerTexture("grass_snow", "grass_snow", BlockDefinition.PaletteFallback.SNOW, 0.4f, true, null, 0, false);
+        registerTexture("spruce_log", "spruce_log", BlockDefinition.PaletteFallback.WOOD, 0.9f, true, null, 0, false);
+        registerTexture("natural_spruce_log", "spruce_log", BlockDefinition.PaletteFallback.WOOD, 0.9f, false, "spruce_log", 0, false, false);
+        registerTexture("spruce_planks", "spruce_planks", BlockDefinition.PaletteFallback.PLANKS, 0.6f, true, null, 0, false);
+        registerTexture("spruce_leaves", "spruce_leaves", BlockDefinition.PaletteFallback.LEAVES, 0.2f, true, null, 0, false, false);
+        registerTexture("spruce_sapling", "spruce_sapling", BlockDefinition.PaletteFallback.NONE, 0.05f, true, null, 0, false, false);
+        registerTexture("fern", "fern", BlockDefinition.PaletteFallback.NONE, 0.05f, true, null, 0, false, false);
+        registerTexture("firefly_bush", "firefly_bush", BlockDefinition.PaletteFallback.NONE, 0.05f, true, null, 0, false, false);
+        registerTexture("poppy", "poppy", BlockDefinition.PaletteFallback.NONE, 0.05f, true, null, 0, false, false);
+        registerTexture("dandelion", "dandelion", BlockDefinition.PaletteFallback.NONE, 0.05f, true, null, 0, false, false);
+        registerTexture("blue_orchid", "blue_orchid", BlockDefinition.PaletteFallback.NONE, 0.05f, true, null, 0, false, false);
+        registerTexture("azure_bluet", "azure_bluet", BlockDefinition.PaletteFallback.NONE, 0.05f, true, null, 0, false, false);
+        registerTexture("cornflower", "cornflower", BlockDefinition.PaletteFallback.NONE, 0.05f, true, null, 0, false, false);
+        registerTexture("lily_of_the_valley", "lily_of_the_valley", BlockDefinition.PaletteFallback.NONE, 0.05f, true, null, 0, false, false);
+        registerTexture("oxeye_daisy", "oxeye_daisy", BlockDefinition.PaletteFallback.NONE, 0.05f, true, null, 0, false, false);
+        registerTexture("cherry_log", "cherry_log", BlockDefinition.PaletteFallback.WOOD, 0.9f, true, null, 0, false);
+        registerTexture("natural_cherry_log", "cherry_log", BlockDefinition.PaletteFallback.WOOD, 0.9f, false, "cherry_log", 0, false, false);
+        registerTexture("cherry_planks", "cherry_planks", BlockDefinition.PaletteFallback.PLANKS, 0.6f, true, null, 0, false);
+        registerTexture("cherry_leaves_5", "cherry_leaves_5", BlockDefinition.PaletteFallback.LEAVES, 0.2f, true, null, 0, false, false);
+        registerTexture("cherry_leaves_6", "cherry_leaves_6", BlockDefinition.PaletteFallback.LEAVES, 0.2f, true, null, 0, false, false);
+        registerTexture("cherry_grass", "cherry_grass", BlockDefinition.PaletteFallback.NONE, 0.05f, true, null, 0, false, false);
+        registerTexture("cherry_flower", "cherry_flower", BlockDefinition.PaletteFallback.NONE, 0.05f, true, null, 0, false, false);
+        registerTexture("cherry_sapling", "cherry_sapling", BlockDefinition.PaletteFallback.NONE, 0.05f, true, null, 0, false, false);
+        registerTexture("cherry_leaves", "cherry_leaves_5", BlockDefinition.PaletteFallback.LEAVES, 0.2f, true, null, 0, false, false);
+        registerTexture("cherry_leaves_2", "cherry_leaves_6", BlockDefinition.PaletteFallback.LEAVES, 0.2f, true, null, 0, false, false);
 
         registerTexture("crafting_table", "crafting_table", BlockDefinition.PaletteFallback.PLANKS, 0.9f, true, null, 0, false);
         registerTexture("furnace", "furnace_off", BlockDefinition.PaletteFallback.NONE, 3.5f, true, null, 1, false);
@@ -151,12 +186,19 @@ public final class BlockRegistry {
     private static void registerTexture(String id, String textureName, BlockDefinition.PaletteFallback fallback,
                                         float hardness, boolean placeable, String dropItemId,
                                         int requiredPickaxeLevel, boolean ore) {
+        registerTexture(id, textureName, fallback, hardness, placeable, dropItemId, requiredPickaxeLevel, ore, true);
+    }
+
+    private static void registerTexture(String id, String textureName, BlockDefinition.PaletteFallback fallback,
+                                        float hardness, boolean placeable, String dropItemId,
+                                        int requiredPickaxeLevel, boolean ore, boolean solid) {
         BlockDefinition.Builder builder = BlockDefinition.builder(id)
             .textureName(textureName)
             .paletteFallback(fallback)
             .hardness(hardness)
             .dropItemId(dropItemId)
-            .requiredPickaxeLevel(requiredPickaxeLevel);
+            .requiredPickaxeLevel(requiredPickaxeLevel)
+            .solid(solid);
         if (placeable) {
             builder.placeable();
         }

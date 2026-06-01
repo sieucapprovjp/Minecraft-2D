@@ -9,8 +9,17 @@ import org.junit.Test;
 public class DayNightCycleTest {
 
     @Test
-    public void gameHourWrapsEveryTenMinutes() {
+    public void defaultStartIsMorning() {
         DayNightCycle cycle = new DayNightCycle();
+
+        assertEquals(6f, cycle.getGameHour(), 0.001f);
+        assertFalse(cycle.isNight());
+        assertEquals(0, cycle.getGlobalLight());
+    }
+
+    @Test
+    public void gameHourWrapsEveryTenMinutes() {
+        DayNightCycle cycle = new DayNightCycle(0f);
 
         assertEquals(0f, cycle.getGameHour(), 0.001f);
         cycle.update(150f);
@@ -47,8 +56,6 @@ public class DayNightCycleTest {
     }
 
     private DayNightCycle cycleAtHour(float hour) {
-        DayNightCycle cycle = new DayNightCycle();
-        cycle.update(hour * DayNightCycle.GAME_HOUR_SECONDS);
-        return cycle;
+        return new DayNightCycle(hour);
     }
 }

@@ -14,6 +14,8 @@ public final class BiomeMobSpawner {
     private static final int INITIAL_TARGET_MOBS = 6;
     private static final int NEARBY_TOTAL_CAP = 12;
     private static final int FOREST_PASSIVE_TARGET = 7;
+    private static final int PLAINS_PASSIVE_TARGET = 6;
+    private static final int PLAINS_HOSTILE_TARGET = 4;
     private static final int HOSTILE_BIOME_HOSTILE_TARGET = 6;
     private static final int MAX_MOBS_PER_AREA = 20;
     private static final int SPAWN_AREA_WIDTH = 48;
@@ -59,18 +61,33 @@ public final class BiomeMobSpawner {
         BiomeType playerBiome = world.getBiome(Math.round(player.getX()));
         lastPlayerBiome = playerBiome;
         int initialTarget = Math.min(INITIAL_TARGET_MOBS, targetForBiome(playerBiome));
+        if (isMixedBiome(playerBiome)) {
+            spawnAroundPlayer(world, player, physics, entityManager,
+                Math.min(INITIAL_TARGET_MOBS, PLAINS_PASSIVE_TARGET),
+                INITIAL_MAX_ATTEMPTS, INITIAL_MIN_DISTANCE, INITIAL_DISTANCE_STEP,
+                playerBiome, SpawnGroup.PASSIVE);
+            if (isNight) {
+                spawnAroundPlayer(world, player, physics, entityManager,
+                    1, INITIAL_MAX_ATTEMPTS, INITIAL_MIN_DISTANCE, INITIAL_DISTANCE_STEP,
+                    playerBiome, SpawnGroup.HOSTILE);
+            }
+            hostileWaveRemaining = 0;
+            return;
+        }
         if (isHostileBiome(playerBiome)) {
             if (!isNight) {
                 hostileWaveRemaining = 0;
                 return;
             }
             int spawned = spawnAroundPlayer(world, player, physics, entityManager,
-                1, INITIAL_MAX_ATTEMPTS, INITIAL_MIN_DISTANCE, INITIAL_DISTANCE_STEP, playerBiome);
+                1, INITIAL_MAX_ATTEMPTS, INITIAL_MIN_DISTANCE, INITIAL_DISTANCE_STEP,
+                playerBiome, SpawnGroup.HOSTILE);
             hostileWaveRemaining = Math.max(0, initialTarget - spawned);
             return;
         }
         spawnAroundPlayer(world, player, physics, entityManager,
-            initialTarget, INITIAL_MAX_ATTEMPTS, INITIAL_MIN_DISTANCE, INITIAL_DISTANCE_STEP, playerBiome);
+            initialTarget, INITIAL_MAX_ATTEMPTS, INITIAL_MIN_DISTANCE, INITIAL_DISTANCE_STEP,
+            playerBiome, SpawnGroup.PASSIVE);
     }
 
     public void update(float delta, World world, Player player, PhysicsEngine physics, EntityManager entityManager) {
@@ -100,6 +117,11 @@ public final class BiomeMobSpawner {
                 playerBiome, biomeChanged, nearbyMobs, totalSpace, isNight);
             return;
         }
+        if (isMixedBiome(playerBiome)) {
+            updatePlainsBiome(delta, world, player, physics, entityManager,
+                playerBiome, biomeChanged, nearbyMobs, totalSpace, isNight);
+            return;
+        }
 
         hostileWaveRemaining = 0;
         int desiredNearbyMobs = targetForBiome(playerBiome);
@@ -125,7 +147,41 @@ public final class BiomeMobSpawner {
         int targetCount = biomeChanged ? Math.min(3, missing) : Math.min(2, missing);
         spawnAroundPlayer(world, player, physics, entityManager,
             targetCount, RUNTIME_MAX_ATTEMPTS, RUNTIME_MIN_DISTANCE, RUNTIME_DISTANCE_STEP,
-            playerBiome);
+            playerBiome, SpawnGroup.PASSIVE);
+    }
+
+    private void updatePlainsBiome(float delta, World world, Player player, PhysicsEngine physics,
+                                   EntityManager entityManager, BiomeType playerBiome, boolean biomeChanged,
+                                   NearbyMobCounts nearbyMobs, int totalSpace, boolean isNight) {
+        hostileWaveRemaining = 0;
+        if (biomeChanged) {
+            spawnTimer = 0f;
+        }
+        spawnTimer -= delta;
+        if (spawnTimer > 0f) {
+            return;
+        }
+        spawnTimer = RUNTIME_SPAWN_INTERVAL;
+
+        int passiveMissing = Math.max(0, PLAINS_PASSIVE_TARGET - nearbyMobs.passive);
+        if (passiveMissing > 0) {
+            int targetCount = Math.min(totalSpace, biomeChanged ? Math.min(3, passiveMissing) : Math.min(2, passiveMissing));
+            spawnAroundPlayer(world, player, physics, entityManager,
+                targetCount, RUNTIME_MAX_ATTEMPTS, RUNTIME_MIN_DISTANCE, RUNTIME_DISTANCE_STEP,
+                playerBiome, SpawnGroup.PASSIVE);
+            return;
+        }
+
+        if (!isNight) {
+            return;
+        }
+        int hostileMissing = Math.min(totalSpace, Math.max(0, PLAINS_HOSTILE_TARGET - nearbyMobs.hostile));
+        if (hostileMissing <= 0) {
+            return;
+        }
+        spawnAroundPlayer(world, player, physics, entityManager,
+            Math.min(1, hostileMissing), RUNTIME_MAX_ATTEMPTS, RUNTIME_MIN_DISTANCE, RUNTIME_DISTANCE_STEP,
+            playerBiome, SpawnGroup.HOSTILE);
     }
 
     private void updateHostileBiome(float delta, World world, Player player, PhysicsEngine physics,
@@ -156,7 +212,8 @@ public final class BiomeMobSpawner {
         spawnTimer = RUNTIME_SPAWN_INTERVAL;
 
         int spawned = spawnAroundPlayer(world, player, physics, entityManager,
-            1, RUNTIME_MAX_ATTEMPTS, RUNTIME_MIN_DISTANCE, RUNTIME_DISTANCE_STEP, playerBiome);
+            1, RUNTIME_MAX_ATTEMPTS, RUNTIME_MIN_DISTANCE, RUNTIME_DISTANCE_STEP,
+            playerBiome, SpawnGroup.HOSTILE);
         if (spawned > 0) {
             hostileWaveRemaining -= spawned;
         }
@@ -165,6 +222,13 @@ public final class BiomeMobSpawner {
     private int spawnAroundPlayer(World world, Player player, PhysicsEngine physics, EntityManager entityManager,
                                   int targetCount, int maxAttempts, int minDistance, int distanceStep,
                                   BiomeType requiredBiome) {
+        return spawnAroundPlayer(world, player, physics, entityManager, targetCount, maxAttempts,
+            minDistance, distanceStep, requiredBiome, SpawnGroup.ANY);
+    }
+
+    private int spawnAroundPlayer(World world, Player player, PhysicsEngine physics, EntityManager entityManager,
+                                  int targetCount, int maxAttempts, int minDistance, int distanceStep,
+                                  BiomeType requiredBiome, SpawnGroup spawnGroup) {
         if (!canSpawn(world, player, physics, entityManager) || targetCount <= 0) {
             return 0;
         }
@@ -178,7 +242,7 @@ public final class BiomeMobSpawner {
             BiomeType spawnBiome = world.getBiome(targetX);
             if (requiredBiome != null && spawnBiome != requiredBiome) continue;
 
-            Mob.MobType type = spawnTable.selectMobForBiome(spawnBiome, random);
+            Mob.MobType type = selectMobType(spawnBiome, spawnGroup);
             int spawnWidth = Mob.getRequiredSpawnWidth(type);
             int spawnHeight = Mob.getRequiredSpawnHeight(type);
             Vector2 spawn = SpawnSafety.findSurfaceSpawn(world, targetX, SPAWN_SEARCH_RADIUS, spawnWidth, spawnHeight);
@@ -190,6 +254,16 @@ public final class BiomeMobSpawner {
             spawned++;
         }
         return spawned;
+    }
+
+    private Mob.MobType selectMobType(BiomeType spawnBiome, SpawnGroup spawnGroup) {
+        if (spawnGroup == SpawnGroup.PASSIVE) {
+            return spawnTable.selectPassiveForBiome(spawnBiome, random);
+        }
+        if (spawnGroup == SpawnGroup.HOSTILE) {
+            return spawnTable.selectHostileForBiome(spawnBiome, random);
+        }
+        return spawnTable.selectMobForBiome(spawnBiome, random);
     }
 
     private void despawnDistantMobs(EntityManager entityManager, Player player) {
@@ -233,15 +307,26 @@ public final class BiomeMobSpawner {
     }
 
     private int targetForBiome(BiomeType biome) {
-        return biome == BiomeType.FOREST ? FOREST_PASSIVE_TARGET : HOSTILE_BIOME_HOSTILE_TARGET;
+        if (biome == BiomeType.PLAINS) {
+            return PLAINS_PASSIVE_TARGET;
+        }
+        return isPassiveBiome(biome) ? FOREST_PASSIVE_TARGET : HOSTILE_BIOME_HOSTILE_TARGET;
     }
 
     private boolean isHostileBiome(BiomeType biome) {
         return biome == BiomeType.DESERT || biome == BiomeType.SNOW;
     }
 
+    private boolean isPassiveBiome(BiomeType biome) {
+        return biome == BiomeType.FOREST || biome == BiomeType.CHERRY;
+    }
+
+    private boolean isMixedBiome(BiomeType biome) {
+        return biome == BiomeType.PLAINS;
+    }
+
     private int matchingCountForBiome(NearbyMobCounts counts, BiomeType biome) {
-        return biome == BiomeType.FOREST ? counts.passive : counts.hostile;
+        return isPassiveBiome(biome) ? counts.passive : counts.hostile;
     }
 
     private int chooseSide(int attempt) {
@@ -269,5 +354,11 @@ public final class BiomeMobSpawner {
         int total;
         int passive;
         int hostile;
+    }
+
+    private enum SpawnGroup {
+        ANY,
+        PASSIVE,
+        HOSTILE
     }
 }

@@ -39,6 +39,7 @@ public class Player extends Entity {
 
     private static final float HURT_DURATION   = 0.5f;
     private static final float PLACE_SWING_DURATION = 0.18f;
+    private static final float ATTACK_SWING_DURATION = 0.22f;
 
     private float stateTime = 0f;
 
@@ -49,10 +50,14 @@ public class Player extends Entity {
     private float       placeSwingTimer = 0f;
     private float       placeSwingTime = 0f;
     private String      placeSwingItemId;
+    private float       attackSwingTimer = 0f;
+    private float       attackSwingTime = 0f;
+    private String      attackSwingItemId;
     private boolean     mining = false;
     private String      heldItemId;
     private int         health    = 20;
     private int         maxHealth = 20;
+    private final FoodMeter foodMeter = new FoodMeter();
     private boolean     isBanned  = false;
     private ArmorLoadout armorLoadout;
 
@@ -87,6 +92,13 @@ public class Player extends Entity {
                 placeSwingItemId = null;
             }
         }
+        if (attackSwingTimer > 0f) {
+            attackSwingTimer = Math.max(0f, attackSwingTimer - delta);
+            attackSwingTime += delta;
+            if (attackSwingTimer <= 0f) {
+                attackSwingItemId = null;
+            }
+        }
         handleInput(delta);
 
         lastVy = velocity.y;
@@ -100,6 +112,7 @@ public class Player extends Entity {
             if (fallDamage > 0) takeDamage(fallDamage);
         }
 
+        updateFoodEffects(delta);
         updateState(delta);
         updateBounds();
     }
@@ -107,10 +120,13 @@ public class Player extends Entity {
     @Override
     public void render(SpriteBatch batch) {
         if (!isAlive) return;
-        boolean actionSwinging = mining || placeSwingTimer > 0f;
-        float actionSwingTime = mining ? miningTime : placeSwingTime;
-        String renderedHeldItemId = heldItemId != null ? heldItemId : placeSwingItemId;
-        renderer.render(batch, this, state, stateTime, actionSwinging, actionSwingTime, isHurt(), renderedHeldItemId);
+        boolean attackSwinging = attackSwingTimer > 0f;
+        boolean actionSwinging = mining || placeSwingTimer > 0f || attackSwinging;
+        float actionSwingTime = mining ? miningTime : attackSwinging ? attackSwingTime : placeSwingTime;
+        String renderedHeldItemId = heldItemId != null ? heldItemId
+            : attackSwingItemId != null ? attackSwingItemId : placeSwingItemId;
+        renderer.render(batch, this, state, stateTime, actionSwinging, actionSwingTime,
+            isHurt(), renderedHeldItemId);
     }
 
     public void ban() {
@@ -147,6 +163,10 @@ public class Player extends Entity {
             velocity.y = JUMP_IMPULSE;
             onGround   = false;
             stateTime  = 0f; // reset để jump animation bắt đầu từ đầu
+            foodMeter.addJumpExhaustion();
+        }
+        if (Math.abs(moveX) > 0.01f) {
+            foodMeter.addMovementExhaustion(delta);
         }
     }
 
@@ -211,6 +231,8 @@ public class Player extends Entity {
     public EntityState getState()     { return state;      }
     public int         getHealth()    { return health;     }
     public int         getMaxHealth() { return maxHealth;  }
+    public int         getFoodLevel() { return foodMeter.getFoodLevel(); }
+    public int         getMaxFoodLevel() { return foodMeter.getMaxFoodLevel(); }
     public boolean     isHurt()       { return hurtTimer > 0; }
     public String      getHeldItemId() { return heldItemId;   }
     public int         getArmorDefensePoints() {
@@ -232,6 +254,21 @@ public class Player extends Entity {
         this.armorLoadout = armorLoadout;
     }
 
+    public boolean canEat(String itemId) {
+        return foodMeter.canEat(itemId);
+    }
+
+    public boolean eat(String itemId) {
+        return foodMeter.eat(itemId);
+    }
+
+    public void heal(int amount) {
+        if (!isAlive || amount <= 0) {
+            return;
+        }
+        health = Math.min(maxHealth, health + amount);
+    }
+
     public void setMining(boolean mining, float targetX) {
         this.mining = mining;
         if (mining) {
@@ -243,6 +280,13 @@ public class Player extends Entity {
         placeSwingTimer = PLACE_SWING_DURATION;
         placeSwingTime = 0f;
         placeSwingItemId = itemId;
+        facingRight = targetX >= position.x + width / 2f;
+    }
+
+    public void playAttackAnimation(float targetX, String itemId) {
+        attackSwingTimer = ATTACK_SWING_DURATION;
+        attackSwingTime = 0f;
+        attackSwingItemId = itemId;
         facingRight = targetX >= position.x + width / 2f;
     }
 
@@ -259,6 +303,10 @@ public class Player extends Entity {
         this.placeSwingTimer = 0;
         this.placeSwingTime = 0;
         this.placeSwingItemId = null;
+        this.attackSwingTimer = 0;
+        this.attackSwingTime = 0;
+        this.attackSwingItemId = null;
+        this.foodMeter.reset();
     }
 
     private int calculateArmorReducedDamage(int rawDamage) {
@@ -268,5 +316,27 @@ public class Player extends Entity {
         int defensePoints = armorLoadout.applyDamageAndGetDefense(rawDamage);
         float multiplier = Math.max(0.4f, 1f - defensePoints * 0.03f);
         return Math.max(1, (int) Math.ceil(rawDamage * multiplier));
+    }
+
+    private void updateFoodEffects(float delta) {
+        FoodMeter.TickResult result = foodMeter.update(delta, health < maxHealth);
+        if (result.getHealing() > 0) {
+            heal(result.getHealing());
+        }
+        if (result.getDamage() > 0) {
+            applyFoodDamage(result.getDamage());
+        }
+    }
+
+    private void applyFoodDamage(int amount) {
+        if (!isAlive || amount <= 0) {
+            return;
+        }
+        health -= amount;
+        if (health <= 0) {
+            health = 0;
+            isAlive = false;
+            state = EntityState.DEAD;
+        }
     }
 }

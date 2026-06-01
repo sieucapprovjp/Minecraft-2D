@@ -4,10 +4,20 @@ public final class DayNightCycle {
 
     public static final float FULL_CYCLE_SECONDS = 600f;
     public static final float GAME_HOUR_SECONDS = FULL_CYCLE_SECONDS / 24f;
+    public static final float DEFAULT_START_GAME_HOUR = 6f;
     public static final int MAX_GLOBAL_LIGHT = 12;
 
     private float elapsedSeconds;
     private float timeReal;
+
+    public DayNightCycle() {
+        this(DEFAULT_START_GAME_HOUR);
+    }
+
+    public DayNightCycle(float startGameHour) {
+        elapsedSeconds = normalizeGameHour(startGameHour) * GAME_HOUR_SECONDS;
+        timeReal = elapsedSeconds;
+    }
 
     public void update(float delta) {
         if (delta <= 0f) {
@@ -59,5 +69,10 @@ public final class DayNightCycle {
 
     private int clampGlobalLight(int value) {
         return Math.max(0, Math.min(MAX_GLOBAL_LIGHT, value));
+    }
+
+    private float normalizeGameHour(float gameHour) {
+        float normalized = gameHour % 24f;
+        return normalized < 0f ? normalized + 24f : normalized;
     }
 }

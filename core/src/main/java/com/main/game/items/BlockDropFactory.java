@@ -9,6 +9,8 @@ import com.main.game.world.World;
 
 public final class BlockDropFactory {
 
+    private static final float OAK_LEAF_APPLE_DROP_CHANCE = 0.05f;
+
     private BlockDropFactory() {
     }
 
@@ -27,7 +29,10 @@ public final class BlockDropFactory {
         }
 
         int tileIdx = HarvestEntry.toTileIdx(block.getTileX(), block.getTileY(), world);
-        String itemId = BlockRegistry.getDropItemId(blockId);
+        String itemId = dropItemIdForBlock(blockId, MathUtils.random());
+        if (itemId == null) {
+            return null;
+        }
         TextureRegion texture = ItemRegistry.getTexture(itemId);
         if (texture == null && !BlockRegistry.isOre(blockId)) {
             texture = block.getTexture();
@@ -40,5 +45,21 @@ public final class BlockDropFactory {
             MathUtils.random(-0.1f, 0.1f),
             HarvestEntry.RANDOM_VERTICAL_SPEED
         );
+    }
+
+    static String dropItemIdForBlock(String blockId, float appleRoll) {
+        if ("apple_in_tree".equals(blockId)) {
+            return "apple";
+        }
+        if (isOakLeafBlock(blockId) && appleRoll < OAK_LEAF_APPLE_DROP_CHANCE) {
+            return "apple";
+        }
+        return BlockRegistry.getDropItemId(blockId);
+    }
+
+    private static boolean isOakLeafBlock(String blockId) {
+        return "leaves".equals(blockId)
+            || "desert_oak_leaves".equals(blockId)
+            || "desert_oak_leaves_2".equals(blockId);
     }
 }
