@@ -11,6 +11,7 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Rectangle;
 import com.main.game.MainGame;
+import com.main.game.audio.AudioId;
 import com.main.game.navigation.ScreenId;
 
 public class StateScreen extends BaseScreen {
@@ -51,12 +52,14 @@ public class StateScreen extends BaseScreen {
             float my = Gdx.graphics.getHeight() - Gdx.input.getY(); // Unproject Y
 
             if (btn1Rect.contains(mx, my)) {
+                game.getAudioManager().play(AudioId.UI_CLICK);
                 if (id == ScreenId.MENU || id == ScreenId.PAUSE) {
                     game.getScreenRouter().request(ScreenId.GAME);
                 } else if (id == ScreenId.GAME_OVER) {
                     game.getScreenRouter().request(ScreenId.GAME);
                 }
             } else if (btn2Rect.contains(mx, my)) {
+                game.getAudioManager().play(AudioId.UI_CLICK);
                 if (id == ScreenId.MENU) {
                     Gdx.app.exit();
                 } else if (id == ScreenId.PAUSE || id == ScreenId.GAME_OVER) {

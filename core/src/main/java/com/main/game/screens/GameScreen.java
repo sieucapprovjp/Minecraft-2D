@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.math.Vector2;
 import com.main.game.MainGame;
+import com.main.game.audio.AudioId;
 import com.main.game.blocks.AbstractBlock;
 import com.main.game.combat.PlayerAttackController;
 import com.main.game.crafting.CraftingController;
@@ -87,6 +88,7 @@ public class GameScreen extends BaseScreen {
     private Random mobDropRandom;
     private boolean paused;
     private boolean dead;
+    private int lastPlayerHealthForAudio;
 
     private float deathBtnX, deathBtnY, deathBtnW, deathBtnH;
 
@@ -96,6 +98,8 @@ public class GameScreen extends BaseScreen {
 
     @Override
     public void show() {
+        game.getAudioManager().stopMusic();
+
         // Tích hợp Seed Random
         long currentSeed = System.currentTimeMillis();
         world = new World(currentSeed);
@@ -128,7 +132,9 @@ public class GameScreen extends BaseScreen {
         blockBreakOverlay = new BlockBreakOverlay();
         playerAttackController = new PlayerAttackController();
         playerAttackController.setMobDeathListener(this::handleMobKilled);
+        playerAttackController.setMobHitListener(this::handleMobHit);
         droppedItemManager = new DroppedItemManager();
+        droppedItemManager.setPickupListener(() -> game.getAudioManager().play(AudioId.ITEM_PICKUP));
         mobDropRandom = new Random(currentSeed + 7717L);
         inventory = new Inventory();
         StarterInventoryKit.grant(inventory);
@@ -156,6 +162,7 @@ public class GameScreen extends BaseScreen {
         camera.zoom = CAMERA_ZOOM;
         hudRenderer = new GameHudRenderer();
         overlayRenderer = new GameOverlayRenderer();
+        lastPlayerHealthForAudio = player.getHealth();
     }
 
     @Override
@@ -201,6 +208,7 @@ public class GameScreen extends BaseScreen {
         }
 
         if (player.getHealth() <= 0) dead = true;
+        updatePlayerDamageAudio();
 
         if (paused || dead) {
             float mx = Gdx.input.getX();
@@ -234,6 +242,7 @@ public class GameScreen extends BaseScreen {
         boolean attacked = playerAttackController.update(delta, player, entityManager,
             camera, viewport, inventoryController.isInventoryOpen(), heldItemId);
         if (shouldPlaySwordSlash(heldItemId)) {
+            game.getAudioManager().play(AudioId.SWORD_SWING);
             player.playAttackAnimation(mouseWorldX(), heldItemId);
         }
         boolean brokeBlock = false;
@@ -241,6 +250,9 @@ public class GameScreen extends BaseScreen {
             blockBreaker.cancel();
         } else {
             brokeBlock = blockBreaker.update(delta, player, world, camera, viewport, heldItemId);
+            if (blockBreaker.consumeDigSoundRequest()) {
+                playHoveredBlockBreakSound();
+            }
         }
         if (attacked || brokeBlock) {
             damageHeldTool();
@@ -299,13 +311,20 @@ public class GameScreen extends BaseScreen {
         float bx = (sw - bw) / 2f;
         float by1 = sh * 0.45f;
         float by2 = sh * 0.30f;
-        if (mx >= bx && mx <= bx + bw && my >= by1 && my <= by1 + bh) paused = false;
-        else if (mx >= bx && mx <= bx + bw && my >= by2 && my <= by2 + bh) game.getScreenRouter().request(ScreenId.MENU);
+        if (mx >= bx && mx <= bx + bw && my >= by1 && my <= by1 + bh) {
+            game.getAudioManager().play(AudioId.UI_CLICK);
+            paused = false;
+        } else if (mx >= bx && mx <= bx + bw && my >= by2 && my <= by2 + bh) {
+            game.getAudioManager().play(AudioId.UI_CLICK);
+            game.getScreenRouter().request(ScreenId.MENU);
+        }
     }
 
     private void handleDeathClick() {
+        game.getAudioManager().play(AudioId.UI_CLICK);
         spawnSafetyController.respawn(world, player);
         dead = false;
+        lastPlayerHealthForAudio = player.getHealth();
     }
 
     private void handleInventoryKey() {
@@ -323,6 +342,7 @@ public class GameScreen extends BaseScreen {
                 chestInteractionController.getHoveredTileX(),
                 chestInteractionController.getHoveredTileY());
             inventoryController.open();
+            game.getAudioManager().play(AudioId.CHEST_OPEN);
             return;
         }
         openChestState = null;
@@ -333,6 +353,7 @@ public class GameScreen extends BaseScreen {
                 furnaceInteractionController.getHoveredTileX(),
                 furnaceInteractionController.getHoveredTileY());
             inventoryController.open();
+            game.getAudioManager().play(AudioId.UI_CLICK);
             return;
         }
         openFurnaceState = null;
@@ -342,23 +363,28 @@ public class GameScreen extends BaseScreen {
             craftingController.openPlayerCrafting(inventory);
         }
         inventoryController.open();
+        game.getAudioManager().play(AudioId.UI_CLICK);
     }
 
     private void handleInventoryClosed() {
         if (openFurnaceState != null) {
+            game.getAudioManager().play(AudioId.UI_CLICK);
             furnaceInteractionHandler.onCloseInventory(inventory);
             openFurnaceState = null;
             return;
         }
         if (openChestState != null) {
+            game.getAudioManager().play(AudioId.CHEST_CLOSE);
             chestInteractionHandler.onCloseInventory(inventory);
             openChestState = null;
             return;
         }
+        game.getAudioManager().play(AudioId.UI_CLICK);
         inventoryInteractionHandler.onCloseInventory(inventory, craftingController);
     }
 
     private void handleBlockBroken(AbstractBlock block, World worldRef) {
+        playBlockBreakSound(block);
         if (block != null && "furnace".equals(block.getBlockId())) {
             furnaceManager.dropContents(block, worldRef, droppedItemManager);
         }
@@ -366,6 +392,12 @@ public class GameScreen extends BaseScreen {
             chestManager.dropContents(block, worldRef, droppedItemManager);
         }
         droppedItemManager.spawn(BlockDropFactory.createDrop(block, worldRef, getHeldItemId()), worldRef);
+    }
+
+    private void handleMobHit(Mob mob) {
+        if (mob != null) {
+            game.getAudioManager().playMobHurt(mob.getType());
+        }
     }
 
     private void handleMobKilled(Mob mob) {
@@ -427,7 +459,33 @@ public class GameScreen extends BaseScreen {
             return false;
         }
         reduceHeldStack();
+        game.getAudioManager().play(AudioId.PLAYER_EAT);
         return true;
+    }
+
+    private void updatePlayerDamageAudio() {
+        if (player == null) {
+            return;
+        }
+        int health = player.getHealth();
+        if (health < lastPlayerHealthForAudio) {
+            game.getAudioManager().play(health <= 0 ? AudioId.PLAYER_DEATH : AudioId.PLAYER_HURT);
+        }
+        lastPlayerHealthForAudio = health;
+    }
+
+    private void playHoveredBlockBreakSound() {
+        if (world == null || blockBreaker == null || !blockBreaker.hasHoveredBlock()) {
+            return;
+        }
+        AbstractBlock block = world.getBlock(blockBreaker.getHoveredBlockX(), blockBreaker.getHoveredBlockY());
+        playBlockBreakSound(block);
+    }
+
+    private void playBlockBreakSound(AbstractBlock block) {
+        if (block != null) {
+            game.getAudioManager().playBlockBreak(block.getBlockId());
+        }
     }
 
     private void reduceHeldStack() {

@@ -382,6 +382,47 @@
   - `core/src/test/java/com/main/game/entities/player/FoodMeterTest.java`
   - `core/src/test/java/com/main/game/inventory/StarterInventoryKitTest.java`
 
+### Audio System V1
+- `AudioManager` centralizes runtime SFX and menu music playback.
+- `MainGame` owns and disposes the shared audio manager.
+- Settings toggles now control sound and music through `GameState.soundEnabled` and `GameState.musicEnabled`.
+- Menu music plays from `assets/audio/ui_menu/music.mp3` while in the menu flow.
+- Gameplay currently has no background music; entering `GameScreen` stops menu music.
+- SFX are implemented for UI clicks/toggles, player hurt/death/eating/sword swing, block breaking, chest open/close, item pickup, and mob hit/death behavior.
+- Player death reuses the player hurt sound for V1.
+- Mob death reuses the mob hurt sound path for V1 by playing the hit sound on the killing hit.
+- Block breaking uses material-specific asset groups for stone, deepslate, sand, snow, and wood.
+- Block placement intentionally has no sound in V1.
+- Missing audio assets are skipped safely with a log message instead of crashing gameplay.
+- Related files:
+  - `core/src/main/java/com/main/game/audio/AudioId.java`
+  - `core/src/main/java/com/main/game/audio/AudioCatalog.java`
+  - `core/src/main/java/com/main/game/audio/AudioManager.java`
+  - `core/src/main/java/com/main/game/MainGame.java`
+  - `core/src/main/java/com/main/game/screens/MenuScreen.java`
+  - `core/src/main/java/com/main/game/screens/ModeSelectScreen.java`
+  - `core/src/main/java/com/main/game/screens/SettingsScreen.java`
+  - `core/src/main/java/com/main/game/screens/GameScreen.java`
+  - `core/src/main/java/com/main/game/screens/StateScreen.java`
+  - `core/src/main/java/com/main/game/combat/PlayerAttackController.java`
+  - `core/src/main/java/com/main/game/combat/MobHitListener.java`
+  - `core/src/main/java/com/main/game/items/DroppedItemManager.java`
+  - `core/src/test/java/com/main/game/audio/AudioCatalogTest.java`
+  - `assets/audio/`
+
+### Asset Resource Layout
+- Runtime visual assets can be stored under `assets/image/...` while existing code still references paths such as `stage/...`, `images/...`, `fonts/...`, and `mvp/...`.
+- `lwjgl3` resource processing copies `assets/image` into the desktop resource root so those existing internal paths continue to resolve.
+- Menu and mode-select background selection uses a shared stage picker that can read either `stage/...` or `image/stage/...` and falls back through the known stage image list if directory listing is unavailable.
+- Audio assets remain under `assets/audio/...` and are referenced directly from that path.
+- Related files:
+  - `core/src/main/java/com/main/game/screens/StageBackgrounds.java`
+  - `core/src/main/java/com/main/game/screens/MenuScreen.java`
+  - `core/src/main/java/com/main/game/screens/ModeSelectScreen.java`
+  - `lwjgl3/build.gradle`
+  - `assets/image/`
+  - `assets/audio/`
+
 ### Utility Blocks
 - Utility block interaction is grouped under the `utilityblock` package.
 - `UtilityBlockInteractionController` provides shared reachable-hover checks for utility blocks.
@@ -504,11 +545,13 @@
 ## Latest Verification
 - `.\gradlew.bat --no-daemon classes` passed.
 - `.\gradlew.bat --no-daemon test` passed.
+- `.\gradlew.bat --no-daemon lwjgl3:processResources lwjgl3:classes` passed.
 - `git diff --check` passed.
+- `.\gradlew.bat --no-daemon lwjgl3:run` no longer exited with missing `stage/sky.png`; the command was stopped by timeout after the game stayed running.
 - Manual gameplay verification was reported working for crafting, furnace, chest, block metadata behavior, shared slot interaction/rendering, armor visuals, mob spawning, food usage, cooked food, and sword swing behavior.
 
 ## Known Gaps
 - XP system has not been implemented yet.
-- Sound/Audio system has not been implemented yet.
+- Audio V1 has no gameplay music, block placement sound, volume sliders, footstep system, ambient biome/cave sounds, or positional audio yet.
 - Food V1 has no potion/debuff effects yet, so rotten flesh is currently just food.
 - Food and day/night state are runtime-only and do not persist after leaving `GameScreen`.

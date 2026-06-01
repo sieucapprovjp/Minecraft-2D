@@ -22,9 +22,14 @@ public class PlayerAttackController {
     private final Vector2 mouseWorld = new Vector2();
     private float cooldownTimer = 0f;
     private MobDeathListener mobDeathListener;
+    private MobHitListener mobHitListener;
 
     public void setMobDeathListener(MobDeathListener mobDeathListener) {
         this.mobDeathListener = mobDeathListener;
+    }
+
+    public void setMobHitListener(MobHitListener mobHitListener) {
+        this.mobHitListener = mobHitListener;
     }
 
     public boolean update(float delta, Player player, EntityManager entityManager,
@@ -49,6 +54,9 @@ public class PlayerAttackController {
         if (target.takeDamage(getDamage(player, heldItemId))) {
             boolean killed = !target.isAlive();
             target.onPlayerHit(player);
+            if (mobHitListener != null) {
+                mobHitListener.onMobHit(target);
+            }
             target.applyKnockback(direction * KNOCKBACK_X, KNOCKBACK_Y);
             if (killed && mobDeathListener != null) {
                 mobDeathListener.onMobKilled(target);
