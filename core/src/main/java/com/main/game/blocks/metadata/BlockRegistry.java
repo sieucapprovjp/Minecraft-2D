@@ -151,6 +151,10 @@ public final class BlockRegistry {
         return resolveTexture(definitionOrDefault(blockId));
     }
 
+    public static BlockRenderSpec getRenderSpec(String blockId) {
+        return definitionOrDefault(blockId).getRenderSpec();
+    }
+
     public static TextureRegion getPaletteFallbackTexture(String blockId) {
         BlockDefinition definition = get(blockId);
         if (definition == null || !definition.shouldPreferPalette()) {
@@ -208,7 +212,8 @@ public final class BlockRegistry {
             .hardness(hardness)
             .dropItemId(dropItemId)
             .requiredPickaxeLevel(requiredPickaxeLevel)
-            .solid(solid);
+            .solid(solid)
+            .renderSpec(defaultRenderSpec(id));
         if (placeable) {
             builder.placeable();
         }
@@ -226,6 +231,41 @@ public final class BlockRegistry {
     private static BlockDefinition definitionOrDefault(String blockId) {
         BlockDefinition definition = get(blockId);
         return definition == null ? DEFAULT_BLOCK : definition;
+    }
+
+    private static BlockRenderSpec defaultRenderSpec(String id) {
+        return usesNativeSpriteSize(id)
+            ? BlockRenderSpec.nativeBottomCenter()
+            : BlockRenderSpec.fullTile();
+    }
+
+    private static boolean usesNativeSpriteSize(String id) {
+        if (id == null) {
+            return false;
+        }
+        switch (id) {
+            case "cactus_flower":
+            case "dead_bush":
+            case "dry_grass":
+            case "short_dry_grass":
+            case "spruce_sapling":
+            case "fern":
+            case "firefly_bush":
+            case "poppy":
+            case "dandelion":
+            case "blue_orchid":
+            case "azure_bluet":
+            case "cornflower":
+            case "lily_of_the_valley":
+            case "oxeye_daisy":
+            case "cherry_grass":
+            case "cherry_flower":
+            case "cherry_sapling":
+            case "raid_banner":
+                return true;
+            default:
+                return false;
+        }
     }
 
     private static TextureRegion resolveTexture(BlockDefinition definition) {
