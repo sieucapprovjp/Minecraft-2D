@@ -537,6 +537,8 @@ public class GameScreen extends BaseScreen {
                 + ", textureCache=" + textureManager.getCachedTextureCount()
                 + ", ownedTextures=" + textureManager.getOwnedTextureCount()
                 + ", generatedFallbacks=" + textureManager.getGeneratedFallbackCount()
+                + ", mobAssetTypes=" + Mob.getCachedAssetTypeCount()
+                + ", mobAssetTextures=" + Mob.getLoadedAssetTextureCount()
                 + ", initialMobs=" + (entityManager == null ? 0 : entityManager.aliveMobCount()));
     }
 
@@ -558,6 +560,7 @@ public class GameScreen extends BaseScreen {
         if (furnaceRenderer != null) furnaceRenderer.dispose();
         if (furnaceManager != null) furnaceManager.clear();
         entityManager.dispose();
+        Mob.disposeSharedAssets();
     }
 
     @Override

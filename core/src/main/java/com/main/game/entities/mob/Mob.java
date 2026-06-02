@@ -99,6 +99,18 @@ public class Mob extends Entity {
         return Math.max(1, (int) Math.ceil(MobProfile.forType(type).height));
     }
 
+    public static void disposeSharedAssets() {
+        MobAssetPack.disposeSharedAssets();
+    }
+
+    public static int getCachedAssetTypeCount() {
+        return MobAssetPack.cachedMobTypeCount();
+    }
+
+    public static int getLoadedAssetTextureCount() {
+        return MobAssetPack.loadedTextureCount();
+    }
+
     // ─── Asset loading ─────────────────────────────────────────
 
     private void loadAssets(MobType type) {
