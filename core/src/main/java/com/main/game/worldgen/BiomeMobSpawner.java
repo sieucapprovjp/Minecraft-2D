@@ -276,7 +276,19 @@ public final class BiomeMobSpawner {
     }
 
     static boolean isPersistentMob(Mob mob) {
-        return mob != null && mob.getType() == Mob.MobType.VILLAGER;
+        if (mob == null) {
+            return false;
+        }
+        switch (mob.getType()) {
+            case VILLAGER:
+            case PILLAGER:
+            case VINDICATOR:
+            case EVOKER:
+            case RAVAGER:
+                return true;
+            default:
+                return false;
+        }
     }
 
     private NearbyMobCounts countNearbyMobs(EntityManager entityManager, Player player, float radius) {
