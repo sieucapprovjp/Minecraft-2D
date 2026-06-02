@@ -29,6 +29,7 @@ import com.main.game.worldgen.BiomeType;
 import com.main.game.worldgen.WorldGenerator;
 import com.main.game.worldgen.WorldBlockFactory;
 import com.main.game.worldgen.cave.CaveGenerator;
+import com.main.game.worldgen.village.VillageState;
 import com.main.game.utils.Constants;
 
 import java.util.Arrays;
@@ -55,6 +56,7 @@ public class World {
     private final int chunkRows;
     private final Map<Integer, BiomeType> biomes;
     private final int[] surfaceByX;
+    private VillageState villageState = VillageState.none();
     private int initialSpawnPlatformMinX = -1;
     private int initialSpawnPlatformMaxX = -1;
     private int initialSpawnPlatformY = -1;
@@ -131,6 +133,14 @@ public class World {
             }
         }
         return -1;
+    }
+
+    public VillageState getVillageState() {
+        return villageState;
+    }
+
+    public void setVillageState(VillageState villageState) {
+        this.villageState = villageState == null ? VillageState.none() : villageState;
     }
 
     /** Load chunk trong phạm vi map hữu hạn xung quanh camera. */
