@@ -41,4 +41,10 @@ public final class RaidController {
     public int getTriggerTileY() {
         return triggerTileY;
     }
+
+    public void markWaveActive() {
+        if (state == RaidState.COUNTDOWN) {
+            state = RaidState.WAVE_ACTIVE;
+        }
+    }
 }

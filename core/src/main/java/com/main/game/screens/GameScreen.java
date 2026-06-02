@@ -39,6 +39,7 @@ import com.main.game.items.MobDropFactory;
 import com.main.game.navigation.ScreenId;
 import com.main.game.physics.PhysicsEngine;
 import com.main.game.raid.RaidController;
+import com.main.game.raid.RaidMobSpawner;
 import com.main.game.time.DayNightCycle;
 import com.main.game.trading.TradingController;
 import com.main.game.trading.TradingInteractionHandler;
@@ -467,6 +468,11 @@ public class GameScreen extends BaseScreen {
 
     private void handleBlockPlaced(String blockId, int tileX, int tileY) {
         if (raidController != null && raidController.tryStartFromBanner(world, blockId, tileX, tileY)) {
+            int spawnedRaidMobs = RaidMobSpawner.spawnOneOfEach(world, player, physics, entityManager);
+            if (spawnedRaidMobs > 0) {
+                raidController.markWaveActive();
+                Gdx.app.log(PERF_LOG_TAG, "spawnedRaidMobs=" + spawnedRaidMobs);
+            }
             game.getAudioManager().play(AudioId.UI_CLICK);
         }
     }

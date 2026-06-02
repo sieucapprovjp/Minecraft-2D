@@ -33,4 +33,16 @@ public class RaidControllerTest {
         assertTrue(controller.tryStartFromBanner(world, "raid_banner", 100, 51));
         assertFalse(controller.tryStartFromBanner(world, "raid_banner", 101, 51));
     }
+
+    @Test
+    public void movesCountdownRaidToWaveActiveAfterMobsSpawn() {
+        World world = new World(123L);
+        world.setVillageState(VillageState.present(100, 51, 90, 50, 21, 28));
+        RaidController controller = new RaidController();
+
+        assertTrue(controller.tryStartFromBanner(world, "raid_banner", 100, 51));
+        controller.markWaveActive();
+
+        assertEquals(RaidState.WAVE_ACTIVE, controller.getState());
+    }
 }
