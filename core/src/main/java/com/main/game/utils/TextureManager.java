@@ -16,6 +16,7 @@ public class TextureManager {
     private static TextureManager instance;
     private TextureAtlas atlas;
     private final List<Texture> ownedTextures = new ArrayList<>();
+    private final Map<String, TextureRegion> textureCache = new HashMap<>();
     private final Map<String, TextureRegion> generatedFallbacks = new HashMap<>();
 
     private TextureManager() {
@@ -38,6 +39,9 @@ public class TextureManager {
     }
 
     public TextureRegion getTexture(String name) {
+        if (textureCache.containsKey(name)) {
+            return textureCache.get(name);
+        }
         // If libGDX file resolver is not initialized yet (no Application created), bail out.
         if (Gdx.files == null) {
             System.err.println("Gdx.files not initialized yet; cannot load texture: " + name);
@@ -45,7 +49,10 @@ public class TextureManager {
         }
         if (atlas != null) {
             TextureRegion r = atlas.findRegion(name);
-            if (r != null) return r;
+            if (r != null) {
+                textureCache.put(name, r);
+                return r;
+            }
         }
 
         // Fallback: try to load individual image files from common asset locations.
@@ -142,7 +149,9 @@ public class TextureManager {
                         Texture t = new Texture(fh);
                         t.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
                         ownedTextures.add(t);
-                        return new TextureRegion(t);
+                        TextureRegion region = new TextureRegion(t);
+                        textureCache.put(name, region);
+                        return region;
                     } catch (Exception e) {
                         // continue searching
                     }
@@ -152,14 +161,24 @@ public class TextureManager {
 
         // Last resort: try variants (remove suffixes like _block)
         if (base.endsWith("_block")) {
-            return getTexture(base.substring(0, base.length() - 6));
+            TextureRegion region = getTexture(base.substring(0, base.length() - 6));
+            if (region != null) {
+                textureCache.put(name, region);
+            }
+            return region;
         }
 
         TextureRegion generatedArmor = generatedArmorFallback(name);
-        if (generatedArmor != null) return generatedArmor;
+        if (generatedArmor != null) {
+            textureCache.put(name, generatedArmor);
+            return generatedArmor;
+        }
 
         TextureRegion generatedOre = generatedOreFallback(name);
-        if (generatedOre != null) return generatedOre;
+        if (generatedOre != null) {
+            textureCache.put(name, generatedOre);
+            return generatedOre;
+        }
 
         return null;
     }
@@ -168,6 +187,7 @@ public class TextureManager {
         if (atlas != null) atlas.dispose();
         for (Texture t : ownedTextures) t.dispose();
         ownedTextures.clear();
+        textureCache.clear();
         generatedFallbacks.clear();
     }
 
