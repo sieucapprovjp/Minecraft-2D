@@ -71,6 +71,15 @@ public final class BlockRegistry {
         registerTexture("furnace", "furnace_off", BlockDefinition.PaletteFallback.NONE, 3.5f, true, null, 1, false);
         registerTexture("chest", "chest_closed", BlockDefinition.PaletteFallback.NONE, 0.9f, true, null, 0, false);
         registerTexture("raid_banner", "raid_banner", BlockDefinition.PaletteFallback.NONE, 0.3f, true, null, 0, false, false);
+        registerTexture("village_bookshelf", "village_bookshelf", BlockDefinition.PaletteFallback.PLANKS, 0.6f, true, null, 0, false, false);
+        registerTexture("village_cobblestone", "village_cobblestone", BlockDefinition.PaletteFallback.STONE, 1.2f, true, "cobblestone", 1, false);
+        registerTexture("village_glass2", "village_glass2", BlockDefinition.PaletteFallback.NONE, 0.3f, true, null, 0, false, false);
+        registerTexture("village_glass3", "village_glass3", BlockDefinition.PaletteFallback.NONE, 0.3f, true, null, 0, false, false);
+        registerTexture("village_bed_left", "village_bed_left", BlockDefinition.PaletteFallback.NONE, 0.2f, true, null, 0, false, false);
+        registerTexture("village_bed_right", "village_bed_right", BlockDefinition.PaletteFallback.NONE, 0.2f, true, null, 0, false, false);
+        registerTexture("village_moss_stone", "village_moss_stone", BlockDefinition.PaletteFallback.STONE, 1.2f, true, null, 1, false);
+        registerTexture("village_roof_stair_left", "village_roof_stair_left", BlockDefinition.PaletteFallback.WOOD, 0.6f, true, null, 0, false);
+        registerTexture("village_roof_stair_right", "village_roof_stair_right", BlockDefinition.PaletteFallback.WOOD, 0.6f, true, null, 0, false);
 
         registerOre("coal_ore", "coal", 3f, 1);
         registerOre("deepslate_co", "coal", 3f, 1);

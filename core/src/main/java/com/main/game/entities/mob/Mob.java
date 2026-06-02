@@ -65,6 +65,7 @@ public class Mob extends Entity {
     private final MobBrain brain = new MobBrain();
     private final MobRenderer renderer = new MobRenderer();
     private final MobType type;
+    private final VillagerProfession villagerProfession;
     private final MobProfile profile;
 
     // ─── Refs ─────────────────────────────────────────────────
@@ -75,20 +76,29 @@ public class Mob extends Entity {
     // ───────────────────────────────────────────────────────────
 
     public Mob(float x, float y, MobType type, Player target, PhysicsEngine physics, World world) {
-        this(x, y, type, target, physics, world, MobProfile.forType(type));
+        this(x, y, type, VillagerProfession.UNEMPLOYED, target, physics, world);
     }
 
-    private Mob(float x, float y, MobType type, Player target, PhysicsEngine physics, World world, MobProfile profile) {
+    public Mob(float x, float y, MobType type, VillagerProfession villagerProfession,
+               Player target, PhysicsEngine physics, World world) {
+        this(x, y, type, villagerProfession, target, physics, world, MobProfile.forType(type));
+    }
+
+    private Mob(float x, float y, MobType type, VillagerProfession villagerProfession,
+                Player target, PhysicsEngine physics, World world, MobProfile profile) {
         super(x, y, profile.width, profile.height);
         this.patrolOriginX = x;
         this.target        = target;
         this.physics       = physics;
         this.world         = world;
         this.type = type;
+        this.villagerProfession = type == MobType.VILLAGER
+            ? (villagerProfession == null ? VillagerProfession.UNEMPLOYED : villagerProfession)
+            : VillagerProfession.UNEMPLOYED;
         this.profile = profile;
         this.health = profile.maxHealth;
 
-        loadAssets(type);
+        loadAssets(type, this.villagerProfession);
     }
 
     public static int getRequiredSpawnWidth(MobType type) {
@@ -113,8 +123,8 @@ public class Mob extends Entity {
 
     // ─── Asset loading ─────────────────────────────────────────
 
-    private void loadAssets(MobType type) {
-        assets.load(type);
+    private void loadAssets(MobType type, VillagerProfession villagerProfession) {
+        assets.load(type, villagerProfession);
         animIdle = assets.idle();
         animWalk = assets.walk();
         animHurt = assets.hurt();
@@ -267,6 +277,7 @@ public class Mob extends Entity {
     public EntityState getState()   { return state;   }
     public AIState     getAIState() { return aiState;  }
     public MobType     getType()    { return type;     }
+    public VillagerProfession getVillagerProfession() { return villagerProfession; }
     public int         getHealth()  { return health;   }
     public int         getAllegiance() { return profile.allegiance; }
     public boolean     isTamed()    { return profile.allegiance == MobAllegiance.TAMED; }

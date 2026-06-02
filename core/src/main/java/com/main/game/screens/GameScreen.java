@@ -40,6 +40,10 @@ import com.main.game.navigation.ScreenId;
 import com.main.game.physics.PhysicsEngine;
 import com.main.game.raid.RaidController;
 import com.main.game.time.DayNightCycle;
+import com.main.game.trading.TradingController;
+import com.main.game.trading.TradingInteractionHandler;
+import com.main.game.trading.TradingRenderer;
+import com.main.game.trading.VillagerInteractionController;
 import com.main.game.ui.GameCameraController;
 import com.main.game.ui.GameHudRenderer;
 import com.main.game.ui.GameOverlayRenderer;
@@ -50,6 +54,7 @@ import com.main.game.world.SpawnSafetyController;
 import com.main.game.world.World;
 import com.main.game.entities.mob.Mob;
 import com.main.game.worldgen.BiomeMobSpawner;
+import com.main.game.worldgen.village.VillageVillagerSpawner;
 import java.util.Locale;
 import java.util.Random;
 
@@ -82,6 +87,10 @@ public class GameScreen extends BaseScreen {
     private FurnaceInteractionHandler furnaceInteractionHandler;
     private FurnaceManager furnaceManager;
     private FurnaceState openFurnaceState;
+    private VillagerInteractionController villagerInteractionController;
+    private TradingController tradingController;
+    private TradingRenderer tradingRenderer;
+    private TradingInteractionHandler tradingInteractionHandler;
     private CraftingController craftingController;
     private GameCameraController cameraController;
     private GameHudRenderer hudRenderer;
@@ -90,6 +99,7 @@ public class GameScreen extends BaseScreen {
     private BiomeMobSpawner mobSpawner;
     private DayNightCycle dayNightCycle;
     private RaidController raidController;
+    private VillageVillagerSpawner villageVillagerSpawner;
     private Random mobDropRandom;
     private boolean paused;
     private boolean dead;
@@ -133,6 +143,7 @@ public class GameScreen extends BaseScreen {
         entityManager = new EntityManager();
         entityManager.setPlayer(player);
         raidController = new RaidController();
+        villageVillagerSpawner = new VillageVillagerSpawner();
         blockBreaker = new BlockBreaker();
         blockPlacementController = new BlockPlacementController();
         blockPlacementController.setBlockPlacementListener(this::handleBlockPlaced);
@@ -156,6 +167,9 @@ public class GameScreen extends BaseScreen {
         chestManager = new ChestManager();
         furnaceInteractionHandler = new FurnaceInteractionHandler();
         furnaceManager = new FurnaceManager();
+        villagerInteractionController = new VillagerInteractionController();
+        tradingController = new TradingController();
+        tradingInteractionHandler = new TradingInteractionHandler();
         craftingController = new CraftingController();
         cameraController = new GameCameraController();
         syncHeldItem();
@@ -204,10 +218,18 @@ public class GameScreen extends BaseScreen {
                 mobSpawner.update(delta, world, player, physics, entityManager,
                     dayNightCycle == null || dayNightCycle.isNight());
             }
+            if (villageVillagerSpawner != null) {
+                int spawnedVillagers = villageVillagerSpawner.update(world, player, physics, entityManager);
+                if (spawnedVillagers > 0) {
+                    Gdx.app.log(PERF_LOG_TAG, "spawnedVillagers=" + spawnedVillagers);
+                }
+            }
             spawnSafetyController.update(delta, world, player);
             droppedItemManager.update(delta, world, player, inventory);
             if (inventoryController.isInventoryOpen()) {
-                if (openChestState != null) {
+                if (tradingController != null && tradingController.isOpen()) {
+                    tradingInteractionHandler.update(inventory, tradingController, getTradingRenderer());
+                } else if (openChestState != null) {
                     chestInteractionHandler.update(inventory, openChestState, getChestRenderer());
                 } else if (openFurnaceState != null) {
                     furnaceInteractionHandler.update(inventory, openFurnaceState, getFurnaceRenderer());
@@ -309,7 +331,9 @@ public class GameScreen extends BaseScreen {
             inventoryInteractionHandler, craftingController,
             openFurnaceState == null ? null : getFurnaceRenderer(), furnaceInteractionHandler,
             openFurnaceState,
-            openChestState == null ? null : getChestRenderer(), chestInteractionHandler, openChestState, player);
+            openChestState == null ? null : getChestRenderer(), chestInteractionHandler, openChestState,
+            tradingController != null && tradingController.isOpen() ? getTradingRenderer() : null,
+            tradingInteractionHandler, tradingController, player);
 
         if (paused) overlayRenderer.renderPause(batch);
         else if (dead) overlayRenderer.renderDeath(batch);
@@ -348,6 +372,17 @@ public class GameScreen extends BaseScreen {
         if (paused || dead) {
             return;
         }
+        if (villagerInteractionController.canOpen(player, entityManager, camera, viewport)
+            && tradingController.open(villagerInteractionController.getHoveredVillager())) {
+            craftingController.closeCrafting(inventory);
+            openChestState = null;
+            openFurnaceState = null;
+            getTradingRenderer();
+            inventoryController.open();
+            game.getAudioManager().play(AudioId.UI_CLICK);
+            return;
+        }
+        tradingController.close();
         if (chestInteractionController.canOpen(player, world, camera, viewport)) {
             craftingController.closeCrafting(inventory);
             openFurnaceState = null;
@@ -382,6 +417,12 @@ public class GameScreen extends BaseScreen {
     }
 
     private void handleInventoryClosed() {
+        if (tradingController != null && tradingController.isOpen()) {
+            game.getAudioManager().play(AudioId.UI_CLICK);
+            tradingInteractionHandler.onCloseInventory(inventory);
+            tradingController.close();
+            return;
+        }
         if (openFurnaceState != null) {
             game.getAudioManager().play(AudioId.UI_CLICK);
             furnaceInteractionHandler.onCloseInventory(inventory);
@@ -572,6 +613,13 @@ public class GameScreen extends BaseScreen {
         return furnaceRenderer;
     }
 
+    private TradingRenderer getTradingRenderer() {
+        if (tradingRenderer == null) {
+            tradingRenderer = new TradingRenderer();
+        }
+        return tradingRenderer;
+    }
+
     @Override
     public void dispose() {
         super.dispose();
@@ -582,6 +630,7 @@ public class GameScreen extends BaseScreen {
         if (droppedItemManager != null) droppedItemManager.clear();
         if (inventoryRenderer != null) inventoryRenderer.dispose();
         if (chestRenderer != null) chestRenderer.dispose();
+        if (tradingRenderer != null) tradingRenderer.dispose();
         if (chestManager != null) chestManager.clear();
         if (furnaceRenderer != null) furnaceRenderer.dispose();
         if (furnaceManager != null) furnaceManager.clear();

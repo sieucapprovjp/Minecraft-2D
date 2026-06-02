@@ -70,6 +70,7 @@ public class TextureManager {
         nameMap.put("bread", "food/bread");
         nameMap.put("carrot", "food/carrot");
         nameMap.put("cookie", "food/cookie");
+        nameMap.put("cake", "food/cake");
         nameMap.put("la_baguette", "food/la_baguette");
         nameMap.put("berry_bush3", "food/berry_bush3");
         nameMap.put("raw_beef", "food/raw_beef");
@@ -115,6 +116,15 @@ public class TextureManager {
         nameMap.put("lily_of_the_valley", "tiles/plain/lily_of_the_valley");
         nameMap.put("oxeye_daisy", "tiles/plain/oxeye_daisy");
         nameMap.put("raid_banner", "tiles/plain/village/pillager_banner");
+        nameMap.put("village_bookshelf", "tiles/plain/village/bookshelf");
+        nameMap.put("village_cobblestone", "tiles/plain/village/cobblestone");
+        nameMap.put("village_glass2", "tiles/plain/village/glass2");
+        nameMap.put("village_glass3", "tiles/plain/village/glass3");
+        nameMap.put("village_bed_left", "tiles/plain/village/w_bed_left");
+        nameMap.put("village_bed_right", "tiles/plain/village/w_bed_right");
+        nameMap.put("village_moss_stone", "tiles/plain/village/moss_stone");
+        nameMap.put("village_roof_stair_left", "tiles/plain/village/stair_l_wood");
+        nameMap.put("village_roof_stair_right", "tiles/plain/village/stair_r_wood_1");
         nameMap.put("cherry_grass", "tiles/cherry/grass_cherry");
         nameMap.put("cherry_log", "tiles/cherry/cherry_log");
         nameMap.put("natural_cherry_log", "tiles/cherry/cherry_log");
@@ -181,6 +191,12 @@ public class TextureManager {
             return generatedOre;
         }
 
+        TextureRegion generatedItem = generatedItemFallback(name);
+        if (generatedItem != null) {
+            textureCache.put(name, generatedItem);
+            return generatedItem;
+        }
+
         return null;
     }
 
@@ -244,6 +260,33 @@ public class TextureManager {
         pixmap.fill();
         pixmap.setColor(color);
         drawArmorShape(pixmap, itemId);
+
+        Texture texture = new Texture(pixmap);
+        texture.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+        pixmap.dispose();
+        ownedTextures.add(texture);
+
+        TextureRegion region = new TextureRegion(texture);
+        generatedFallbacks.put(name, region);
+        return region;
+    }
+
+    private TextureRegion generatedItemFallback(String name) {
+        if (!"cake".equals(name)) return null;
+        if (generatedFallbacks.containsKey(name)) return generatedFallbacks.get(name);
+
+        Pixmap pixmap = new Pixmap(16, 16, Pixmap.Format.RGBA8888);
+        pixmap.setColor(0f, 0f, 0f, 0f);
+        pixmap.fill();
+        pixmap.setColor(0.82f, 0.54f, 0.34f, 1f);
+        pixmap.fillRectangle(2, 7, 12, 6);
+        pixmap.setColor(0.98f, 0.94f, 0.88f, 1f);
+        pixmap.fillRectangle(2, 5, 12, 4);
+        pixmap.setColor(0.86f, 0.12f, 0.14f, 1f);
+        pixmap.fillRectangle(4, 5, 2, 2);
+        pixmap.fillRectangle(10, 5, 2, 2);
+        pixmap.setColor(0.46f, 0.24f, 0.12f, 1f);
+        pixmap.drawRectangle(2, 5, 12, 8);
 
         Texture texture = new Texture(pixmap);
         texture.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);

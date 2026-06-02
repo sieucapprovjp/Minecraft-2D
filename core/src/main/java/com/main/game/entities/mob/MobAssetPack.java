@@ -5,22 +5,24 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import java.util.ArrayList;
-import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 final class MobAssetPack {
 
-    private static final EnumMap<Mob.MobType, SharedAssets> CACHE = new EnumMap<>(Mob.MobType.class);
+    private static final Map<AssetKey, SharedAssets> CACHE = new HashMap<>();
 
     private Animation<TextureRegion> idleAnim;
     private Animation<TextureRegion> walkAnim;
     private Animation<TextureRegion> hurtAnim;
 
-    void load(Mob.MobType type) {
-        SharedAssets sharedAssets = CACHE.get(type);
+    void load(Mob.MobType type, VillagerProfession villagerProfession) {
+        AssetKey key = AssetKey.of(type, villagerProfession);
+        SharedAssets sharedAssets = CACHE.get(key);
         if (sharedAssets == null) {
-            sharedAssets = loadShared(type);
-            CACHE.put(type, sharedAssets);
+            sharedAssets = loadShared(key.type, key.villagerProfession);
+            CACHE.put(key, sharedAssets);
         }
         idleAnim = sharedAssets.idleAnim;
         walkAnim = sharedAssets.walkAnim;
@@ -62,7 +64,7 @@ final class MobAssetPack {
         return count;
     }
 
-    private static SharedAssets loadShared(Mob.MobType type) {
+    private static SharedAssets loadShared(Mob.MobType type, VillagerProfession villagerProfession) {
         List<Texture> loadedTextures = new ArrayList<>();
         Animation<TextureRegion> idleAnim;
         Animation<TextureRegion> walkAnim;
@@ -126,13 +128,32 @@ final class MobAssetPack {
                     "mobs/chicken/mobs/chicken5.png");
                 hurtAnim = single(loadedTextures, "mobs/chicken/mobs/chickenface.png");
                 break;
+            case VILLAGER:
+                switch (villagerProfession == null ? VillagerProfession.UNEMPLOYED : villagerProfession) {
+                    case BLACKSMITH:
+                        idleAnim = single(loadedTextures, "mobs/villager/blacksmith-look.png");
+                        walkAnim = sequence(loadedTextures, "mobs/villager/blacksmith-walk%d.png", 1, 5, 0.12f);
+                        hurtAnim = single(loadedTextures, "mobs/villager/blacksmith-hurt.png");
+                        break;
+                    case FARMER:
+                        idleAnim = single(loadedTextures, "mobs/villager/farmer.png");
+                        walkAnim = sequence(loadedTextures, "mobs/villager/farmer%d.png", 2, 6, 0.12f);
+                        hurtAnim = single(loadedTextures, "mobs/villager/farmer-hurt.png");
+                        break;
+                    case UNEMPLOYED:
+                    default:
+                        idleAnim = single(loadedTextures, "mobs/villager/villager-face.png");
+                        walkAnim = sequence(loadedTextures, "mobs/villager/villager-walk-%d.png", 1, 5, 0.12f);
+                        hurtAnim = single(loadedTextures, "mobs/villager/villager_hurt.png");
+                        break;
+                }
+                break;
             case COW:
             case DOG:
             case TAMED_HORSE:
             case HORSE:
             case WOLF:
             case CAT:
-            case VILLAGER:
             case COD:
             case SALMON:
             case TROPICAL_FISH:
@@ -214,12 +235,59 @@ final class MobAssetPack {
     }
 
     private static Texture loadTexture(List<Texture> loadedTextures, String path) {
-        if (!Gdx.files.internal(path).exists()) {
+        if (Gdx.files == null) {
             return null;
         }
-        Texture t = new Texture(Gdx.files.internal(path));
+        String resolvedPath = resolveInternalPath(path);
+        if (resolvedPath == null) {
+            return null;
+        }
+        Texture t = new Texture(Gdx.files.internal(resolvedPath));
         loadedTextures.add(t);
         return t;
+    }
+
+    private static String resolveInternalPath(String path) {
+        if (path == null) {
+            return null;
+        }
+        if (Gdx.files.internal(path).exists()) {
+            return path;
+        }
+        String imagePath = path.startsWith("image/") ? path : "image/" + path;
+        return Gdx.files.internal(imagePath).exists() ? imagePath : null;
+    }
+
+    private static final class AssetKey {
+        final Mob.MobType type;
+        final VillagerProfession villagerProfession;
+
+        private AssetKey(Mob.MobType type, VillagerProfession villagerProfession) {
+            this.type = type;
+            this.villagerProfession = villagerProfession;
+        }
+
+        static AssetKey of(Mob.MobType type, VillagerProfession villagerProfession) {
+            VillagerProfession normalizedProfession = type == Mob.MobType.VILLAGER
+                ? (villagerProfession == null ? VillagerProfession.UNEMPLOYED : villagerProfession)
+                : VillagerProfession.UNEMPLOYED;
+            return new AssetKey(type, normalizedProfession);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (!(obj instanceof AssetKey)) return false;
+            AssetKey other = (AssetKey) obj;
+            return type == other.type && villagerProfession == other.villagerProfession;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = type == null ? 0 : type.hashCode();
+            result = 31 * result + (villagerProfession == null ? 0 : villagerProfession.hashCode());
+            return result;
+        }
     }
 
     private static final class SharedAssets {
