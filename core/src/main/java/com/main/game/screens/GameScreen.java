@@ -38,6 +38,7 @@ import com.main.game.items.HarvestEntry;
 import com.main.game.items.MobDropFactory;
 import com.main.game.navigation.ScreenId;
 import com.main.game.physics.PhysicsEngine;
+import com.main.game.raid.RaidController;
 import com.main.game.time.DayNightCycle;
 import com.main.game.ui.GameCameraController;
 import com.main.game.ui.GameHudRenderer;
@@ -88,6 +89,7 @@ public class GameScreen extends BaseScreen {
     private SpawnSafetyController spawnSafetyController;
     private BiomeMobSpawner mobSpawner;
     private DayNightCycle dayNightCycle;
+    private RaidController raidController;
     private Random mobDropRandom;
     private boolean paused;
     private boolean dead;
@@ -130,8 +132,10 @@ public class GameScreen extends BaseScreen {
         // ── Khởi tạo EntityManager & Tools ─────────────
         entityManager = new EntityManager();
         entityManager.setPlayer(player);
+        raidController = new RaidController();
         blockBreaker = new BlockBreaker();
         blockPlacementController = new BlockPlacementController();
+        blockPlacementController.setBlockPlacementListener(this::handleBlockPlaced);
         craftingTableInteractionController = new CraftingTableInteractionController();
         chestInteractionController = new ChestInteractionController();
         furnaceInteractionController = new FurnaceInteractionController();
@@ -417,6 +421,12 @@ public class GameScreen extends BaseScreen {
         }
         for (HarvestEntry entry : MobDropFactory.createDrops(mob, world, mobDropRandom)) {
             droppedItemManager.spawn(entry, world);
+        }
+    }
+
+    private void handleBlockPlaced(String blockId, int tileX, int tileY) {
+        if (raidController != null && raidController.tryStartFromBanner(world, blockId, tileX, tileY)) {
+            game.getAudioManager().play(AudioId.UI_CLICK);
         }
     }
 

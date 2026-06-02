@@ -23,6 +23,18 @@ public class StarterInventoryKitTest {
     }
 
     @Test
+    public void grantsRaidBannerForVillageRaidTesting() {
+        Inventory inventory = new Inventory();
+
+        StarterInventoryKit.grant(inventory);
+
+        ItemStack banner = findStack(inventory, "raid_banner");
+        assertNotNull(banner);
+        assertEquals(1, banner.getCount());
+        assertTrue(ItemRegistry.isPlaceableBlock("raid_banner"));
+    }
+
+    @Test
     public void grantsAllFoodsAndNoArmor() {
         Inventory inventory = new Inventory();
 
