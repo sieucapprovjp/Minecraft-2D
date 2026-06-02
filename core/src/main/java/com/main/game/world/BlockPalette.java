@@ -1,6 +1,7 @@
 package com.main.game.world;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.main.game.blocks.AbstractBlock;
@@ -115,6 +116,9 @@ public final class BlockPalette {
         TextureRegion texture = tm.getTexture(name);
         if (texture != null) {
             return texture;
+        }
+        if (Gdx.files == null) {
+            return null;
         }
         Pixmap pixmap = new Pixmap(16, 16, Pixmap.Format.RGBA8888);
         pixmap.setColor(fallbackColor);

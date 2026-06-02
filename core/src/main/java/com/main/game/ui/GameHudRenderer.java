@@ -15,6 +15,9 @@ import com.main.game.utilityblock.chest.ChestState;
 import com.main.game.utilityblock.furnace.FurnaceInteractionHandler;
 import com.main.game.utilityblock.furnace.FurnaceRenderer;
 import com.main.game.utilityblock.furnace.FurnaceState;
+import com.main.game.trading.TradingController;
+import com.main.game.trading.TradingInteractionHandler;
+import com.main.game.trading.TradingRenderer;
 import com.main.game.inventory.Inventory;
 import com.main.game.inventory.InventoryController;
 import com.main.game.inventory.InventoryInteractionHandler;
@@ -62,7 +65,8 @@ public class GameHudRenderer {
                        CraftingController craftingController, FurnaceRenderer furnaceRenderer,
                        FurnaceInteractionHandler furnaceInteractionHandler, FurnaceState openFurnaceState,
                        ChestRenderer chestRenderer, ChestInteractionHandler chestInteractionHandler,
-                       ChestState openChestState,
+                       ChestState openChestState, TradingRenderer tradingRenderer,
+                       TradingInteractionHandler tradingInteractionHandler, TradingController tradingController,
                        Player player) {
         batch.setProjectionMatrix(viewport.getCamera().combined);
         batch.begin();
@@ -81,7 +85,12 @@ public class GameHudRenderer {
 
         inventoryRenderer.renderHotbar(batch, inventory, inventoryController, hotbarTex, selectorTex, sw, scale);
         if (inventoryController.isInventoryOpen()) {
-            if (openChestState != null) {
+            if (tradingController != null && tradingController.isOpen() && tradingRenderer != null) {
+                tradingRenderer.renderTrading(batch, inventory, tradingController, sw, sh);
+                if (tradingInteractionHandler != null) {
+                    tradingRenderer.renderCarriedStack(batch, tradingInteractionHandler.getCarriedStack());
+                }
+            } else if (openChestState != null) {
                 chestRenderer.renderChest(batch, inventory, openChestState, sw, sh);
                 chestRenderer.renderCarriedStack(batch, chestInteractionHandler.getCarriedStack());
             } else if (openFurnaceState != null) {

@@ -35,6 +35,8 @@ public final class WorldGenerator {
     private static final int FILLER_LAYER_DEPTH = 2;
     private static final int GUARANTEED_PLAINS_CENTER_OFFSET = 70;
     private static final int GUARANTEED_PLAINS_HALF_WIDTH = 48;
+    private static final int GUARANTEED_PLAINS_EDGE_BLEND_WIDTH = 16;
+    private static final int GUARANTEED_PLAINS_SURFACE_OFFSET = -5;
 
     private WorldGenerator() {
     }
@@ -46,16 +48,21 @@ public final class WorldGenerator {
         int guaranteedPlainsCenterX = guaranteedPlainsCenterX(world.width);
 
         for (int x = 0; x < world.width; x++) {
+            BiomeType naturalBiome = chooseBiome(x, seed);
             BiomeType biome = chooseBiome(x, seed, guaranteedPlainsCenterX);
             BiomeProfile profile = BiomeProfile.forType(biome);
             world.setBiome(x, biome);
 
             float terrainNoise = WorldNoise.smoothNoise1D(x * TERRAIN_FREQUENCY, seed);
             float detailNoise = WorldNoise.smoothNoise1D(x * TERRAIN_FREQUENCY * 3f, seed + 1);
-            int surface = baseGround + profile.heightOffset
-                + (int) (terrainNoise * profile.terrainAmplitude + detailNoise * profile.detailStrength);
+            int surface = naturalSurface(baseGround, BiomeProfile.forType(naturalBiome), terrainNoise, detailNoise);
             if (isGuaranteedPlainsColumn(x, guaranteedPlainsCenterX)) {
-                surface = guaranteedPlainsSurface(baseGround, x, seed);
+                surface = blendedGuaranteedPlainsSurface(
+                    guaranteedPlainsSurface(baseGround, x, seed),
+                    surface,
+                    x,
+                    guaranteedPlainsCenterX
+                );
             }
             surface = Math.max(8, Math.min(world.height - 8, surface));
             world.setSurfaceY(x, surface);
@@ -94,7 +101,27 @@ public final class WorldGenerator {
 
     static int guaranteedPlainsSurface(int baseGround, int x, long seed) {
         float local = WorldNoise.smoothNoise1D(x * 0.10f, seed + 44011);
-        return baseGround + Math.round(local);
+        return baseGround + GUARANTEED_PLAINS_SURFACE_OFFSET + Math.round(local);
+    }
+
+    static int blendedGuaranteedPlainsSurface(int targetSurface, int naturalSurface, int x, int guaranteedPlainsCenterX) {
+        int distanceFromCenter = Math.abs(x - guaranteedPlainsCenterX);
+        int distanceFromEdge = GUARANTEED_PLAINS_HALF_WIDTH - distanceFromCenter;
+        if (distanceFromEdge >= GUARANTEED_PLAINS_EDGE_BLEND_WIDTH) {
+            return targetSurface;
+        }
+        float progress = Math.max(0f, Math.min(1f, distanceFromEdge / (float) GUARANTEED_PLAINS_EDGE_BLEND_WIDTH));
+        float smoothProgress = progress * progress * (3f - 2f * progress);
+        return Math.round(lerp(naturalSurface, targetSurface, smoothProgress));
+    }
+
+    private static int naturalSurface(int baseGround, BiomeProfile profile, float terrainNoise, float detailNoise) {
+        return baseGround + profile.heightOffset
+            + (int) (terrainNoise * profile.terrainAmplitude + detailNoise * profile.detailStrength);
+    }
+
+    private static float lerp(float from, float to, float progress) {
+        return from + (to - from) * progress;
     }
 
     static BiomeType chooseBiomeForNoise(float noise) {

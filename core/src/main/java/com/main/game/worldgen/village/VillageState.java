@@ -1,8 +1,11 @@
 package com.main.game.worldgen.village;
 
+import java.util.Collections;
+import java.util.List;
+
 public final class VillageState {
 
-    private static final VillageState NONE = new VillageState(false, 0, 0, 0, 0, 0, 0);
+    private static final VillageState NONE = new VillageState(false, 0, 0, 0, 0, 0, 0, Collections.emptyList());
 
     private final boolean present;
     private final int centerX;
@@ -11,9 +14,11 @@ public final class VillageState {
     private final int houseFloorY;
     private final int houseWidth;
     private final int radius;
+    private final List<VillageSpawnPoint> villagerSpawnPoints;
 
     private VillageState(boolean present, int centerX, int centerY, int houseBaseX,
-                         int houseFloorY, int houseWidth, int radius) {
+                         int houseFloorY, int houseWidth, int radius,
+                         List<VillageSpawnPoint> villagerSpawnPoints) {
         this.present = present;
         this.centerX = centerX;
         this.centerY = centerY;
@@ -21,6 +26,7 @@ public final class VillageState {
         this.houseFloorY = houseFloorY;
         this.houseWidth = houseWidth;
         this.radius = radius;
+        this.villagerSpawnPoints = List.copyOf(villagerSpawnPoints);
     }
 
     public static VillageState none() {
@@ -29,7 +35,14 @@ public final class VillageState {
 
     public static VillageState present(int centerX, int centerY, int houseBaseX,
                                        int houseFloorY, int houseWidth, int radius) {
-        return new VillageState(true, centerX, centerY, houseBaseX, houseFloorY, houseWidth, radius);
+        return present(centerX, centerY, houseBaseX, houseFloorY, houseWidth, radius, Collections.emptyList());
+    }
+
+    public static VillageState present(int centerX, int centerY, int houseBaseX,
+                                       int houseFloorY, int houseWidth, int radius,
+                                       List<VillageSpawnPoint> villagerSpawnPoints) {
+        return new VillageState(true, centerX, centerY, houseBaseX, houseFloorY, houseWidth, radius,
+            villagerSpawnPoints == null ? Collections.emptyList() : villagerSpawnPoints);
     }
 
     public boolean isPresent() {
@@ -58,6 +71,10 @@ public final class VillageState {
 
     public int getRadius() {
         return radius;
+    }
+
+    public List<VillageSpawnPoint> getVillagerSpawnPoints() {
+        return villagerSpawnPoints;
     }
 
     public boolean containsRaidBannerTile(int tileX, int tileY) {

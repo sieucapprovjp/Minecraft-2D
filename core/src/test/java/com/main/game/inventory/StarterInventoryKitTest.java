@@ -35,6 +35,15 @@ public class StarterInventoryKitTest {
     }
 
     @Test
+    public void grantsEmeraldsForTradingTesting() {
+        Inventory inventory = new Inventory();
+
+        StarterInventoryKit.grant(inventory);
+
+        assertEquals(64, inventory.countItem("emerald"));
+    }
+
+    @Test
     public void grantsAllFoodsAndNoArmor() {
         Inventory inventory = new Inventory();
 

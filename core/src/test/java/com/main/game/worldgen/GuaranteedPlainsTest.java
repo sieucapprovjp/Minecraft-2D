@@ -36,12 +36,38 @@ public class GuaranteedPlainsTest {
         int min = Integer.MAX_VALUE;
         int max = Integer.MIN_VALUE;
 
-        for (int x = center - WorldGenerator.guaranteedPlainsHalfWidth(); x <= center + WorldGenerator.guaranteedPlainsHalfWidth(); x++) {
+        for (int x = center - 24; x <= center + 24; x++) {
             int surface = WorldGenerator.guaranteedPlainsSurface(baseGround, x, 12345L);
             min = Math.min(min, surface);
             max = Math.max(max, surface);
         }
 
         assertTrue(max - min <= 2);
+    }
+
+    @Test
+    public void guaranteedPlainsSurfaceIsLowerThanBaseGround() {
+        int baseGround = 64;
+        int center = WorldGenerator.guaranteedPlainsCenterX(500);
+
+        int surface = WorldGenerator.guaranteedPlainsSurface(baseGround, center, 12345L);
+
+        assertTrue(surface <= baseGround - 4);
+    }
+
+    @Test
+    public void guaranteedPlainsEdgeBlendsFromNaturalTerrain() {
+        int center = WorldGenerator.guaranteedPlainsCenterX(500);
+        int edgeX = center - WorldGenerator.guaranteedPlainsHalfWidth();
+        int naturalSurface = 52;
+        int targetSurface = 59;
+
+        assertEquals(naturalSurface,
+            WorldGenerator.blendedGuaranteedPlainsSurface(targetSurface, naturalSurface, edgeX, center));
+        assertEquals(targetSurface,
+            WorldGenerator.blendedGuaranteedPlainsSurface(targetSurface, naturalSurface, center, center));
+        int midway = WorldGenerator.blendedGuaranteedPlainsSurface(targetSurface, naturalSurface, edgeX + 8, center);
+        assertTrue(midway > naturalSurface);
+        assertTrue(midway < targetSurface);
     }
 }
