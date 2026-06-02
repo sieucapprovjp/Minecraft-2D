@@ -145,6 +145,11 @@ public class AudioManager {
                 Gdx.app.log("AudioManager", "Missing sound asset: " + path);
                 continue;
             }
+            String unsupportedReason = AudioFileSupport.unsupportedReason(file);
+            if (unsupportedReason != null) {
+                Gdx.app.log("AudioManager", "Skipping unsupported sound asset: " + path + " (" + unsupportedReason + ")");
+                continue;
+            }
             try {
                 loaded.add(Gdx.audio.newSound(file));
             } catch (RuntimeException ex) {
