@@ -191,6 +191,18 @@ public class TextureManager {
         generatedFallbacks.clear();
     }
 
+    public int getCachedTextureCount() {
+        return textureCache.size();
+    }
+
+    public int getOwnedTextureCount() {
+        return ownedTextures.size();
+    }
+
+    public int getGeneratedFallbackCount() {
+        return generatedFallbacks.size();
+    }
+
     private TextureRegion generatedOreFallback(String name) {
         Color color = oreColor(name);
         if (color == null) return null;
