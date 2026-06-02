@@ -2,6 +2,7 @@ package com.main.game.entities;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.main.game.entities.mob.Mob;
+import com.main.game.entities.mob.MobHitboxDebugRenderer;
 import com.main.game.entities.player.Player;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -48,6 +49,7 @@ public class EntityManager {
     // Hàng chờ thêm/xoá an toàn trong lúc iterate
     private final List<Entity> toAdd    = new ArrayList<>();
     private final List<Entity> toRemove = new ArrayList<>();
+    private MobHitboxDebugRenderer mobHitboxDebugRenderer;
 
     // ─── Quản lý Player ───────────────────────────────────────
 
@@ -115,6 +117,13 @@ public class EntityManager {
         if (player != null) player.render(batch);
     }
 
+    /** Vẽ hitbox debug của mob. Chỉ gọi khi debug mode đang bật. */
+    public void renderMobHitboxes(SpriteBatch batch) {
+        for (Mob mob : mobs) {
+            getMobHitboxDebugRenderer().render(batch, mob);
+        }
+    }
+
     // ─── Dispose ──────────────────────────────────────────────
 
     /** Giải phóng tài nguyên tất cả entity. Gọi khi thoát GameScreen. */
@@ -124,6 +133,10 @@ public class EntityManager {
         mobs.clear();
         toAdd.clear();
         toRemove.clear();
+        if (mobHitboxDebugRenderer != null) {
+            mobHitboxDebugRenderer.dispose();
+            mobHitboxDebugRenderer = null;
+        }
         player = null;
     }
 
@@ -142,6 +155,13 @@ public class EntityManager {
         allEntities.removeAll(toRemove);
         mobs.removeAll(toRemove);
         toRemove.clear();
+    }
+
+    private MobHitboxDebugRenderer getMobHitboxDebugRenderer() {
+        if (mobHitboxDebugRenderer == null) {
+            mobHitboxDebugRenderer = new MobHitboxDebugRenderer();
+        }
+        return mobHitboxDebugRenderer;
     }
 
     // ─── Tiện ích query ───────────────────────────────────────

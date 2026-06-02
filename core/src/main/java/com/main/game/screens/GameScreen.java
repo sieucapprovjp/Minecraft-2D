@@ -104,6 +104,7 @@ public class GameScreen extends BaseScreen {
     private Random mobDropRandom;
     private boolean paused;
     private boolean dead;
+    private boolean debugMode;
     private int lastPlayerHealthForAudio;
 
     private float deathBtnX, deathBtnY, deathBtnW, deathBtnH;
@@ -198,6 +199,7 @@ public class GameScreen extends BaseScreen {
         if (Gdx.input.isKeyJustPressed(Input.Keys.O)) DemoBlockViewer.populateDemo(world, Math.max(2, (int) player.getX()), Math.max(2, (int) player.getY()));
         if (Gdx.input.isKeyJustPressed(Input.Keys.K)) player.kill();
         if (Gdx.input.isKeyJustPressed(Input.Keys.B)) player.ban();
+        if (Gdx.input.isKeyJustPressed(Input.Keys.F3)) debugMode = !debugMode;
 
         boolean inventoryKeyPressed = inventoryController.update();
         if (inventoryKeyPressed) handleInventoryKey();
@@ -323,6 +325,7 @@ public class GameScreen extends BaseScreen {
         furnaceManager.render(batch, world, camera);
         droppedItemManager.render(batch);
         entityManager.render(batch);
+        if (debugMode) entityManager.renderMobHitboxes(batch);
         blockBreakOverlay.render(batch, blockBreaker, blockPlacementController);
         batch.end();
 
