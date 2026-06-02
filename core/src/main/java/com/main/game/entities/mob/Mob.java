@@ -285,6 +285,9 @@ public class Mob extends Entity {
     public boolean     isHostile()  { return profile.allegiance == MobAllegiance.HOSTILE; }
     boolean isPanicking() { return panicTimer > 0f; }
     float getStateTime() { return stateTime; }
+    float getRenderPixelsPerTile() { return profile.renderPixelsPerTile; }
+    float getMaxRenderWidth() { return profile.maxRenderWidth; }
+    float getMaxRenderHeight() { return profile.maxRenderHeight; }
 
     public void setTarget(Player p)   { this.target  = p;   }
     Player getTarget() { return target; }

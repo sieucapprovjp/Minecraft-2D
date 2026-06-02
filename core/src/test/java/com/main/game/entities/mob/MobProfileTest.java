@@ -1,0 +1,48 @@
+package com.main.game.entities.mob;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
+
+public class MobProfileTest {
+
+    private static final float EPSILON = 0.0001f;
+
+    @Test
+    public void pillagerUsesSkeletonRangedTimingWithHigherDamage() {
+        MobProfile skeleton = MobProfile.forType(Mob.MobType.SKELETON);
+        MobProfile pillager = MobProfile.forType(Mob.MobType.PILLAGER);
+
+        assertEquals(skeleton.attackRange, pillager.attackRange, EPSILON);
+        assertEquals(skeleton.attackCooldown, pillager.attackCooldown, EPSILON);
+        assertEquals(skeleton.patrolRange, pillager.patrolRange, EPSILON);
+        assertEquals(skeleton.chaseSpeed, pillager.chaseSpeed, EPSILON);
+        assertTrue(pillager.attackDamage > skeleton.attackDamage);
+        assertEquals(40f, pillager.renderPixelsPerTile, EPSILON);
+    }
+
+    @Test
+    public void vindicatorIsFastHardHittingMeleeHostile() {
+        MobProfile zombie = MobProfile.forType(Mob.MobType.ZOMBIE);
+        MobProfile vindicator = MobProfile.forType(Mob.MobType.VINDICATOR);
+
+        assertEquals(zombie.attackRange, vindicator.attackRange, EPSILON);
+        assertEquals(1.5f, vindicator.attackCooldown, EPSILON);
+        assertTrue(vindicator.chaseSpeed > zombie.chaseSpeed);
+        assertTrue(vindicator.attackDamage > zombie.attackDamage);
+        assertTrue(vindicator.maxHealth > zombie.maxHealth);
+        assertEquals(MobAllegiance.HOSTILE, vindicator.allegiance);
+    }
+
+    @Test
+    public void pigAndSheepHaveRenderCapsForOversizedScratchSprites() {
+        MobProfile pig = MobProfile.forType(Mob.MobType.PIG);
+        MobProfile sheep = MobProfile.forType(Mob.MobType.SHEEP);
+
+        assertEquals(1.35f, pig.maxRenderWidth, EPSILON);
+        assertEquals(0.95f, pig.maxRenderHeight, EPSILON);
+        assertEquals(1.3f, sheep.maxRenderWidth, EPSILON);
+        assertEquals(1.25f, sheep.maxRenderHeight, EPSILON);
+    }
+}
