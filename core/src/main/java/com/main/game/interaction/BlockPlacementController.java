@@ -18,6 +18,7 @@ public class BlockPlacementController {
     private final Vector2 mouseWorld = new Vector2();
     private int hoveredPlaceX = -1;
     private int hoveredPlaceY = -1;
+    private BlockPlacementListener blockPlacementListener;
 
     public boolean update(Player player, World world, OrthographicCamera camera, Viewport viewport,
                           String heldItemId, boolean inputBlocked) {
@@ -32,7 +33,14 @@ public class BlockPlacementController {
 
         world.setBlock(hoveredPlaceX, hoveredPlaceY,
             WorldBlockFactory.create(hoveredPlaceX, hoveredPlaceY, heldItemId));
+        if (blockPlacementListener != null) {
+            blockPlacementListener.onBlockPlaced(heldItemId, hoveredPlaceX, hoveredPlaceY);
+        }
         return true;
+    }
+
+    public void setBlockPlacementListener(BlockPlacementListener blockPlacementListener) {
+        this.blockPlacementListener = blockPlacementListener;
     }
 
     public boolean hasHoveredPlacement() {

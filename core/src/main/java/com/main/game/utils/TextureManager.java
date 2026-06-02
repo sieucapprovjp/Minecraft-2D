@@ -114,6 +114,7 @@ public class TextureManager {
         nameMap.put("cornflower", "tiles/plain/cornflower");
         nameMap.put("lily_of_the_valley", "tiles/plain/lily_of_the_valley");
         nameMap.put("oxeye_daisy", "tiles/plain/oxeye_daisy");
+        nameMap.put("raid_banner", "tiles/plain/village/pillager_banner");
         nameMap.put("cherry_grass", "tiles/cherry/grass_cherry");
         nameMap.put("cherry_log", "tiles/cherry/cherry_log");
         nameMap.put("natural_cherry_log", "tiles/cherry/cherry_log");

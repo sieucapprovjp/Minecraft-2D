@@ -6,6 +6,9 @@ public final class StarterInventoryKit {
     private static final String[] STARTER_TOOLS = {
         "netherite_sword"
     };
+    private static final String[] STARTER_BLOCKS = {
+        "raid_banner"
+    };
 
     private StarterInventoryKit() {
     }
@@ -15,6 +18,9 @@ public final class StarterInventoryKit {
             return;
         }
         for (String itemId : STARTER_TOOLS) {
+            inventory.add(itemId, 1);
+        }
+        for (String itemId : STARTER_BLOCKS) {
             inventory.add(itemId, 1);
         }
         for (String itemId : FoodRegistry.getFoodItemIds()) {
