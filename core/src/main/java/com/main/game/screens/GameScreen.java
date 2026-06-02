@@ -148,10 +148,8 @@ public class GameScreen extends BaseScreen {
         inventoryController = new InventoryController();
         inventoryRenderer = new InventoryRenderer();
         inventoryInteractionHandler = new InventoryInteractionHandler();
-        chestRenderer = new ChestRenderer();
         chestInteractionHandler = new ChestInteractionHandler();
         chestManager = new ChestManager();
-        furnaceRenderer = new FurnaceRenderer();
         furnaceInteractionHandler = new FurnaceInteractionHandler();
         furnaceManager = new FurnaceManager();
         craftingController = new CraftingController();
@@ -206,9 +204,9 @@ public class GameScreen extends BaseScreen {
             droppedItemManager.update(delta, world, player, inventory);
             if (inventoryController.isInventoryOpen()) {
                 if (openChestState != null) {
-                    chestInteractionHandler.update(inventory, openChestState, chestRenderer);
+                    chestInteractionHandler.update(inventory, openChestState, getChestRenderer());
                 } else if (openFurnaceState != null) {
-                    furnaceInteractionHandler.update(inventory, openFurnaceState, furnaceRenderer);
+                    furnaceInteractionHandler.update(inventory, openFurnaceState, getFurnaceRenderer());
                 } else {
                     inventoryInteractionHandler.update(inventory, inventoryRenderer, craftingController);
                 }
@@ -304,8 +302,10 @@ public class GameScreen extends BaseScreen {
         overlayRenderer.renderWorldDarkness(batch, globalLight);
 
         hudRenderer.render(batch, viewport, inventory, inventoryController, inventoryRenderer,
-            inventoryInteractionHandler, craftingController, furnaceRenderer, furnaceInteractionHandler,
-            openFurnaceState, chestRenderer, chestInteractionHandler, openChestState, player);
+            inventoryInteractionHandler, craftingController,
+            openFurnaceState == null ? null : getFurnaceRenderer(), furnaceInteractionHandler,
+            openFurnaceState,
+            openChestState == null ? null : getChestRenderer(), chestInteractionHandler, openChestState, player);
 
         if (paused) overlayRenderer.renderPause(batch);
         else if (dead) overlayRenderer.renderDeath(batch);
@@ -350,6 +350,7 @@ public class GameScreen extends BaseScreen {
             openChestState = chestManager.getOrCreate(world,
                 chestInteractionController.getHoveredTileX(),
                 chestInteractionController.getHoveredTileY());
+            getChestRenderer();
             inventoryController.open();
             game.getAudioManager().play(AudioId.CHEST_OPEN);
             return;
@@ -361,6 +362,7 @@ public class GameScreen extends BaseScreen {
             openFurnaceState = furnaceManager.getOrCreate(world,
                 furnaceInteractionController.getHoveredTileX(),
                 furnaceInteractionController.getHoveredTileY());
+            getFurnaceRenderer();
             inventoryController.open();
             game.getAudioManager().play(AudioId.UI_CLICK);
             return;
@@ -544,6 +546,20 @@ public class GameScreen extends BaseScreen {
 
     private static String formatMillis(long nanos) {
         return String.format(Locale.ROOT, "%.2f", nanos / 1_000_000f);
+    }
+
+    private ChestRenderer getChestRenderer() {
+        if (chestRenderer == null) {
+            chestRenderer = new ChestRenderer();
+        }
+        return chestRenderer;
+    }
+
+    private FurnaceRenderer getFurnaceRenderer() {
+        if (furnaceRenderer == null) {
+            furnaceRenderer = new FurnaceRenderer();
+        }
+        return furnaceRenderer;
     }
 
     @Override
