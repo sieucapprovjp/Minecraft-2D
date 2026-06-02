@@ -42,16 +42,19 @@ import com.main.game.time.DayNightCycle;
 import com.main.game.ui.GameCameraController;
 import com.main.game.ui.GameHudRenderer;
 import com.main.game.ui.GameOverlayRenderer;
+import com.main.game.utils.TextureManager;
 import com.main.game.world.BlockPalette;
 import com.main.game.world.DemoBlockViewer;
 import com.main.game.world.SpawnSafetyController;
 import com.main.game.world.World;
 import com.main.game.entities.mob.Mob;
 import com.main.game.worldgen.BiomeMobSpawner;
+import java.util.Locale;
 import java.util.Random;
 
 public class GameScreen extends BaseScreen {
 
+    private static final String PERF_LOG_TAG = "GameScreenPerf";
     private static final float CAMERA_ZOOM = 0.5f;
 
     private World world;
@@ -98,6 +101,7 @@ public class GameScreen extends BaseScreen {
 
     @Override
     public void show() {
+        long setupStartNanos = System.nanoTime();
         game.getAudioManager().stopMusic();
 
         // Tích hợp Seed Random
@@ -106,7 +110,9 @@ public class GameScreen extends BaseScreen {
         physics = new PhysicsEngine();
 
         // Sinh toàn bộ finite world trước khi tìm spawn để cave/ore không bị lỗi seam.
+        long worldGenerateStartNanos = System.nanoTime();
         world.generate();
+        long worldGenerateNanos = System.nanoTime() - worldGenerateStartNanos;
         camera.position.set(world.width / 2f, world.height / 2f, 0f);
         camera.update();
 
@@ -155,7 +161,9 @@ public class GameScreen extends BaseScreen {
 
         dayNightCycle = new DayNightCycle();
         mobSpawner = new BiomeMobSpawner(currentSeed);
+        long mobSpawnStartNanos = System.nanoTime();
         mobSpawner.spawnInitial(world, player, physics, entityManager, dayNightCycle.isNight());
+        long mobSpawnNanos = System.nanoTime() - mobSpawnStartNanos;
 
         paused = false;
         dead = false;
@@ -163,6 +171,7 @@ public class GameScreen extends BaseScreen {
         hudRenderer = new GameHudRenderer();
         overlayRenderer = new GameOverlayRenderer();
         lastPlayerHealthForAudio = player.getHealth();
+        logPerformanceSnapshot(currentSeed, setupStartNanos, worldGenerateNanos, mobSpawnNanos);
     }
 
     @Override
@@ -516,6 +525,23 @@ public class GameScreen extends BaseScreen {
     private float lerp(float from, float to, float progress) {
         float t = Math.max(0f, Math.min(1f, progress));
         return from + (to - from) * t;
+    }
+
+    private void logPerformanceSnapshot(long seed, long setupStartNanos, long worldGenerateNanos, long mobSpawnNanos) {
+        TextureManager textureManager = TextureManager.getInstance();
+        Gdx.app.log(PERF_LOG_TAG,
+            "seed=" + seed
+                + ", setupMs=" + formatMillis(System.nanoTime() - setupStartNanos)
+                + ", worldGenerateMs=" + formatMillis(worldGenerateNanos)
+                + ", initialMobSpawnMs=" + formatMillis(mobSpawnNanos)
+                + ", textureCache=" + textureManager.getCachedTextureCount()
+                + ", ownedTextures=" + textureManager.getOwnedTextureCount()
+                + ", generatedFallbacks=" + textureManager.getGeneratedFallbackCount()
+                + ", initialMobs=" + (entityManager == null ? 0 : entityManager.aliveMobCount()));
+    }
+
+    private static String formatMillis(long nanos) {
+        return String.format(Locale.ROOT, "%.2f", nanos / 1_000_000f);
     }
 
     @Override
