@@ -1,5 +1,6 @@
 package com.main.game.worldgen.village;
 
+import com.main.game.blocks.AbstractBlock;
 import com.main.game.world.World;
 import com.main.game.worldgen.BiomeType;
 import com.main.game.worldgen.WorldBlockFactory;
@@ -83,7 +84,7 @@ public final class VillagePlacer {
     private static void prepareFoundation(World world, int minX, int maxX, int floorY) {
         for (int x = minX; x <= maxX; x++) {
             for (int y = Math.max(World.BEDROCK_TOP_Y + 1, floorY - 3); y <= floorY; y++) {
-                if (world.getBlock(x, y) == null) {
+                if (shouldReplaceWithFoundation(world.getBlock(x, y))) {
                     world.setBlock(x, y, WorldBlockFactory.create(x, y, "dirt"));
                 }
             }
@@ -99,6 +100,10 @@ public final class VillagePlacer {
                 }
             }
         }
+    }
+
+    private static boolean shouldReplaceWithFoundation(AbstractBlock block) {
+        return block == null || !block.isSolid();
     }
 
     private static void placeLargeHouse(World world, int baseX, int floorY) {

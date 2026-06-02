@@ -3,7 +3,8 @@ package com.main.game.blocks;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
-import com.main.game.utils.Constants;
+import com.main.game.blocks.metadata.BlockRegistry;
+import com.main.game.blocks.metadata.BlockRenderSpec;
 
 /**
  * Abstract base cho mọi loại block: Dirt, Stone, Wood, Air...
@@ -53,9 +54,12 @@ public abstract class AbstractBlock {
     public void render(SpriteBatch batch) {
         TextureRegion tex = getTexture();
         if (tex != null) {
+            BlockRenderSpec renderSpec = BlockRegistry.getRenderSpec(blockId);
             batch.draw(tex,
-                tileX,   tileY,     // position (đơn vị tile, camera lo việc scale)
-                1f,      1f         // width = height = 1 tile
+                tileX + renderSpec.offsetX(tex),
+                tileY + renderSpec.offsetY(tex),
+                renderSpec.width(tex),
+                renderSpec.height(tex)
             );
         }
     }
