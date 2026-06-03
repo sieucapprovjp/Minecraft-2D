@@ -32,13 +32,19 @@ public class FurnaceManager {
         return furnaces.computeIfAbsent(key, ignored -> new FurnaceState());
     }
 
-    public void update(float delta) {
+    public int update(float delta) {
         if (delta <= 0f) {
-            return;
+            return 0;
         }
+        int startedBurningCount = 0;
         for (FurnaceState furnace : furnaces.values()) {
+            boolean wasBurning = furnace.isBurning();
             updateFurnace(furnace, delta);
+            if (!wasBurning && furnace.isBurning()) {
+                startedBurningCount++;
+            }
         }
+        return startedBurningCount;
     }
 
     public void render(SpriteBatch batch, World world, OrthographicCamera camera) {
