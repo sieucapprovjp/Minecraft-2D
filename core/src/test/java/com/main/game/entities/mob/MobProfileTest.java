@@ -19,6 +19,7 @@ public class MobProfileTest {
         assertEquals(skeleton.patrolRange, pillager.patrolRange, EPSILON);
         assertEquals(skeleton.chaseSpeed, pillager.chaseSpeed, EPSILON);
         assertTrue(pillager.attackDamage > skeleton.attackDamage);
+        assertEquals(MobAttackStyle.RANGED, pillager.attackStyle);
         assertEquals(40f, pillager.renderPixelsPerTile, EPSILON);
     }
 
@@ -33,6 +34,7 @@ public class MobProfileTest {
         assertTrue(vindicator.attackDamage > zombie.attackDamage);
         assertTrue(vindicator.maxHealth > zombie.maxHealth);
         assertEquals(MobAllegiance.HOSTILE, vindicator.allegiance);
+        assertEquals(MobAttackStyle.MELEE, vindicator.attackStyle);
     }
 
     @Test

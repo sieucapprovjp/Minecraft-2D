@@ -38,6 +38,7 @@ import com.main.game.items.HarvestEntry;
 import com.main.game.items.MobDropFactory;
 import com.main.game.navigation.ScreenId;
 import com.main.game.physics.PhysicsEngine;
+import com.main.game.projectile.ProjectileManager;
 import com.main.game.raid.RaidController;
 import com.main.game.raid.RaidMobSpawner;
 import com.main.game.time.DayNightCycle;
@@ -100,6 +101,7 @@ public class GameScreen extends BaseScreen {
     private BiomeMobSpawner mobSpawner;
     private DayNightCycle dayNightCycle;
     private RaidController raidController;
+    private ProjectileManager projectileManager;
     private VillageVillagerSpawner villageVillagerSpawner;
     private Random mobDropRandom;
     private boolean paused;
@@ -144,6 +146,8 @@ public class GameScreen extends BaseScreen {
         // ── Khởi tạo EntityManager & Tools ─────────────
         entityManager = new EntityManager();
         entityManager.setPlayer(player);
+        projectileManager = new ProjectileManager(new Random(currentSeed + 8819L));
+        entityManager.setMobRangedAttackListener(projectileManager::spawnFromMobAttack);
         raidController = new RaidController();
         villageVillagerSpawner = new VillageVillagerSpawner();
         blockBreaker = new BlockBreaker();
@@ -226,6 +230,9 @@ public class GameScreen extends BaseScreen {
                 if (spawnedVillagers > 0) {
                     Gdx.app.log(PERF_LOG_TAG, "spawnedVillagers=" + spawnedVillagers);
                 }
+            }
+            if (projectileManager != null) {
+                projectileManager.update(delta, world, player);
             }
             spawnSafetyController.update(delta, world, player);
             droppedItemManager.update(delta, world, player, inventory);
@@ -325,6 +332,7 @@ public class GameScreen extends BaseScreen {
         furnaceManager.render(batch, world, camera);
         droppedItemManager.render(batch);
         entityManager.render(batch);
+        if (projectileManager != null) projectileManager.render(batch);
         if (debugMode) entityManager.renderMobHitboxes(batch);
         blockBreakOverlay.render(batch, blockBreaker, blockPlacementController);
         batch.end();
@@ -643,6 +651,7 @@ public class GameScreen extends BaseScreen {
         if (chestManager != null) chestManager.clear();
         if (furnaceRenderer != null) furnaceRenderer.dispose();
         if (furnaceManager != null) furnaceManager.clear();
+        if (projectileManager != null) projectileManager.dispose();
         entityManager.dispose();
         Mob.disposeSharedAssets();
     }

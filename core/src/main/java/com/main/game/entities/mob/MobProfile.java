@@ -27,6 +27,7 @@ final class MobProfile {
     final int attackDamage;
     final int maxHealth;
     final int allegiance;
+    final MobAttackStyle attackStyle;
     final float renderPixelsPerTile;
     final float maxRenderWidth;
     final float maxRenderHeight;
@@ -35,13 +36,24 @@ final class MobProfile {
                        float attackRange, float attackCooldown, float patrolRange, int attackDamage,
                        int maxHealth, int allegiance, float width, float height) {
         this(patrolSpeed, chaseSpeed, aggroRadius, deAggroRadius, attackRange, attackCooldown, patrolRange,
-            attackDamage, maxHealth, allegiance, width, height, DEFAULT_RENDER_PIXELS_PER_TILE, 0f, 0f);
+            attackDamage, maxHealth, allegiance, width, height, MobAttackStyle.MELEE,
+            DEFAULT_RENDER_PIXELS_PER_TILE, 0f, 0f);
     }
 
     private MobProfile(float patrolSpeed, float chaseSpeed, float aggroRadius, float deAggroRadius,
                        float attackRange, float attackCooldown, float patrolRange, int attackDamage,
                        int maxHealth, int allegiance, float width, float height,
                        float renderPixelsPerTile, float maxRenderWidth, float maxRenderHeight) {
+        this(patrolSpeed, chaseSpeed, aggroRadius, deAggroRadius, attackRange, attackCooldown, patrolRange,
+            attackDamage, maxHealth, allegiance, width, height, MobAttackStyle.MELEE,
+            renderPixelsPerTile, maxRenderWidth, maxRenderHeight);
+    }
+
+    private MobProfile(float patrolSpeed, float chaseSpeed, float aggroRadius, float deAggroRadius,
+                       float attackRange, float attackCooldown, float patrolRange, int attackDamage,
+                       int maxHealth, int allegiance, float width, float height,
+                       MobAttackStyle attackStyle, float renderPixelsPerTile,
+                       float maxRenderWidth, float maxRenderHeight) {
         this.patrolSpeed = patrolSpeed;
         this.chaseSpeed = chaseSpeed;
         this.aggroRadius = aggroRadius;
@@ -54,6 +66,7 @@ final class MobProfile {
         this.attackDamage = attackDamage;
         this.maxHealth = maxHealth;
         this.allegiance = allegiance;
+        this.attackStyle = attackStyle == null ? MobAttackStyle.MELEE : attackStyle;
         this.renderPixelsPerTile = renderPixelsPerTile <= 0f ? DEFAULT_RENDER_PIXELS_PER_TILE : renderPixelsPerTile;
         this.maxRenderWidth = maxRenderWidth;
         this.maxRenderHeight = maxRenderHeight;
@@ -92,7 +105,7 @@ final class MobProfile {
             case PILLAGER:
                 return new MobProfile(1.8f, 2.4f, HOSTILE_AGGRO_RADIUS, 18f,
                     5f, RANGED_HOSTILE_ATTACK_COOL, 5f, 3, 24, MobAllegiance.HOSTILE, 0.8f, 1.8f,
-                    SCRATCH_RENDER_PIXELS_PER_TILE, 0f, 0f);
+                    MobAttackStyle.RANGED, SCRATCH_RENDER_PIXELS_PER_TILE, 0f, 0f);
             case VINDICATOR:
                 return new MobProfile(2.1f, 2.7f, HOSTILE_AGGRO_RADIUS, DEFAULT_DEAGGRO,
                     DEFAULT_ATTACK_RANGE, 1.5f, DEFAULT_PATROL_RANGE, 5, 24, MobAllegiance.HOSTILE, 0.8f, 1.8f);
