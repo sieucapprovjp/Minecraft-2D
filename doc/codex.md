@@ -113,6 +113,31 @@
   - `core/src/main/java/com/main/game/worldgen/BiomeMobSpawner.java`
   - `core/src/main/java/com/main/game/world/World.java`
 
+### Village And Trading V1
+- World generation reserves a guaranteed plains region near the player route and blends its edges into surrounding terrain.
+- Village placement only succeeds on a flat plains site to avoid broken 2D structures.
+- The village currently contains one large center house and two smaller side houses.
+- Village houses use cobblestone/moss-stone mixed floors, plank roofs, glass windows, bookshelves, and beds.
+- `VillageState` stores the village center/radius, the main house raid-banner trigger area, and villager spawn points.
+- Villagers spawn only when the player approaches the village, so they do not appear near initial spawn and walk across the map.
+- Villager professions implemented for trading are `UNEMPLOYED`, `FARMER`, and `BLACKSMITH`.
+- Each villager gets up to three offers from its profession catalog.
+- Pressing `E` near a hovered villager opens the trading GUI; selecting an offer previews cost/result and clicking the result executes the trade when the inventory has the cost.
+- Related files:
+  - `core/src/main/java/com/main/game/worldgen/WorldGenerator.java`
+  - `core/src/main/java/com/main/game/worldgen/village/VillagePlacer.java`
+  - `core/src/main/java/com/main/game/worldgen/village/VillageState.java`
+  - `core/src/main/java/com/main/game/worldgen/village/VillageSpawnPoint.java`
+  - `core/src/main/java/com/main/game/worldgen/village/VillageVillagerSpawner.java`
+  - `core/src/main/java/com/main/game/entities/mob/VillagerProfession.java`
+  - `core/src/main/java/com/main/game/entities/mob/MobAssetPack.java`
+  - `core/src/main/java/com/main/game/trading/TradingController.java`
+  - `core/src/main/java/com/main/game/trading/TradingRenderer.java`
+  - `core/src/main/java/com/main/game/trading/TradingInteractionHandler.java`
+  - `core/src/main/java/com/main/game/trading/VillagerInteractionController.java`
+  - `core/src/main/java/com/main/game/trading/VillagerTradeCatalog.java`
+  - `core/src/main/java/com/main/game/screens/GameScreen.java`
+
 ### Day/Night Cycle V1
 - Day/night cycle is runtime-only and does not persist across `GameScreen` lifetimes.
 - One full cycle is `600s`: about `5` minutes day and `5` minutes night.
@@ -208,6 +233,36 @@
   - `core/src/main/java/com/main/game/worldgen/BiomeSpawnTable.java`
   - `core/src/main/java/com/main/game/worldgen/BiomeMobSpawner.java`
 
+### Raid V1
+- `raid_banner` is a placeable block and starter test item.
+- Placing a raid banner inside the main village house trigger area starts a raid; placing it elsewhere does not.
+- Raid waves spawn from both sides of the village instead of on top of the houses.
+- Each wave has a 30 second preparation countdown before mobs spawn; the same delay applies between waves.
+- Wave 1 contains 2 pillagers and 2 vindicators.
+- Wave 2 contains 1 evoker, 3 pillagers, and 3 vindicators.
+- Wave 3 contains 1 ravager, 2 evokers, 3 pillagers, and 3 vindicators.
+- Clearing all raid mobs in all waves sets `Raid: Victory`; player death during a raid sets `Raid: Defeat`.
+- `RaidHudRenderer` shows the top-screen raid bar using `red_background.png` and `red_progress.png`.
+- The raid bar displays `RAID` during countdown, `Raid: Wave N` during active waves, then victory/defeat labels.
+- Pillagers use ranged projectile attacks, vindicators/vex use melee, ravagers use melee, and evokers use caster behavior.
+- Evokers randomly choose between fangs, magic projectile, and summoning one vex from the currently available spell pool.
+- A maximum of two vex can be alive at once; vex hover on the second tile above the surface and count as raid mobs until killed.
+- Related files:
+  - `core/src/main/java/com/main/game/raid/RaidController.java`
+  - `core/src/main/java/com/main/game/raid/RaidMobSpawner.java`
+  - `core/src/main/java/com/main/game/raid/RaidState.java`
+  - `core/src/main/java/com/main/game/ui/RaidHudRenderer.java`
+  - `core/src/main/java/com/main/game/projectile/ProjectileManager.java`
+  - `core/src/main/java/com/main/game/projectile/Projectile.java`
+  - `core/src/main/java/com/main/game/projectile/ProjectileAim.java`
+  - `core/src/main/java/com/main/game/evoker/EvokerSpellManager.java`
+  - `core/src/main/java/com/main/game/evoker/EvokerFangManager.java`
+  - `core/src/main/java/com/main/game/evoker/EvokerFang.java`
+  - `core/src/main/java/com/main/game/evoker/VexSummonListener.java`
+  - `core/src/main/java/com/main/game/screens/GameScreen.java`
+  - `assets/image/red_background.png`
+  - `assets/image/red_progress.png`
+
 ### Mob And Food Drops
 - Killed mobs can produce dropped item entities through `MobDropFactory`.
 - Cow, pig, sheep, and chicken drop `raw_beef`, `raw_pork`, `raw_mutton`, and `raw_chicken`.
@@ -247,8 +302,7 @@
 - Left/right click supports pick, place, swap, stack, and split-stack behavior.
 - Item textures and stack counts render in the hotbar/inventory.
 - Tool and armor stack size is `1`; block and food stack size defaults to `64`.
-- Starter inventory currently grants one `netherite_sword` and every registered food item, `8` of each, for gameplay/testing.
-- Starter inventory no longer grants armor.
+- Starter inventory currently grants one `netherite_sword`, one full netherite armor set, one `raid_banner`, `64` emeralds, and every registered food item, `8` of each, for gameplay/testing.
 - Related files:
   - `core/src/main/java/com/main/game/inventory/Inventory.java`
   - `core/src/main/java/com/main/game/inventory/InventoryController.java`
@@ -269,7 +323,7 @@
 - Equipped armor loses durability from raw damage; broken armor is removed before defense is counted.
 - HUD renders total armor points when armor is equipped.
 - Player armor visuals replace Steve body-part assets directly; there is no overlay/tint layer.
-- Current starter inventory does not grant armor, but armor can still be crafted/equipped.
+- Current starter inventory grants one full netherite armor set for raid/combat testing; armor can still be crafted/equipped normally.
 - Related files:
   - `core/src/main/java/com/main/game/inventory/ArmorRegistry.java`
   - `core/src/main/java/com/main/game/inventory/ArmorSlot.java`
@@ -381,6 +435,47 @@
   - `core/src/test/java/com/main/game/inventory/FoodRegistryTest.java`
   - `core/src/test/java/com/main/game/entities/player/FoodMeterTest.java`
   - `core/src/test/java/com/main/game/inventory/StarterInventoryKitTest.java`
+
+### Audio System V1
+- `AudioManager` centralizes runtime SFX and menu music playback.
+- `MainGame` owns and disposes the shared audio manager.
+- Settings toggles now control sound and music through `GameState.soundEnabled` and `GameState.musicEnabled`.
+- Menu music plays from `assets/audio/ui_menu/music.mp3` while in the menu flow.
+- Gameplay music assets exist under `assets/audio/ui_menu/ingame_music/`, but background music is not yet wired into `GameScreen`; entering `GameScreen` still stops menu music.
+- SFX are implemented for UI clicks/toggles, player hurt/death/eating/sword swing, block breaking, block placement assets, chest open/close, item pickup, and mob hit/death behavior.
+- Player death reuses the player hurt sound for V1.
+- Mob death reuses the mob hurt sound path for V1 by playing the hit sound on the killing hit.
+- Block breaking uses material-specific asset groups for stone, deepslate, sand, snow, and wood.
+- Block placement audio assets exist under `assets/audio/placing_block/`; placement playback should be verified before treating this as complete gameplay behavior.
+- Missing audio assets are skipped safely with a log message instead of crashing gameplay.
+- Related files:
+  - `core/src/main/java/com/main/game/audio/AudioId.java`
+  - `core/src/main/java/com/main/game/audio/AudioCatalog.java`
+  - `core/src/main/java/com/main/game/audio/AudioManager.java`
+  - `core/src/main/java/com/main/game/MainGame.java`
+  - `core/src/main/java/com/main/game/screens/MenuScreen.java`
+  - `core/src/main/java/com/main/game/screens/ModeSelectScreen.java`
+  - `core/src/main/java/com/main/game/screens/SettingsScreen.java`
+  - `core/src/main/java/com/main/game/screens/GameScreen.java`
+  - `core/src/main/java/com/main/game/screens/StateScreen.java`
+  - `core/src/main/java/com/main/game/combat/PlayerAttackController.java`
+  - `core/src/main/java/com/main/game/combat/MobHitListener.java`
+  - `core/src/main/java/com/main/game/items/DroppedItemManager.java`
+  - `core/src/test/java/com/main/game/audio/AudioCatalogTest.java`
+  - `assets/audio/`
+
+### Asset Resource Layout
+- Runtime visual assets can be stored under `assets/image/...` while existing code still references paths such as `stage/...`, `images/...`, `fonts/...`, and `mvp/...`.
+- `lwjgl3` resource processing copies `assets/image` into the desktop resource root so those existing internal paths continue to resolve.
+- Menu and mode-select background selection uses a shared stage picker that can read either `stage/...` or `image/stage/...` and falls back through the known stage image list if directory listing is unavailable.
+- Audio assets remain under `assets/audio/...` and are referenced directly from that path.
+- Related files:
+  - `core/src/main/java/com/main/game/screens/StageBackgrounds.java`
+  - `core/src/main/java/com/main/game/screens/MenuScreen.java`
+  - `core/src/main/java/com/main/game/screens/ModeSelectScreen.java`
+  - `lwjgl3/build.gradle`
+  - `assets/image/`
+  - `assets/audio/`
 
 ### Utility Blocks
 - Utility block interaction is grouped under the `utilityblock` package.
@@ -504,11 +599,13 @@
 ## Latest Verification
 - `.\gradlew.bat --no-daemon classes` passed.
 - `.\gradlew.bat --no-daemon test` passed.
+- `.\gradlew.bat --no-daemon lwjgl3:processResources lwjgl3:classes` passed.
 - `git diff --check` passed.
+- `.\gradlew.bat --no-daemon lwjgl3:run` no longer exited with missing `stage/sky.png`; the command was stopped by timeout after the game stayed running.
 - Manual gameplay verification was reported working for crafting, furnace, chest, block metadata behavior, shared slot interaction/rendering, armor visuals, mob spawning, food usage, cooked food, and sword swing behavior.
 
 ## Known Gaps
 - XP system has not been implemented yet.
-- Sound/Audio system has not been implemented yet.
+- Audio V1 has no wired gameplay music, volume sliders, full footstep system, ambient biome/cave sounds, or positional audio yet.
 - Food V1 has no potion/debuff effects yet, so rotten flesh is currently just food.
 - Food and day/night state are runtime-only and do not persist after leaving `GameScreen`.

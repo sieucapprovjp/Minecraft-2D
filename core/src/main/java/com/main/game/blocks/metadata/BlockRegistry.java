@@ -70,6 +70,16 @@ public final class BlockRegistry {
         registerTexture("crafting_table", "crafting_table", BlockDefinition.PaletteFallback.PLANKS, 0.9f, true, null, 0, false);
         registerTexture("furnace", "furnace_off", BlockDefinition.PaletteFallback.NONE, 3.5f, true, null, 1, false);
         registerTexture("chest", "chest_closed", BlockDefinition.PaletteFallback.NONE, 0.9f, true, null, 0, false);
+        registerTexture("raid_banner", "raid_banner", BlockDefinition.PaletteFallback.NONE, 0.3f, true, null, 0, false, false);
+        registerTexture("village_bookshelf", "village_bookshelf", BlockDefinition.PaletteFallback.PLANKS, 0.6f, true, null, 0, false, false);
+        registerTexture("village_cobblestone", "village_cobblestone", BlockDefinition.PaletteFallback.STONE, 1.2f, true, "cobblestone", 1, false);
+        registerTexture("village_glass2", "village_glass2", BlockDefinition.PaletteFallback.NONE, 0.3f, true, null, 0, false, false);
+        registerTexture("village_glass3", "village_glass3", BlockDefinition.PaletteFallback.NONE, 0.3f, true, null, 0, false, false);
+        registerTexture("village_bed_left", "village_bed_left", BlockDefinition.PaletteFallback.NONE, 0.2f, true, null, 0, false, false);
+        registerTexture("village_bed_right", "village_bed_right", BlockDefinition.PaletteFallback.NONE, 0.2f, true, null, 0, false, false);
+        registerTexture("village_moss_stone", "village_moss_stone", BlockDefinition.PaletteFallback.STONE, 1.2f, true, null, 1, false);
+        registerTexture("village_roof_stair_left", "village_roof_stair_left", BlockDefinition.PaletteFallback.WOOD, 0.6f, true, null, 0, false);
+        registerTexture("village_roof_stair_right", "village_roof_stair_right", BlockDefinition.PaletteFallback.WOOD, 0.6f, true, null, 0, false);
 
         registerOre("coal_ore", "coal", 3f, 1);
         registerOre("deepslate_co", "coal", 3f, 1);
@@ -141,6 +151,10 @@ public final class BlockRegistry {
         return resolveTexture(definitionOrDefault(blockId));
     }
 
+    public static BlockRenderSpec getRenderSpec(String blockId) {
+        return definitionOrDefault(blockId).getRenderSpec();
+    }
+
     public static TextureRegion getPaletteFallbackTexture(String blockId) {
         BlockDefinition definition = get(blockId);
         if (definition == null || !definition.shouldPreferPalette()) {
@@ -198,7 +212,8 @@ public final class BlockRegistry {
             .hardness(hardness)
             .dropItemId(dropItemId)
             .requiredPickaxeLevel(requiredPickaxeLevel)
-            .solid(solid);
+            .solid(solid)
+            .renderSpec(defaultRenderSpec(id));
         if (placeable) {
             builder.placeable();
         }
@@ -216,6 +231,41 @@ public final class BlockRegistry {
     private static BlockDefinition definitionOrDefault(String blockId) {
         BlockDefinition definition = get(blockId);
         return definition == null ? DEFAULT_BLOCK : definition;
+    }
+
+    private static BlockRenderSpec defaultRenderSpec(String id) {
+        return usesNativeSpriteSize(id)
+            ? BlockRenderSpec.nativeBottomCenter()
+            : BlockRenderSpec.fullTile();
+    }
+
+    private static boolean usesNativeSpriteSize(String id) {
+        if (id == null) {
+            return false;
+        }
+        switch (id) {
+            case "cactus_flower":
+            case "dead_bush":
+            case "dry_grass":
+            case "short_dry_grass":
+            case "spruce_sapling":
+            case "fern":
+            case "firefly_bush":
+            case "poppy":
+            case "dandelion":
+            case "blue_orchid":
+            case "azure_bluet":
+            case "cornflower":
+            case "lily_of_the_valley":
+            case "oxeye_daisy":
+            case "cherry_grass":
+            case "cherry_flower":
+            case "cherry_sapling":
+            case "raid_banner":
+                return true;
+            default:
+                return false;
+        }
     }
 
     private static TextureRegion resolveTexture(BlockDefinition definition) {

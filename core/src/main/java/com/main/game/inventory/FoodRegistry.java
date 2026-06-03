@@ -35,6 +35,7 @@ public final class FoodRegistry {
         register("bread", 5);
         register("carrot", 3);
         register("cookie", 2);
+        register("cake", 10);
         register("la_baguette", 7);
         register("berry_bush3", 2);
         register("raw_beef", 3);

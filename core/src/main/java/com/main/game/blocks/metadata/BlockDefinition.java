@@ -29,6 +29,7 @@ public final class BlockDefinition {
     private final String dropItemId;
     private final int requiredPickaxeLevel;
     private final boolean ore;
+    private final BlockRenderSpec renderSpec;
 
     private BlockDefinition(Builder builder) {
         this.id = builder.id;
@@ -42,6 +43,7 @@ public final class BlockDefinition {
         this.dropItemId = builder.dropItemId;
         this.requiredPickaxeLevel = builder.requiredPickaxeLevel;
         this.ore = builder.ore;
+        this.renderSpec = builder.renderSpec;
     }
 
     public static Builder builder(String id) {
@@ -92,6 +94,10 @@ public final class BlockDefinition {
         return ore;
     }
 
+    public BlockRenderSpec getRenderSpec() {
+        return renderSpec;
+    }
+
     public static final class Builder {
         private final String id;
         private String textureName;
@@ -104,6 +110,7 @@ public final class BlockDefinition {
         private String dropItemId;
         private int requiredPickaxeLevel;
         private boolean ore;
+        private BlockRenderSpec renderSpec = BlockRenderSpec.fullTile();
 
         private Builder(String id) {
             this.id = id;
@@ -162,6 +169,11 @@ public final class BlockDefinition {
 
         public Builder ore() {
             this.ore = true;
+            return this;
+        }
+
+        public Builder renderSpec(BlockRenderSpec renderSpec) {
+            this.renderSpec = renderSpec == null ? BlockRenderSpec.fullTile() : renderSpec;
             return this;
         }
 

@@ -57,6 +57,78 @@ public class Inventory {
         return incoming;
     }
 
+    public int countItem(String itemId) {
+        if (itemId == null) {
+            return 0;
+        }
+        int total = 0;
+        for (int i = 0; i < PICKUP_SLOT_COUNT; i++) {
+            ItemStack stack = slots[i];
+            if (stack != null && itemId.equals(stack.getItemId()) && stack.getCount() > 0) {
+                total += stack.getCount();
+            }
+        }
+        return total;
+    }
+
+    public boolean hasItems(String itemId, int count) {
+        return count <= 0 || countItem(itemId) >= count;
+    }
+
+    public boolean canAdd(ItemStack incoming) {
+        if (incoming == null || incoming.getCount() <= 0) {
+            return true;
+        }
+        if (incoming.hasDurability()) {
+            for (int i = 0; i < PICKUP_SLOT_COUNT; i++) {
+                if (slots[i] == null || slots[i].getCount() <= 0) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        int remaining = incoming.getCount();
+        int maxStack = ItemRegistry.getMaxStack(incoming.getItemId());
+        for (int i = 0; i < PICKUP_SLOT_COUNT && remaining > 0; i++) {
+            ItemStack stack = slots[i];
+            if (stack != null && incoming.getItemId().equals(stack.getItemId()) && stack.getCount() < maxStack) {
+                remaining -= Math.min(remaining, maxStack - stack.getCount());
+            }
+        }
+        for (int i = 0; i < PICKUP_SLOT_COUNT && remaining > 0; i++) {
+            ItemStack stack = slots[i];
+            if (stack == null || stack.getCount() <= 0) {
+                remaining -= Math.min(remaining, maxStack);
+            }
+        }
+        return remaining <= 0;
+    }
+
+    public boolean remove(String itemId, int count) {
+        if (count <= 0) {
+            return true;
+        }
+        if (!hasItems(itemId, count)) {
+            return false;
+        }
+
+        int remaining = count;
+        for (int i = 0; i < PICKUP_SLOT_COUNT && remaining > 0; i++) {
+            ItemStack stack = slots[i];
+            if (stack == null || !itemId.equals(stack.getItemId()) || stack.getCount() <= 0) {
+                continue;
+            }
+            int removed = Math.min(remaining, stack.getCount());
+            stack.subtract(removed);
+            remaining -= removed;
+            if (stack.getCount() <= 0) {
+                slots[i] = null;
+            }
+        }
+        return remaining <= 0;
+    }
+
     public ItemStack getSlot(int index) {
         if (index < 0 || index >= slots.length) {
             return null;

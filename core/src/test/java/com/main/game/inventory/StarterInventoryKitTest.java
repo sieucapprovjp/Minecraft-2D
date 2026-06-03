@@ -1,7 +1,6 @@
 package com.main.game.inventory;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -23,7 +22,40 @@ public class StarterInventoryKitTest {
     }
 
     @Test
-    public void grantsAllFoodsAndNoArmor() {
+    public void grantsRaidBannerForVillageRaidTesting() {
+        Inventory inventory = new Inventory();
+
+        StarterInventoryKit.grant(inventory);
+
+        ItemStack banner = findStack(inventory, "raid_banner");
+        assertNotNull(banner);
+        assertEquals(1, banner.getCount());
+        assertTrue(ItemRegistry.isPlaceableBlock("raid_banner"));
+    }
+
+    @Test
+    public void grantsEmeraldsForTradingTesting() {
+        Inventory inventory = new Inventory();
+
+        StarterInventoryKit.grant(inventory);
+
+        assertEquals(64, inventory.countItem("emerald"));
+    }
+
+    @Test
+    public void grantsNetheriteArmorSetForTesting() {
+        Inventory inventory = new Inventory();
+
+        StarterInventoryKit.grant(inventory);
+
+        assertStarterArmor(inventory, "netherite_helmet", ArmorSlot.HELMET);
+        assertStarterArmor(inventory, "netherite_chestplate", ArmorSlot.CHESTPLATE);
+        assertStarterArmor(inventory, "netherite_leggings", ArmorSlot.LEGGINGS);
+        assertStarterArmor(inventory, "netherite_boots", ArmorSlot.BOOTS);
+    }
+
+    @Test
+    public void grantsAllFoods() {
         Inventory inventory = new Inventory();
 
         StarterInventoryKit.grant(inventory);
@@ -33,12 +65,14 @@ public class StarterInventoryKitTest {
             assertNotNull(itemId, stack);
             assertEquals(8, stack.getCount());
         }
-        for (int i = 0; i < inventory.getTotalSize(); i++) {
-            ItemStack stack = inventory.getSlot(i);
-            if (stack != null) {
-                assertFalse(stack.getItemId(), ArmorRegistry.isArmor(stack.getItemId()));
-            }
-        }
+    }
+
+    private void assertStarterArmor(Inventory inventory, String itemId, ArmorSlot slot) {
+        ItemStack stack = findStack(inventory, itemId);
+        assertNotNull(itemId, stack);
+        assertEquals(1, stack.getCount());
+        assertTrue(ArmorRegistry.isArmor(itemId));
+        assertEquals(slot, ArmorRegistry.getSlot(itemId));
     }
 
     private ItemStack findStack(Inventory inventory, String itemId) {
