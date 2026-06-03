@@ -5,6 +5,7 @@ import com.main.game.entities.mob.Mob;
 import com.main.game.entities.player.Player;
 import com.main.game.projectile.ProjectileManager;
 import com.main.game.world.World;
+import java.util.Random;
 
 public final class EvokerSpellManager {
 
@@ -13,14 +14,29 @@ public final class EvokerSpellManager {
 
     public enum CastResult {
         NONE,
+        SUMMON_VEX,
         FANGS,
         PROJECTILE
     }
 
     private final EvokerFangManager fangManager = new EvokerFangManager();
+    private final Random random;
+    private VexSummonListener vexSummonListener;
+
+    public EvokerSpellManager() {
+        this(new Random());
+    }
+
+    public EvokerSpellManager(Random random) {
+        this.random = random == null ? new Random() : random;
+    }
 
     public void setFangHitListener(Runnable hitListener) {
         fangManager.setHitListener(hitListener);
+    }
+
+    public void setVexSummonListener(VexSummonListener vexSummonListener) {
+        this.vexSummonListener = vexSummonListener;
     }
 
     public CastResult cast(Mob caster, Player target, int projectileDamage, World world,
@@ -28,14 +44,26 @@ public final class EvokerSpellManager {
         if (caster == null || target == null || !caster.isAlive() || !target.isAlive()) {
             return CastResult.NONE;
         }
-        if (shouldCastFangs(caster, target)) {
-            fangManager.spawnLine(caster, target, world);
-            return CastResult.FANGS;
-        } else if (projectileManager != null) {
-            projectileManager.spawnEvokerMagic(caster, target, projectileDamage);
-            return CastResult.PROJECTILE;
+
+        boolean canSummonVex = canSummonVex(caster, target);
+        boolean canCastFangs = shouldCastFangs(caster, target);
+        boolean canCastProjectile = projectileManager != null;
+        CastResult spell = chooseSpell(canSummonVex, canCastFangs, canCastProjectile);
+        switch (spell) {
+            case SUMMON_VEX:
+                return vexSummonListener.onSummonVex(caster, target)
+                    ? CastResult.SUMMON_VEX
+                    : CastResult.NONE;
+            case FANGS:
+                fangManager.spawnLine(caster, target, world);
+                return CastResult.FANGS;
+            case PROJECTILE:
+                projectileManager.spawnEvokerMagic(caster, target, projectileDamage);
+                return CastResult.PROJECTILE;
+            case NONE:
+            default:
+                return CastResult.NONE;
         }
-        return CastResult.NONE;
     }
 
     public void update(float delta, World world, Player player) {
@@ -52,6 +80,31 @@ public final class EvokerSpellManager {
 
     public int activeFangCount() {
         return fangManager.activeCount();
+    }
+
+    private boolean canSummonVex(Mob caster, Player target) {
+        return vexSummonListener != null && vexSummonListener.canSummonVex(caster, target);
+    }
+
+    CastResult chooseSpell(boolean canSummonVex, boolean canCastFangs, boolean canCastProjectile) {
+        int availableSpellCount = (canSummonVex ? 1 : 0)
+            + (canCastFangs ? 1 : 0)
+            + (canCastProjectile ? 1 : 0);
+        if (availableSpellCount == 0) {
+            return CastResult.NONE;
+        }
+
+        int choice = random.nextInt(availableSpellCount);
+        if (canSummonVex && choice-- == 0) {
+            return CastResult.SUMMON_VEX;
+        }
+        if (canCastFangs && choice-- == 0) {
+            return CastResult.FANGS;
+        }
+        if (canCastProjectile) {
+            return CastResult.PROJECTILE;
+        }
+        return CastResult.NONE;
     }
 
     static boolean shouldCastFangs(Mob caster, Player target) {

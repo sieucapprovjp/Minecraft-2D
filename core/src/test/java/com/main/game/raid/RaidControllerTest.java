@@ -26,6 +26,7 @@ public class RaidControllerTest {
         assertEquals(100, controller.getTriggerTileX());
         assertEquals(51, controller.getTriggerTileY());
         assertEquals(RaidController.PREPARATION_DELAY_SECONDS, controller.getNextWaveTimer(), 0.001f);
+        assertEquals(0, controller.getCurrentWaveMobCount());
     }
 
     @Test
@@ -65,6 +66,7 @@ public class RaidControllerTest {
         assertEquals(4, spawned);
         assertEquals(RaidState.WAVE_ACTIVE, controller.getState());
         assertEquals(1, controller.getCurrentWave());
+        assertEquals(4, controller.getCurrentWaveMobCount());
         assertEquals(4, RaidController.countAliveRaidMobs(entityManager));
     }
 
@@ -89,6 +91,7 @@ public class RaidControllerTest {
         assertEquals(7, spawned);
         assertEquals(RaidState.WAVE_ACTIVE, controller.getState());
         assertEquals(2, controller.getCurrentWave());
+        assertEquals(7, controller.getCurrentWaveMobCount());
         assertEquals(7, RaidController.countAliveRaidMobs(entityManager));
     }
 

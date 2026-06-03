@@ -126,6 +126,21 @@ public class AudioCatalogTest {
     }
 
     @Test
+    public void vexUsesIdleHurtDeathAndChargeAudio() {
+        assertEquals(4, AudioCatalog.mobIdlePaths(Mob.MobType.VEX).length);
+        assertEquals(2, AudioCatalog.mobHurtPaths(Mob.MobType.VEX).length);
+        assertEquals(2, AudioCatalog.mobDeathPaths(Mob.MobType.VEX).length);
+        assertArrayEquals(
+            new String[] {
+                "audio/mobs/vex/charge1.ogg",
+                "audio/mobs/vex/charge2.ogg",
+                "audio/mobs/vex/charge3.ogg"
+            },
+            AudioCatalog.mobAttackPaths(Mob.MobType.VEX)
+        );
+    }
+
+    @Test
     public void zombieHurtMappingStaysAvailable() {
         assertArrayEquals(
             new String[] {

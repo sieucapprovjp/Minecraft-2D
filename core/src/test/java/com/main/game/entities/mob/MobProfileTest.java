@@ -48,6 +48,21 @@ public class MobProfileTest {
     }
 
     @Test
+    public void vexIsWeakerFastMeleeIllager() {
+        MobProfile vex = MobProfile.forType(Mob.MobType.VEX);
+        MobProfile vindicator = MobProfile.forType(Mob.MobType.VINDICATOR);
+
+        assertEquals(MobAllegiance.HOSTILE, vex.allegiance);
+        assertEquals(MobAttackStyle.MELEE, vex.attackStyle);
+        assertTrue(vex.attackDamage < vindicator.attackDamage);
+        assertTrue(vex.maxHealth < vindicator.maxHealth);
+        assertTrue(vex.chaseSpeed > vindicator.chaseSpeed);
+        assertTrue(vex.width < vindicator.width);
+        assertTrue(vex.height < vindicator.height);
+        assertEquals(40f, vex.renderPixelsPerTile, EPSILON);
+    }
+
+    @Test
     public void pigAndSheepHaveRenderCapsForOversizedScratchSprites() {
         MobProfile pig = MobProfile.forType(Mob.MobType.PIG);
         MobProfile sheep = MobProfile.forType(Mob.MobType.SHEEP);

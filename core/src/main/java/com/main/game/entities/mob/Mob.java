@@ -33,7 +33,7 @@ public class Mob extends Entity {
     public enum MobType {
         DOG, TAMED_HORSE,
         COW, PIG, SHEEP, CHICKEN, HORSE, WOLF, CAT, VILLAGER, COD, SALMON, TROPICAL_FISH, PUFFERFISH, DOLPHIN,
-        ZOMBIE, HUSK, SKELETON, STRAY, PILLAGER, VINDICATOR, EVOKER, RAVAGER
+        ZOMBIE, HUSK, SKELETON, STRAY, PILLAGER, VINDICATOR, EVOKER, VEX, RAVAGER
     }
 
     private static final float JUMP_IMPULSE = 10f;
@@ -41,6 +41,7 @@ public class Mob extends Entity {
     private static final float HURT_DURATION = 0.3f;
     private static final float DAMAGE_INVULN_DURATION = 0.8f;
     private static final float PASSIVE_PANIC_DURATION = 5f;
+    private static final float VEX_HOVER_ABOVE_SURFACE = 2f;
 
     // ─── AI state ─────────────────────────────────────────────
     public enum AIState { PATROL, CHASE, ATTACK }
@@ -142,7 +143,11 @@ public class Mob extends Entity {
         stateTime += delta;
         tickTimers(delta);
         brain.update(this);
-        physics.update(this, world, delta);
+        if (isPseudoFlying()) {
+            updatePseudoFlying(delta);
+        } else if (physics != null && world != null) {
+            physics.update(this, world, delta);
+        }
         updateEntityState();
         updateBounds();
     }
@@ -174,7 +179,7 @@ public class Mob extends Entity {
             return;
         }
         velocity.x = facingRight ? profile.patrolSpeed : -profile.patrolSpeed;
-        if (MobMovementHelper.shouldJumpOverObstacle(this, world, facingRight)) {
+        if (!isPseudoFlying() && MobMovementHelper.shouldJumpOverObstacle(this, world, facingRight)) {
             velocity.y = JUMP_IMPULSE;
             onGround = false;
         }
@@ -186,7 +191,7 @@ public class Mob extends Entity {
         boolean playerRight = target.getX() > position.x;
         facingRight = playerRight;
         velocity.x  = playerRight ? profile.chaseSpeed : -profile.chaseSpeed;
-        if (MobMovementHelper.shouldJumpOverObstacle(this, world, facingRight)) {
+        if (!isPseudoFlying() && MobMovementHelper.shouldJumpOverObstacle(this, world, facingRight)) {
             velocity.y = JUMP_IMPULSE;
             onGround = false;
         }
@@ -196,7 +201,7 @@ public class Mob extends Entity {
         patrolIdleTimer = 0f;
         facingRight = panicDirection > 0f;
         velocity.x = panicDirection * profile.patrolSpeed * 1.35f;
-        if (MobMovementHelper.shouldJumpOverObstacle(this, world, facingRight)) {
+        if (!isPseudoFlying() && MobMovementHelper.shouldJumpOverObstacle(this, world, facingRight)) {
             velocity.y = JUMP_IMPULSE;
             onGround = false;
         }
@@ -257,6 +262,24 @@ public class Mob extends Entity {
         if (target != null) {
             facingRight = target.getX() + target.getWidth() * 0.5f >= position.x + width * 0.5f;
         }
+    }
+
+    private void updatePseudoFlying(float delta) {
+        position.x += velocity.x * Math.max(0f, delta);
+        if (world != null) {
+            position.x = Math.max(0f, Math.min(Math.max(0f, world.width - width), position.x));
+            int tileX = Math.max(0, Math.min(world.width - 1, (int) Math.floor(position.x + width * 0.5f)));
+            int surfaceY = world.getSurfaceY(tileX);
+            if (surfaceY >= 0) {
+                position.y = Math.min(world.height - height, surfaceY + VEX_HOVER_ABOVE_SURFACE);
+            }
+        }
+        velocity.y = 0f;
+        onGround = true;
+    }
+
+    private boolean isPseudoFlying() {
+        return type == MobType.VEX;
     }
 
     // ─── Nhận damage ──────────────────────────────────────────
