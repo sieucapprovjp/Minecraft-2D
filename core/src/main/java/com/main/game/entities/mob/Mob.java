@@ -68,6 +68,8 @@ public class Mob extends Entity {
     private final VillagerProfession villagerProfession;
     private final MobProfile profile;
     private MobRangedAttackListener rangedAttackListener;
+    private MobCastSpellListener castSpellListener;
+    private MobMeleeAttackListener meleeAttackListener;
 
     // ─── Refs ─────────────────────────────────────────────────
     private Player          target;
@@ -211,8 +213,16 @@ public class Mob extends Entity {
                 if (rangedAttackListener != null) {
                     rangedAttackListener.onMobRangedAttack(this, target, profile.attackDamage);
                 }
+            } else if (profile.attackStyle == MobAttackStyle.CASTER) {
+                if (castSpellListener != null) {
+                    castSpellListener.onMobCastSpell(this, target, profile.attackDamage);
+                }
             } else {
+                int healthBefore = target.getHealth();
                 target.takeDamage(profile.attackDamage);
+                if (target.getHealth() < healthBefore && meleeAttackListener != null) {
+                    meleeAttackListener.onMobMeleeHitPlayer(this);
+                }
             }
             attackTimer = profile.attackCooldown;
         }
@@ -306,6 +316,12 @@ public class Mob extends Entity {
     public void setTarget(Player p)   { this.target  = p;   }
     public void setRangedAttackListener(MobRangedAttackListener rangedAttackListener) {
         this.rangedAttackListener = rangedAttackListener;
+    }
+    public void setCastSpellListener(MobCastSpellListener castSpellListener) {
+        this.castSpellListener = castSpellListener;
+    }
+    public void setMeleeAttackListener(MobMeleeAttackListener meleeAttackListener) {
+        this.meleeAttackListener = meleeAttackListener;
     }
     Player getTarget() { return target; }
     void setAiState(AIState aiState) { this.aiState = aiState; }

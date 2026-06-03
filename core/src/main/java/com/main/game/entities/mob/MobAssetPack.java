@@ -185,10 +185,10 @@ final class MobAssetPack {
             case EVOKER:
                 idleAnim = single(loadedTextures, "mobs/evoker/mobs/evoker-face2.png");
                 walkAnim = sequenceWithFallback(loadedTextures, 0.12f,
+                    "mobs/evoker/mobs/evoker_walk1.png",
                     "mobs/evoker/mobs/evoker_walk_2.png",
                     "mobs/evoker/mobs/evoker_walk_3.png",
-                    "mobs/evoker/mobs/evoker_walk_4.png",
-                    "mobs/evoker/mobs/evoker_walk_5.png");
+                    "mobs/evoker/mobs/evoker_walk_4.png");
                 hurtAnim = single(loadedTextures, "mobs/evoker/mobs/evoker_hurt_attack.png");
                 break;
             case RAVAGER:

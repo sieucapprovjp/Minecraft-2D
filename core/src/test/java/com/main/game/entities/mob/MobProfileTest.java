@@ -38,6 +38,16 @@ public class MobProfileTest {
     }
 
     @Test
+    public void evokerUsesCasterStyleWithPillagerDamageProjectile() {
+        MobProfile evoker = MobProfile.forType(Mob.MobType.EVOKER);
+        MobProfile pillager = MobProfile.forType(Mob.MobType.PILLAGER);
+
+        assertEquals(MobAttackStyle.CASTER, evoker.attackStyle);
+        assertEquals(pillager.attackDamage, evoker.attackDamage);
+        assertEquals(6f, evoker.attackRange, EPSILON);
+    }
+
+    @Test
     public void pigAndSheepHaveRenderCapsForOversizedScratchSprites() {
         MobProfile pig = MobProfile.forType(Mob.MobType.PIG);
         MobProfile sheep = MobProfile.forType(Mob.MobType.SHEEP);

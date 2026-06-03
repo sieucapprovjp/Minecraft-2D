@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 final class ProjectileRenderer {
 
     private static final Color ARROW_COLOR = new Color(0.18f, 0.16f, 0.13f, 1f);
+    private static final Color EVOKER_MAGIC_COLOR = new Color(0.45f, 0.25f, 0.75f, 1f);
 
     private final Texture pixel;
 
@@ -30,7 +31,7 @@ final class ProjectileRenderer {
         float previousB = color.b;
         float previousA = color.a;
 
-        batch.setColor(ARROW_COLOR);
+        batch.setColor(colorFor(projectile.getType()));
         batch.draw(pixel,
             projectile.getX(),
             projectile.getY(),
@@ -52,5 +53,9 @@ final class ProjectileRenderer {
 
     void dispose() {
         pixel.dispose();
+    }
+
+    private Color colorFor(ProjectileType type) {
+        return type == ProjectileType.EVOKER_MAGIC ? EVOKER_MAGIC_COLOR : ARROW_COLOR;
     }
 }
