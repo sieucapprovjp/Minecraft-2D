@@ -1,6 +1,7 @@
 package com.main.game.raid;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.main.game.blocks.SimpleBlock;
 import com.main.game.entities.EntityManager;
@@ -69,6 +70,11 @@ public class RaidMobSpawnerTest {
         assertEquals(125, RaidMobSpawner.preferredSpawnX(village, 1));
         assertEquals(70, RaidMobSpawner.preferredSpawnX(village, 2));
         assertEquals(130, RaidMobSpawner.preferredSpawnX(village, 3));
+    }
+
+    @Test
+    public void summonedVexCountsAsRaidMobUntilKilled() {
+        assertTrue(RaidMobSpawner.isRaidMobType(Mob.MobType.VEX));
     }
 
     private void fillFlatGrass(World world, int minX, int maxX, int surfaceY) {

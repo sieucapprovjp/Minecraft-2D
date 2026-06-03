@@ -284,6 +284,7 @@ public final class BiomeMobSpawner {
             case PILLAGER:
             case VINDICATOR:
             case EVOKER:
+            case VEX:
             case RAVAGER:
                 return true;
             default:

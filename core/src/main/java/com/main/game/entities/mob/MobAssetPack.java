@@ -191,6 +191,14 @@ final class MobAssetPack {
                     "mobs/evoker/mobs/evoker_walk_4.png");
                 hurtAnim = single(loadedTextures, "mobs/evoker/mobs/evoker_hurt_attack.png");
                 break;
+            case VEX:
+                idleAnim = single(loadedTextures, "mobs/vex/vex_idle.png");
+                walkAnim = sequenceWithFallback(loadedTextures, 0.12f,
+                    "mobs/vex/vex2.png",
+                    "mobs/vex/vex4.png",
+                    "mobs/vex/vex5.png");
+                hurtAnim = single(loadedTextures, "mobs/vex/vex_idle.png");
+                break;
             case RAVAGER:
                 idleAnim = sequenceWithFallback(loadedTextures, 0.35f,
                     "mobs/ravager/mobs/ravager_idle.png",

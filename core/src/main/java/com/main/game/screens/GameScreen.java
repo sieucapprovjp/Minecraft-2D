@@ -13,6 +13,7 @@ import com.main.game.crafting.CraftingController;
 import com.main.game.entities.EntityManager;
 import com.main.game.entities.player.Player;
 import com.main.game.evoker.EvokerSpellManager;
+import com.main.game.evoker.VexSummonListener;
 import com.main.game.utilityblock.chest.ChestInteractionController;
 import com.main.game.utilityblock.chest.ChestInteractionHandler;
 import com.main.game.utilityblock.chest.ChestManager;
@@ -52,6 +53,7 @@ import com.main.game.trading.VillagerInteractionController;
 import com.main.game.ui.GameCameraController;
 import com.main.game.ui.GameHudRenderer;
 import com.main.game.ui.GameOverlayRenderer;
+import com.main.game.ui.RaidHudRenderer;
 import com.main.game.utils.TextureManager;
 import com.main.game.world.BlockPalette;
 import com.main.game.world.DemoBlockViewer;
@@ -67,6 +69,9 @@ public class GameScreen extends BaseScreen {
 
     private static final String PERF_LOG_TAG = "GameScreenPerf";
     private static final float CAMERA_ZOOM = 0.5f;
+    private static final int MAX_ACTIVE_VEX = 2;
+    private static final float VEX_SUMMON_HORIZONTAL_OFFSET = 1.2f;
+    private static final float VEX_HOVER_ABOVE_SURFACE = 2f;
 
     private World world;
     private PhysicsEngine physics;
@@ -100,6 +105,7 @@ public class GameScreen extends BaseScreen {
     private GameCameraController cameraController;
     private GameHudRenderer hudRenderer;
     private GameOverlayRenderer overlayRenderer;
+    private RaidHudRenderer raidHudRenderer;
     private SpawnSafetyController spawnSafetyController;
     private BiomeMobSpawner mobSpawner;
     private DayNightCycle dayNightCycle;
@@ -154,8 +160,19 @@ public class GameScreen extends BaseScreen {
         entityManager.setPlayer(player);
         projectileManager = new ProjectileManager(new Random(currentSeed + 8819L));
         projectileManager.setHitListener(this::handleProjectileHitPlayer);
-        evokerSpellManager = new EvokerSpellManager();
+        evokerSpellManager = new EvokerSpellManager(new Random(currentSeed + 8849L));
         evokerSpellManager.setFangHitListener(() -> game.getAudioManager().playMobAttack(Mob.MobType.EVOKER));
+        evokerSpellManager.setVexSummonListener(new VexSummonListener() {
+            @Override
+            public boolean canSummonVex(Mob caster, Player target) {
+                return GameScreen.this.canSummonVex(caster, target);
+            }
+
+            @Override
+            public boolean onSummonVex(Mob caster, Player target) {
+                return trySummonVex(caster, target);
+            }
+        });
         entityManager.setMobRangedAttackListener(projectileManager::spawnFromMobAttack);
         entityManager.setMobCastSpellListener((mob, target, damage) -> {
             EvokerSpellManager.CastResult castResult = evokerSpellManager.cast(mob, target, damage, world, projectileManager);
@@ -213,6 +230,7 @@ public class GameScreen extends BaseScreen {
         camera.zoom = CAMERA_ZOOM;
         hudRenderer = new GameHudRenderer();
         overlayRenderer = new GameOverlayRenderer();
+        raidHudRenderer = new RaidHudRenderer();
         lastPlayerHealthForAudio = player.getHealth();
         logPerformanceSnapshot(currentSeed, setupStartNanos, worldGenerateNanos, mobSpawnNanos);
     }
@@ -386,6 +404,7 @@ public class GameScreen extends BaseScreen {
 
         if (paused) overlayRenderer.renderPause(batch);
         else if (dead) overlayRenderer.renderDeath(batch);
+        if (raidHudRenderer != null) raidHudRenderer.render(batch, raidController, entityManager);
         overlayRenderer.renderBrightness(batch, game.getGameState());
     }
 
@@ -517,6 +536,49 @@ public class GameScreen extends BaseScreen {
         } else if (projectileType == ProjectileType.PILLAGER_ARROW) {
             game.getAudioManager().playMobAttack(Mob.MobType.PILLAGER);
         }
+    }
+
+    private boolean trySummonVex(Mob caster, Player target) {
+        if (!canSummonVex(caster, target)) {
+            return false;
+        }
+
+        float casterCenterX = caster.getX() + caster.getWidth() * 0.5f;
+        float targetCenterX = target == null ? casterCenterX : target.getX() + target.getWidth() * 0.5f;
+        float side = targetCenterX < casterCenterX ? -1f : 1f;
+        float spawnX = clamp(caster.getX() + side * VEX_SUMMON_HORIZONTAL_OFFSET,
+            0f, Math.max(0f, world.width - 1f));
+        float spawnY = vexHoverY(spawnX, caster.getY() + 1f);
+        Player vexTarget = target == null ? player : target;
+
+        entityManager.addMob(new Mob(spawnX, spawnY, Mob.MobType.VEX, vexTarget, physics, world));
+        return true;
+    }
+
+    private boolean canSummonVex(Mob caster, Player target) {
+        return caster != null
+            && caster.isAlive()
+            && entityManager != null
+            && world != null
+            && physics != null
+            && countActiveVex() < MAX_ACTIVE_VEX;
+    }
+
+    private int countActiveVex() {
+        int count = 0;
+        for (Mob mob : entityManager.getMobs()) {
+            if (mob != null && mob.isAlive() && mob.getType() == Mob.MobType.VEX) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private float vexHoverY(float x, float fallbackY) {
+        int tileX = Math.max(0, Math.min(world.width - 1, (int) Math.floor(x + 0.5f)));
+        int surfaceY = world.getSurfaceY(tileX);
+        float y = surfaceY >= 0 ? surfaceY + VEX_HOVER_ABOVE_SURFACE : fallbackY;
+        return clamp(y, 0f, Math.max(0f, world.height - Mob.getRequiredSpawnHeight(Mob.MobType.VEX)));
     }
 
     private void handleMobKilled(Mob mob) {
@@ -658,6 +720,10 @@ public class GameScreen extends BaseScreen {
         return from + (to - from) * t;
     }
 
+    private float clamp(float value, float min, float max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
     private void logPerformanceSnapshot(long seed, long setupStartNanos, long worldGenerateNanos, long mobSpawnNanos) {
         TextureManager textureManager = TextureManager.getInstance();
         Gdx.app.log(PERF_LOG_TAG,
@@ -704,6 +770,7 @@ public class GameScreen extends BaseScreen {
         BlockPalette.dispose();
         if (hudRenderer != null) hudRenderer.dispose();
         if (overlayRenderer != null) overlayRenderer.dispose();
+        if (raidHudRenderer != null) raidHudRenderer.dispose();
         if (blockBreakOverlay != null) blockBreakOverlay.dispose();
         if (droppedItemManager != null) droppedItemManager.clear();
         if (inventoryRenderer != null) inventoryRenderer.dispose();

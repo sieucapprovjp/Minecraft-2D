@@ -98,6 +98,10 @@ public final class RaidController {
         return RaidMobSpawner.maxWaveCount();
     }
 
+    public int getCurrentWaveMobCount() {
+        return currentWave <= 0 ? 0 : RaidMobSpawner.waveMobCount(currentWave);
+    }
+
     public float getNextWaveTimer() {
         return nextWaveTimer;
     }

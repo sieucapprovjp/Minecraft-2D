@@ -148,6 +148,25 @@ public final class AudioCatalog {
         "audio/mobs/ravager/bite2.ogg",
         "audio/mobs/ravager/bite3.ogg"
     };
+    private static final String[] VEX_IDLE = {
+        "audio/mobs/vex/idle1.ogg",
+        "audio/mobs/vex/idle2.ogg",
+        "audio/mobs/vex/idle3.ogg",
+        "audio/mobs/vex/idle4.ogg"
+    };
+    private static final String[] VEX_HURT = {
+        "audio/mobs/vex/hurt1.ogg",
+        "audio/mobs/vex/hurt2.ogg"
+    };
+    private static final String[] VEX_DEATH = {
+        "audio/mobs/vex/death1.ogg",
+        "audio/mobs/vex/death2.ogg"
+    };
+    private static final String[] VEX_CHARGE = {
+        "audio/mobs/vex/charge1.ogg",
+        "audio/mobs/vex/charge2.ogg",
+        "audio/mobs/vex/charge3.ogg"
+    };
     private static final String[] RAVAGER_CELEBRATE = {
         "audio/mobs/ravager/celebrate1.ogg",
         "audio/mobs/ravager/celebrate2.ogg"
@@ -257,6 +276,8 @@ public final class AudioCatalog {
                 return VINDICATOR_HURT;
             case RAVAGER:
                 return RAVAGER_HURT;
+            case VEX:
+                return VEX_HURT;
             default:
                 return EMPTY;
         }
@@ -278,6 +299,9 @@ public final class AudioCatalog {
         if (type == Mob.MobType.RAVAGER) {
             return RAVAGER_DEATH;
         }
+        if (type == Mob.MobType.VEX) {
+            return VEX_DEATH;
+        }
         return mobHurtPaths(type);
     }
 
@@ -294,6 +318,8 @@ public final class AudioCatalog {
                 return VINDICATOR_IDLE;
             case RAVAGER:
                 return RAVAGER_IDLE;
+            case VEX:
+                return VEX_IDLE;
             default:
                 return EMPTY;
         }
@@ -312,6 +338,9 @@ public final class AudioCatalog {
         }
         if (type == Mob.MobType.RAVAGER) {
             return RAVAGER_BITE;
+        }
+        if (type == Mob.MobType.VEX) {
+            return VEX_CHARGE;
         }
         if (type == Mob.MobType.PILLAGER || type == Mob.MobType.VINDICATOR || type == Mob.MobType.EVOKER) {
             return mobIdlePaths(type);

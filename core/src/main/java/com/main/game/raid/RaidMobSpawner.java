@@ -89,6 +89,7 @@ public final class RaidMobSpawner {
         return type == Mob.MobType.PILLAGER
             || type == Mob.MobType.VINDICATOR
             || type == Mob.MobType.EVOKER
+            || type == Mob.MobType.VEX
             || type == Mob.MobType.RAVAGER;
     }
 
@@ -99,6 +100,10 @@ public final class RaidMobSpawner {
     static Mob.MobType[] waveMobs(int waveNumber) {
         int index = Math.max(1, Math.min(waveNumber, RAID_WAVES.length)) - 1;
         return RAID_WAVES[index].clone();
+    }
+
+    static int waveMobCount(int waveNumber) {
+        return waveMobs(waveNumber).length;
     }
 
     static Mob.MobType[] previewRaidMobs() {
