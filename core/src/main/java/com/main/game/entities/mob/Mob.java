@@ -67,6 +67,7 @@ public class Mob extends Entity {
     private final MobType type;
     private final VillagerProfession villagerProfession;
     private final MobProfile profile;
+    private MobRangedAttackListener rangedAttackListener;
 
     // ─── Refs ─────────────────────────────────────────────────
     private Player          target;
@@ -205,7 +206,14 @@ public class Mob extends Entity {
             return;
         }
         if (attackTimer <= 0f) {
-            target.takeDamage(profile.attackDamage);
+            faceTarget();
+            if (profile.attackStyle == MobAttackStyle.RANGED) {
+                if (rangedAttackListener != null) {
+                    rangedAttackListener.onMobRangedAttack(this, target, profile.attackDamage);
+                }
+            } else {
+                target.takeDamage(profile.attackDamage);
+            }
             attackTimer = profile.attackCooldown;
         }
     }
@@ -233,6 +241,12 @@ public class Mob extends Entity {
         else if (!onGround){ state = velocity.y > 0 ? EntityState.JUMP : EntityState.FALL; }
         else               { state = Math.abs(velocity.x) > 0.01f ? EntityState.RUN : EntityState.IDLE; }
         if (state != prev) stateTime = 0f;
+    }
+
+    private void faceTarget() {
+        if (target != null) {
+            facingRight = target.getX() + target.getWidth() * 0.5f >= position.x + width * 0.5f;
+        }
     }
 
     // ─── Nhận damage ──────────────────────────────────────────
@@ -290,6 +304,9 @@ public class Mob extends Entity {
     float getMaxRenderHeight() { return profile.maxRenderHeight; }
 
     public void setTarget(Player p)   { this.target  = p;   }
+    public void setRangedAttackListener(MobRangedAttackListener rangedAttackListener) {
+        this.rangedAttackListener = rangedAttackListener;
+    }
     Player getTarget() { return target; }
     void setAiState(AIState aiState) { this.aiState = aiState; }
     float getAggroRadius() { return profile.aggroRadius; }

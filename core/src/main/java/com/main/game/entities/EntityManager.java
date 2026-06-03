@@ -3,6 +3,7 @@ package com.main.game.entities;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.main.game.entities.mob.Mob;
 import com.main.game.entities.mob.MobHitboxDebugRenderer;
+import com.main.game.entities.mob.MobRangedAttackListener;
 import com.main.game.entities.player.Player;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -50,6 +51,7 @@ public class EntityManager {
     private final List<Entity> toAdd    = new ArrayList<>();
     private final List<Entity> toRemove = new ArrayList<>();
     private MobHitboxDebugRenderer mobHitboxDebugRenderer;
+    private MobRangedAttackListener mobRangedAttackListener;
 
     // ─── Quản lý Player ───────────────────────────────────────
 
@@ -65,6 +67,10 @@ public class EntityManager {
 
     /** Thêm mob vào hàng chờ — sẽ được insert đầu frame tiếp theo */
     public void addMob(Mob mob) {
+        if (mob == null) {
+            return;
+        }
+        mob.setRangedAttackListener(mobRangedAttackListener);
         toAdd.add(mob);
         mobs.add(mob);
     }
@@ -76,6 +82,13 @@ public class EntityManager {
     }
 
     public List<Mob> getMobs() { return mobs; }
+
+    public void setMobRangedAttackListener(MobRangedAttackListener mobRangedAttackListener) {
+        this.mobRangedAttackListener = mobRangedAttackListener;
+        for (Mob mob : mobs) {
+            mob.setRangedAttackListener(mobRangedAttackListener);
+        }
+    }
 
     // ─── Update ───────────────────────────────────────────────
 
