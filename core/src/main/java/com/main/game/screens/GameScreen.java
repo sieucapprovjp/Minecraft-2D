@@ -6,6 +6,7 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.math.Vector2;
 import com.main.game.MainGame;
 import com.main.game.audio.AudioId;
+import com.main.game.audio.GameplayMusicController;
 import com.main.game.audio.MobAmbientAudioController;
 import com.main.game.blocks.AbstractBlock;
 import com.main.game.combat.PlayerAttackController;
@@ -113,6 +114,7 @@ public class GameScreen extends BaseScreen {
     private ProjectileManager projectileManager;
     private EvokerSpellManager evokerSpellManager;
     private MobAmbientAudioController mobAmbientAudioController;
+    private GameplayMusicController gameplayMusicController;
     private VillageVillagerSpawner villageVillagerSpawner;
     private Random mobDropRandom;
     private boolean paused;
@@ -185,6 +187,7 @@ public class GameScreen extends BaseScreen {
         });
         entityManager.setMobMeleeAttackListener(this::handleMobDamagedPlayer);
         mobAmbientAudioController = new MobAmbientAudioController(new Random(currentSeed + 9929L));
+        gameplayMusicController = new GameplayMusicController(new Random(currentSeed + 4409L));
         raidController = new RaidController();
         lastRaidAudioState = raidController.getState();
         villageVillagerSpawner = new VillageVillagerSpawner();
@@ -258,7 +261,10 @@ public class GameScreen extends BaseScreen {
             if (dayNightCycle != null) {
                 dayNightCycle.update(delta);
             }
-            furnaceManager.update(delta);
+            int startedFurnaces = furnaceManager.update(delta);
+            if (startedFurnaces > 0) {
+                game.getAudioManager().play(AudioId.FURNACE_CRACKLE);
+            }
             entityManager.update(delta);
             if (mobAmbientAudioController != null) {
                 mobAmbientAudioController.update(delta, entityManager, player, game.getAudioManager());
@@ -287,6 +293,10 @@ public class GameScreen extends BaseScreen {
                         + ", raidWave=" + raidController.getCurrentWave()
                         + "/" + raidController.getMaxWaves());
                 }
+            }
+            if (gameplayMusicController != null) {
+                gameplayMusicController.update(delta, game.getAudioManager(),
+                    raidController == null ? RaidState.IDLE : raidController.getState());
             }
             spawnSafetyController.update(delta, world, player);
             droppedItemManager.update(delta, world, player, inventory);
@@ -471,17 +481,18 @@ public class GameScreen extends BaseScreen {
                 furnaceInteractionController.getHoveredTileY());
             getFurnaceRenderer();
             inventoryController.open();
-            game.getAudioManager().play(AudioId.UI_CLICK);
+            game.getAudioManager().play(AudioId.UTILITY_BLOCK_OPEN);
             return;
         }
         openFurnaceState = null;
         if (craftingTableInteractionController.canOpen(player, world, camera, viewport)) {
             craftingController.openTableCrafting(inventory);
+            game.getAudioManager().play(AudioId.UTILITY_BLOCK_OPEN);
         } else {
             craftingController.openPlayerCrafting(inventory);
+            game.getAudioManager().play(AudioId.UI_CLICK);
         }
         inventoryController.open();
-        game.getAudioManager().play(AudioId.UI_CLICK);
     }
 
     private void handleInventoryClosed() {
@@ -492,7 +503,7 @@ public class GameScreen extends BaseScreen {
             return;
         }
         if (openFurnaceState != null) {
-            game.getAudioManager().play(AudioId.UI_CLICK);
+            game.getAudioManager().play(AudioId.UTILITY_BLOCK_CLOSE);
             furnaceInteractionHandler.onCloseInventory(inventory);
             openFurnaceState = null;
             return;
@@ -503,7 +514,9 @@ public class GameScreen extends BaseScreen {
             openChestState = null;
             return;
         }
-        game.getAudioManager().play(AudioId.UI_CLICK);
+        game.getAudioManager().play(craftingController.isTableCrafting()
+            ? AudioId.UTILITY_BLOCK_CLOSE
+            : AudioId.UI_CLICK);
         inventoryInteractionHandler.onCloseInventory(inventory, craftingController);
     }
 
@@ -781,6 +794,7 @@ public class GameScreen extends BaseScreen {
         if (furnaceManager != null) furnaceManager.clear();
         if (evokerSpellManager != null) evokerSpellManager.dispose();
         if (projectileManager != null) projectileManager.dispose();
+        if (gameplayMusicController != null) gameplayMusicController.stop(game.getAudioManager());
         entityManager.dispose();
         Mob.disposeSharedAssets();
     }

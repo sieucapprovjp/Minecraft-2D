@@ -26,7 +26,10 @@ public class AudioManager {
     private boolean soundEnabled = true;
     private boolean musicEnabled = true;
     private AudioId requestedMusicId;
+    private String requestedMusicPath;
+    private boolean requestedMusicLooping;
     private AudioId currentMusicId;
+    private String currentMusicPath;
     private Music currentMusic;
 
     public void updateSettings(GameState gameState) {
@@ -39,6 +42,8 @@ public class AudioManager {
             musicEnabled = nextMusicEnabled;
             if (!musicEnabled) {
                 stopActiveMusic();
+            } else if (requestedMusicPath != null) {
+                playMusicPath(requestedMusicPath, requestedMusicLooping);
             } else if (requestedMusicId != null) {
                 playMusic(requestedMusicId);
             }
@@ -109,22 +114,40 @@ public class AudioManager {
 
     public void playMusic(AudioId id) {
         requestedMusicId = id;
+        requestedMusicPath = null;
         if (!musicEnabled || id == null) {
             stopActiveMusic();
             return;
         }
-        if (currentMusic != null && currentMusicId == id) {
+        String path = AudioCatalog.musicPath(id);
+        if (path == null) {
+            return;
+        }
+        playMusicPath(path, true, id);
+    }
+
+    public void playMusicPath(String path, boolean looping) {
+        playMusicPath(path, looping, null);
+    }
+
+    private void playMusicPath(String path, boolean looping, AudioId id) {
+        requestedMusicId = id;
+        requestedMusicPath = path;
+        requestedMusicLooping = looping;
+        if (!musicEnabled || path == null) {
+            stopActiveMusic();
+            return;
+        }
+        if (currentMusic != null && path.equals(currentMusicPath)) {
+            currentMusic.setLooping(looping);
             if (!currentMusic.isPlaying()) {
+                currentMusic.setPosition(0f);
                 currentMusic.play();
             }
             return;
         }
 
         stopActiveMusic();
-        String path = AudioCatalog.musicPath(id);
-        if (path == null) {
-            return;
-        }
         FileHandle file = Gdx.files.internal(path);
         if (!file.exists()) {
             Gdx.app.log("AudioManager", "Missing music asset: " + path);
@@ -133,19 +156,26 @@ public class AudioManager {
         try {
             currentMusic = Gdx.audio.newMusic(file);
             currentMusicId = id;
-            currentMusic.setLooping(true);
+            currentMusicPath = path;
+            currentMusic.setLooping(looping);
             currentMusic.setVolume(MUSIC_VOLUME);
             currentMusic.play();
         } catch (RuntimeException ex) {
             Gdx.app.error("AudioManager", "Failed to load music asset: " + path, ex);
             currentMusic = null;
             currentMusicId = null;
+            currentMusicPath = null;
         }
     }
 
     public void stopMusic() {
         requestedMusicId = null;
+        requestedMusicPath = null;
         stopActiveMusic();
+    }
+
+    public boolean isMusicPlaying() {
+        return currentMusic != null && currentMusic.isPlaying();
     }
 
     public void dispose() {
@@ -204,6 +234,7 @@ public class AudioManager {
             currentMusic = null;
         }
         currentMusicId = null;
+        currentMusicPath = null;
     }
 
     private void disposeSounds(Sound[] sounds) {

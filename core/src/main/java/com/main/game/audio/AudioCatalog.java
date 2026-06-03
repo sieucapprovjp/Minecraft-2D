@@ -6,10 +6,10 @@ public final class AudioCatalog {
 
     private static final String[] EMPTY = new String[0];
     private static final String[] STONE_BREAK = {
-        "audio/block/stone1.mp3",
-        "audio/block/stone2.mp3",
-        "audio/block/stone3.mp3",
-        "audio/block/stone4.mp3"
+        "audio/block/stone1.ogg",
+        "audio/block/stone2.ogg",
+        "audio/block/stone3.ogg",
+        "audio/block/stone4.ogg"
     };
     private static final String[] DEEPSLATE_BREAK = {
         "audio/block/deepslate1.mp3",
@@ -40,25 +40,60 @@ public final class AudioCatalog {
         "audio/player/hit2.mp3",
         "audio/player/hit3.mp3"
     };
+    private static final String[] FURNACE_CRACKLE = {
+        "audio/chest_inventory/furnace/fire_crackle1.ogg",
+        "audio/chest_inventory/furnace/fire_crackle2.ogg",
+        "audio/chest_inventory/furnace/fire_crackle3.ogg",
+        "audio/chest_inventory/furnace/fire_crackle4.ogg",
+        "audio/chest_inventory/furnace/fire_crackle5.ogg"
+    };
+    private static final String[] INGAME_MUSIC = {
+        "audio/ui_menu/ingame_music/a_familiar_room.ogg",
+        "audio/ui_menu/ingame_music/below_and_above.ogg",
+        "audio/ui_menu/ingame_music/deeper.ogg",
+        "audio/ui_menu/ingame_music/minecraft.ogg",
+        "audio/ui_menu/ingame_music/sweden.ogg",
+        "audio/ui_menu/ingame_music/yakusoku.ogg"
+    };
     private static final String[] ZOMBIE_HURT = {
-        "audio/mobs/zombiehurt1.wav",
-        "audio/mobs/zombiehurt2.wav"
+        "audio/mobs/zombie/zombiehurt1.wav",
+        "audio/mobs/zombie/zombiehurt2.wav"
     };
     private static final String[] SKELETON_HURT = {
-        "audio/mobs/skeletonhurt1.wav",
-        "audio/mobs/skeletonhurt2.wav"
+        "audio/mobs/skeleton/hurt1.ogg",
+        "audio/mobs/skeleton/hurt2.ogg",
+        "audio/mobs/skeleton/hurt3.ogg",
+        "audio/mobs/skeleton/hurt4.ogg"
+    };
+    private static final String[] HUSK_HURT = {
+        "audio/mobs/husk/hurt1.ogg",
+        "audio/mobs/husk/hurt2.ogg"
     };
     private static final String[] COW_HURT = {
-        "audio/mobs/cowhurt1.wav",
-        "audio/mobs/cowhurt2.wav",
-        "audio/mobs/cowhurt3.wav"
+        "audio/mobs/cow/cowhurt1.wav",
+        "audio/mobs/cow/cowhurt2.wav",
+        "audio/mobs/cow/cowhurt3.wav"
     };
     private static final String[] CHICKEN_HURT = {
-        "audio/mobs/chickenhurt1.wav",
-        "audio/mobs/chickenhurt2.wav"
+        "audio/mobs/chicken/chickenhurt1.wav",
+        "audio/mobs/chicken/chickenhurt2.wav"
     };
     private static final String[] SHEEP_HURT = {
-        "audio/mobs/sheephurt.wav"
+        "audio/mobs/sheep/sheep1.ogg",
+        "audio/mobs/sheep/sheep2.ogg"
+    };
+    private static final String[] ZOMBIE_DEATH = {
+        "audio/mobs/zombie/zombiedeath.wav"
+    };
+    private static final String[] SKELETON_DEATH = {
+        "audio/mobs/skeleton/death.ogg"
+    };
+    private static final String[] HUSK_DEATH = {
+        "audio/mobs/husk/death1.ogg",
+        "audio/mobs/husk/death2.ogg"
+    };
+    private static final String[] SHEEP_DEATH = {
+        "audio/mobs/sheep/sheep_dead.ogg"
     };
     private static final String[] EVOKER_IDLE = {
         "audio/mobs/evoker/idle1.mp3",
@@ -200,6 +235,12 @@ public final class AudioCatalog {
                 return new String[] {"audio/chest_inventory/chestopen.mp3"};
             case CHEST_CLOSE:
                 return new String[] {"audio/chest_inventory/chestclosed.mp3"};
+            case UTILITY_BLOCK_OPEN:
+                return new String[] {"audio/chest_inventory/door/open_door.mp3"};
+            case UTILITY_BLOCK_CLOSE:
+                return new String[] {"audio/chest_inventory/door/close_door.mp3"};
+            case FURNACE_CRACKLE:
+                return FURNACE_CRACKLE;
             case ITEM_PICKUP:
                 return new String[] {"audio/other/collect.mp3"};
             case EVOKER_CAST:
@@ -222,6 +263,14 @@ public final class AudioCatalog {
             return "audio/ui_menu/music.mp3";
         }
         return null;
+    }
+
+    public static String[] ingameMusicPaths() {
+        return INGAME_MUSIC.clone();
+    }
+
+    public static String raidMusicPath() {
+        return "audio/ui_menu/rubedo.ogg";
     }
 
     public static String[] blockBreakPaths(String blockId) {
@@ -257,8 +306,9 @@ public final class AudioCatalog {
         }
         switch (type) {
             case ZOMBIE:
-            case HUSK:
                 return ZOMBIE_HURT;
+            case HUSK:
+                return HUSK_HURT;
             case SKELETON:
             case STRAY:
                 return SKELETON_HURT;
@@ -286,6 +336,18 @@ public final class AudioCatalog {
     public static String[] mobDeathPaths(Mob.MobType type) {
         if (type == null) {
             return EMPTY;
+        }
+        if (type == Mob.MobType.ZOMBIE) {
+            return ZOMBIE_DEATH;
+        }
+        if (type == Mob.MobType.HUSK) {
+            return HUSK_DEATH;
+        }
+        if (type == Mob.MobType.SKELETON || type == Mob.MobType.STRAY) {
+            return SKELETON_DEATH;
+        }
+        if (type == Mob.MobType.SHEEP) {
+            return SHEEP_DEATH;
         }
         if (type == Mob.MobType.EVOKER) {
             return EVOKER_DEATH;
