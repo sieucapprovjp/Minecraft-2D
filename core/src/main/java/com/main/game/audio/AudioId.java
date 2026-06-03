@@ -1,0 +1,22 @@
+package com.main.game.audio;
+
+public enum AudioId {
+    UI_CLICK,
+    UI_TOGGLE,
+    MENU_MUSIC,
+    PLAYER_HURT,
+    PLAYER_DEATH,
+    PLAYER_EAT,
+    SWORD_SWING,
+    CHEST_OPEN,
+    CHEST_CLOSE,
+    UTILITY_BLOCK_OPEN,
+    UTILITY_BLOCK_CLOSE,
+    FURNACE_CRACKLE,
+    ITEM_PICKUP,
+    EVOKER_CAST,
+    EVOKER_FANGS,
+    EVOKER_IDLE,
+    RAID_WAVE_HORN,
+    RAID_CELEBRATE
+}

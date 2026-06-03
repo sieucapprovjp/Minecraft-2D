@@ -12,6 +12,7 @@ import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.math.MathUtils;
 import com.main.game.GameState;
 import com.main.game.MainGame;
+import com.main.game.audio.AudioId;
 import com.main.game.navigation.ScreenId;
 
 public class SettingsScreen extends BaseScreen {
@@ -95,9 +96,14 @@ public class SettingsScreen extends BaseScreen {
         if (clicked) {
             if (soundHover) {
                 gameState.soundEnabled = !gameState.soundEnabled;
+                game.getAudioManager().updateSettings(gameState);
+                game.getAudioManager().play(AudioId.UI_TOGGLE);
             } else if (musicHover) {
                 gameState.musicEnabled = !gameState.musicEnabled;
+                game.getAudioManager().play(AudioId.UI_TOGGLE);
+                game.getAudioManager().updateSettings(gameState);
             } else if (doneHover) {
+                game.getAudioManager().play(AudioId.UI_CLICK);
                 game.getScreenRouter().request(ScreenId.MODE_SELECT);
             } else if (mx >= sliderX && mx <= sliderX + sliderW && my >= sliderY - sliderH && my <= sliderY + sliderH * 2f) {
                 draggingSlider = true;

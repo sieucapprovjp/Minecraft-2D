@@ -4,6 +4,7 @@ import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.main.game.audio.AudioManager;
 import com.main.game.navigation.ScreenId;
 import com.main.game.navigation.ScreenRouter;
 import com.main.game.screens.BaseScreen;
@@ -31,6 +32,7 @@ public class MainGame extends Game {
     private AssetManager assetManager;
     private ScreenRouter screenRouter;
     private GameState gameState;
+    private AudioManager audioManager;
 
     @Override
     public void create() {
@@ -38,6 +40,8 @@ public class MainGame extends Game {
         assetManager = new AssetManager();
         screenRouter = new ScreenRouter(this);
         gameState = new GameState();
+        audioManager = new AudioManager();
+        audioManager.updateSettings(gameState);
         screenRouter.request(ScreenId.LOADING);
     }
 
@@ -84,6 +88,10 @@ public class MainGame extends Game {
         return gameState;
     }
 
+    public AudioManager getAudioManager() {
+        return audioManager;
+    }
+
     @Override
     public void dispose() {
         Screen current = getScreen();
@@ -96,6 +104,9 @@ public class MainGame extends Game {
         // Dispose shared resources
         BlockPalette.dispose();
         TextureManager.getInstance().dispose();
+        if (audioManager != null) {
+            audioManager.dispose();
+        }
         assetManager.dispose();
         batch.dispose();
     }

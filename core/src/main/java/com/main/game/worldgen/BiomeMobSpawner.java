@@ -268,10 +268,27 @@ public final class BiomeMobSpawner {
 
     private void despawnDistantMobs(EntityManager entityManager, Player player) {
         for (Mob mob : new ArrayList<>(entityManager.getMobs())) {
-            if (!mob.isAlive() || distanceFromPlayer(mob, player) <= DESPAWN_RADIUS) {
+            if (!mob.isAlive() || isPersistentMob(mob) || distanceFromPlayer(mob, player) <= DESPAWN_RADIUS) {
                 continue;
             }
             entityManager.removeMob(mob);
+        }
+    }
+
+    static boolean isPersistentMob(Mob mob) {
+        if (mob == null) {
+            return false;
+        }
+        switch (mob.getType()) {
+            case VILLAGER:
+            case PILLAGER:
+            case VINDICATOR:
+            case EVOKER:
+            case VEX:
+            case RAVAGER:
+                return true;
+            default:
+                return false;
         }
     }
 

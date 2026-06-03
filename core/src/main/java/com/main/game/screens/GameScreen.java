@@ -5,11 +5,16 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.math.Vector2;
 import com.main.game.MainGame;
+import com.main.game.audio.AudioId;
+import com.main.game.audio.GameplayMusicController;
+import com.main.game.audio.MobAmbientAudioController;
 import com.main.game.blocks.AbstractBlock;
 import com.main.game.combat.PlayerAttackController;
 import com.main.game.crafting.CraftingController;
 import com.main.game.entities.EntityManager;
 import com.main.game.entities.player.Player;
+import com.main.game.evoker.EvokerSpellManager;
+import com.main.game.evoker.VexSummonListener;
 import com.main.game.utilityblock.chest.ChestInteractionController;
 import com.main.game.utilityblock.chest.ChestInteractionHandler;
 import com.main.game.utilityblock.chest.ChestManager;
@@ -37,21 +42,37 @@ import com.main.game.items.HarvestEntry;
 import com.main.game.items.MobDropFactory;
 import com.main.game.navigation.ScreenId;
 import com.main.game.physics.PhysicsEngine;
+import com.main.game.projectile.ProjectileManager;
+import com.main.game.projectile.ProjectileType;
+import com.main.game.raid.RaidController;
+import com.main.game.raid.RaidState;
 import com.main.game.time.DayNightCycle;
+import com.main.game.trading.TradingController;
+import com.main.game.trading.TradingInteractionHandler;
+import com.main.game.trading.TradingRenderer;
+import com.main.game.trading.VillagerInteractionController;
 import com.main.game.ui.GameCameraController;
 import com.main.game.ui.GameHudRenderer;
 import com.main.game.ui.GameOverlayRenderer;
+import com.main.game.ui.RaidHudRenderer;
+import com.main.game.utils.TextureManager;
 import com.main.game.world.BlockPalette;
 import com.main.game.world.DemoBlockViewer;
 import com.main.game.world.SpawnSafetyController;
 import com.main.game.world.World;
 import com.main.game.entities.mob.Mob;
 import com.main.game.worldgen.BiomeMobSpawner;
+import com.main.game.worldgen.village.VillageVillagerSpawner;
+import java.util.Locale;
 import java.util.Random;
 
 public class GameScreen extends BaseScreen {
 
+    private static final String PERF_LOG_TAG = "GameScreenPerf";
     private static final float CAMERA_ZOOM = 0.5f;
+    private static final int MAX_ACTIVE_VEX = 2;
+    private static final float VEX_SUMMON_HORIZONTAL_OFFSET = 1.2f;
+    private static final float VEX_HOVER_ABOVE_SURFACE = 2f;
 
     private World world;
     private PhysicsEngine physics;
@@ -77,16 +98,30 @@ public class GameScreen extends BaseScreen {
     private FurnaceInteractionHandler furnaceInteractionHandler;
     private FurnaceManager furnaceManager;
     private FurnaceState openFurnaceState;
+    private VillagerInteractionController villagerInteractionController;
+    private TradingController tradingController;
+    private TradingRenderer tradingRenderer;
+    private TradingInteractionHandler tradingInteractionHandler;
     private CraftingController craftingController;
     private GameCameraController cameraController;
     private GameHudRenderer hudRenderer;
     private GameOverlayRenderer overlayRenderer;
+    private RaidHudRenderer raidHudRenderer;
     private SpawnSafetyController spawnSafetyController;
     private BiomeMobSpawner mobSpawner;
     private DayNightCycle dayNightCycle;
+    private RaidController raidController;
+    private ProjectileManager projectileManager;
+    private EvokerSpellManager evokerSpellManager;
+    private MobAmbientAudioController mobAmbientAudioController;
+    private GameplayMusicController gameplayMusicController;
+    private VillageVillagerSpawner villageVillagerSpawner;
     private Random mobDropRandom;
     private boolean paused;
     private boolean dead;
+    private boolean debugMode;
+    private int lastPlayerHealthForAudio;
+    private RaidState lastRaidAudioState;
 
     private float deathBtnX, deathBtnY, deathBtnW, deathBtnH;
 
@@ -96,13 +131,18 @@ public class GameScreen extends BaseScreen {
 
     @Override
     public void show() {
+        long setupStartNanos = System.nanoTime();
+        game.getAudioManager().stopMusic();
+
         // Tích hợp Seed Random
         long currentSeed = System.currentTimeMillis();
         world = new World(currentSeed);
         physics = new PhysicsEngine();
 
         // Sinh toàn bộ finite world trước khi tìm spawn để cave/ore không bị lỗi seam.
+        long worldGenerateStartNanos = System.nanoTime();
         world.generate();
+        long worldGenerateNanos = System.nanoTime() - worldGenerateStartNanos;
         camera.position.set(world.width / 2f, world.height / 2f, 0f);
         camera.update();
 
@@ -120,15 +160,49 @@ public class GameScreen extends BaseScreen {
         // ── Khởi tạo EntityManager & Tools ─────────────
         entityManager = new EntityManager();
         entityManager.setPlayer(player);
+        projectileManager = new ProjectileManager(new Random(currentSeed + 8819L));
+        projectileManager.setHitListener(this::handleProjectileHitPlayer);
+        evokerSpellManager = new EvokerSpellManager(new Random(currentSeed + 8849L));
+        evokerSpellManager.setFangHitListener(() -> game.getAudioManager().playMobAttack(Mob.MobType.EVOKER));
+        evokerSpellManager.setVexSummonListener(new VexSummonListener() {
+            @Override
+            public boolean canSummonVex(Mob caster, Player target) {
+                return GameScreen.this.canSummonVex(caster, target);
+            }
+
+            @Override
+            public boolean onSummonVex(Mob caster, Player target) {
+                return trySummonVex(caster, target);
+            }
+        });
+        entityManager.setMobRangedAttackListener(projectileManager::spawnFromMobAttack);
+        entityManager.setMobCastSpellListener((mob, target, damage) -> {
+            EvokerSpellManager.CastResult castResult = evokerSpellManager.cast(mob, target, damage, world, projectileManager);
+            if (castResult != EvokerSpellManager.CastResult.NONE) {
+                game.getAudioManager().play(AudioId.EVOKER_CAST);
+            }
+            if (castResult == EvokerSpellManager.CastResult.FANGS) {
+                game.getAudioManager().play(AudioId.EVOKER_FANGS);
+            }
+        });
+        entityManager.setMobMeleeAttackListener(this::handleMobDamagedPlayer);
+        mobAmbientAudioController = new MobAmbientAudioController(new Random(currentSeed + 9929L));
+        gameplayMusicController = new GameplayMusicController(new Random(currentSeed + 4409L));
+        raidController = new RaidController();
+        lastRaidAudioState = raidController.getState();
+        villageVillagerSpawner = new VillageVillagerSpawner();
         blockBreaker = new BlockBreaker();
         blockPlacementController = new BlockPlacementController();
+        blockPlacementController.setBlockPlacementListener(this::handleBlockPlaced);
         craftingTableInteractionController = new CraftingTableInteractionController();
         chestInteractionController = new ChestInteractionController();
         furnaceInteractionController = new FurnaceInteractionController();
         blockBreakOverlay = new BlockBreakOverlay();
         playerAttackController = new PlayerAttackController();
         playerAttackController.setMobDeathListener(this::handleMobKilled);
+        playerAttackController.setMobHitListener(this::handleMobHit);
         droppedItemManager = new DroppedItemManager();
+        droppedItemManager.setPickupListener(() -> game.getAudioManager().play(AudioId.ITEM_PICKUP));
         mobDropRandom = new Random(currentSeed + 7717L);
         inventory = new Inventory();
         StarterInventoryKit.grant(inventory);
@@ -136,12 +210,13 @@ public class GameScreen extends BaseScreen {
         inventoryController = new InventoryController();
         inventoryRenderer = new InventoryRenderer();
         inventoryInteractionHandler = new InventoryInteractionHandler();
-        chestRenderer = new ChestRenderer();
         chestInteractionHandler = new ChestInteractionHandler();
         chestManager = new ChestManager();
-        furnaceRenderer = new FurnaceRenderer();
         furnaceInteractionHandler = new FurnaceInteractionHandler();
         furnaceManager = new FurnaceManager();
+        villagerInteractionController = new VillagerInteractionController();
+        tradingController = new TradingController();
+        tradingInteractionHandler = new TradingInteractionHandler();
         craftingController = new CraftingController();
         cameraController = new GameCameraController();
         syncHeldItem();
@@ -149,13 +224,18 @@ public class GameScreen extends BaseScreen {
 
         dayNightCycle = new DayNightCycle();
         mobSpawner = new BiomeMobSpawner(currentSeed);
+        long mobSpawnStartNanos = System.nanoTime();
         mobSpawner.spawnInitial(world, player, physics, entityManager, dayNightCycle.isNight());
+        long mobSpawnNanos = System.nanoTime() - mobSpawnStartNanos;
 
         paused = false;
         dead = false;
         camera.zoom = CAMERA_ZOOM;
         hudRenderer = new GameHudRenderer();
         overlayRenderer = new GameOverlayRenderer();
+        raidHudRenderer = new RaidHudRenderer();
+        lastPlayerHealthForAudio = player.getHealth();
+        logPerformanceSnapshot(currentSeed, setupStartNanos, worldGenerateNanos, mobSpawnNanos);
     }
 
     @Override
@@ -165,6 +245,7 @@ public class GameScreen extends BaseScreen {
         if (Gdx.input.isKeyJustPressed(Input.Keys.O)) DemoBlockViewer.populateDemo(world, Math.max(2, (int) player.getX()), Math.max(2, (int) player.getY()));
         if (Gdx.input.isKeyJustPressed(Input.Keys.K)) player.kill();
         if (Gdx.input.isKeyJustPressed(Input.Keys.B)) player.ban();
+        if (Gdx.input.isKeyJustPressed(Input.Keys.F3)) debugMode = !debugMode;
 
         boolean inventoryKeyPressed = inventoryController.update();
         if (inventoryKeyPressed) handleInventoryKey();
@@ -180,19 +261,52 @@ public class GameScreen extends BaseScreen {
             if (dayNightCycle != null) {
                 dayNightCycle.update(delta);
             }
-            furnaceManager.update(delta);
+            int startedFurnaces = furnaceManager.update(delta);
+            if (startedFurnaces > 0) {
+                game.getAudioManager().play(AudioId.FURNACE_CRACKLE);
+            }
             entityManager.update(delta);
+            if (mobAmbientAudioController != null) {
+                mobAmbientAudioController.update(delta, entityManager, player, game.getAudioManager());
+            }
             if (mobSpawner != null) {
                 mobSpawner.update(delta, world, player, physics, entityManager,
                     dayNightCycle == null || dayNightCycle.isNight());
             }
+            if (villageVillagerSpawner != null) {
+                int spawnedVillagers = villageVillagerSpawner.update(world, player, physics, entityManager);
+                if (spawnedVillagers > 0) {
+                    Gdx.app.log(PERF_LOG_TAG, "spawnedVillagers=" + spawnedVillagers);
+                }
+            }
+            if (projectileManager != null) {
+                projectileManager.update(delta, world, player);
+            }
+            if (evokerSpellManager != null) {
+                evokerSpellManager.update(delta, world, player);
+            }
+            if (raidController != null) {
+                int spawnedRaidMobs = raidController.update(delta, world, player, physics, entityManager);
+                handleRaidAudio(spawnedRaidMobs);
+                if (spawnedRaidMobs > 0) {
+                    Gdx.app.log(PERF_LOG_TAG, "spawnedRaidMobs=" + spawnedRaidMobs
+                        + ", raidWave=" + raidController.getCurrentWave()
+                        + "/" + raidController.getMaxWaves());
+                }
+            }
+            if (gameplayMusicController != null) {
+                gameplayMusicController.update(delta, game.getAudioManager(),
+                    raidController == null ? RaidState.IDLE : raidController.getState());
+            }
             spawnSafetyController.update(delta, world, player);
             droppedItemManager.update(delta, world, player, inventory);
             if (inventoryController.isInventoryOpen()) {
-                if (openChestState != null) {
-                    chestInteractionHandler.update(inventory, openChestState, chestRenderer);
+                if (tradingController != null && tradingController.isOpen()) {
+                    tradingInteractionHandler.update(inventory, tradingController, getTradingRenderer());
+                } else if (openChestState != null) {
+                    chestInteractionHandler.update(inventory, openChestState, getChestRenderer());
                 } else if (openFurnaceState != null) {
-                    furnaceInteractionHandler.update(inventory, openFurnaceState, furnaceRenderer);
+                    furnaceInteractionHandler.update(inventory, openFurnaceState, getFurnaceRenderer());
                 } else {
                     inventoryInteractionHandler.update(inventory, inventoryRenderer, craftingController);
                 }
@@ -201,6 +315,7 @@ public class GameScreen extends BaseScreen {
         }
 
         if (player.getHealth() <= 0) dead = true;
+        updatePlayerDamageAudio();
 
         if (paused || dead) {
             float mx = Gdx.input.getX();
@@ -234,6 +349,7 @@ public class GameScreen extends BaseScreen {
         boolean attacked = playerAttackController.update(delta, player, entityManager,
             camera, viewport, inventoryController.isInventoryOpen(), heldItemId);
         if (shouldPlaySwordSlash(heldItemId)) {
+            game.getAudioManager().play(AudioId.SWORD_SWING);
             player.playAttackAnimation(mouseWorldX(), heldItemId);
         }
         boolean brokeBlock = false;
@@ -241,6 +357,9 @@ public class GameScreen extends BaseScreen {
             blockBreaker.cancel();
         } else {
             brokeBlock = blockBreaker.update(delta, player, world, camera, viewport, heldItemId);
+            if (blockBreaker.consumeDigSoundRequest()) {
+                playHoveredBlockBreakSound();
+            }
         }
         if (attacked || brokeBlock) {
             damageHeldTool();
@@ -277,17 +396,25 @@ public class GameScreen extends BaseScreen {
         furnaceManager.render(batch, world, camera);
         droppedItemManager.render(batch);
         entityManager.render(batch);
+        if (evokerSpellManager != null) evokerSpellManager.render(batch);
+        if (projectileManager != null) projectileManager.render(batch);
+        if (debugMode) entityManager.renderMobHitboxes(batch);
         blockBreakOverlay.render(batch, blockBreaker, blockPlacementController);
         batch.end();
 
         overlayRenderer.renderWorldDarkness(batch, globalLight);
 
         hudRenderer.render(batch, viewport, inventory, inventoryController, inventoryRenderer,
-            inventoryInteractionHandler, craftingController, furnaceRenderer, furnaceInteractionHandler,
-            openFurnaceState, chestRenderer, chestInteractionHandler, openChestState, player);
+            inventoryInteractionHandler, craftingController,
+            openFurnaceState == null ? null : getFurnaceRenderer(), furnaceInteractionHandler,
+            openFurnaceState,
+            openChestState == null ? null : getChestRenderer(), chestInteractionHandler, openChestState,
+            tradingController != null && tradingController.isOpen() ? getTradingRenderer() : null,
+            tradingInteractionHandler, tradingController, player);
 
         if (paused) overlayRenderer.renderPause(batch);
         else if (dead) overlayRenderer.renderDeath(batch);
+        if (raidHudRenderer != null) raidHudRenderer.render(batch, raidController, entityManager);
         overlayRenderer.renderBrightness(batch, game.getGameState());
     }
 
@@ -299,13 +426,20 @@ public class GameScreen extends BaseScreen {
         float bx = (sw - bw) / 2f;
         float by1 = sh * 0.45f;
         float by2 = sh * 0.30f;
-        if (mx >= bx && mx <= bx + bw && my >= by1 && my <= by1 + bh) paused = false;
-        else if (mx >= bx && mx <= bx + bw && my >= by2 && my <= by2 + bh) game.getScreenRouter().request(ScreenId.MENU);
+        if (mx >= bx && mx <= bx + bw && my >= by1 && my <= by1 + bh) {
+            game.getAudioManager().play(AudioId.UI_CLICK);
+            paused = false;
+        } else if (mx >= bx && mx <= bx + bw && my >= by2 && my <= by2 + bh) {
+            game.getAudioManager().play(AudioId.UI_CLICK);
+            game.getScreenRouter().request(ScreenId.MENU);
+        }
     }
 
     private void handleDeathClick() {
+        game.getAudioManager().play(AudioId.UI_CLICK);
         spawnSafetyController.respawn(world, player);
         dead = false;
+        lastPlayerHealthForAudio = player.getHealth();
     }
 
     private void handleInventoryKey() {
@@ -316,13 +450,26 @@ public class GameScreen extends BaseScreen {
         if (paused || dead) {
             return;
         }
+        if (villagerInteractionController.canOpen(player, entityManager, camera, viewport)
+            && tradingController.open(villagerInteractionController.getHoveredVillager())) {
+            craftingController.closeCrafting(inventory);
+            openChestState = null;
+            openFurnaceState = null;
+            getTradingRenderer();
+            inventoryController.open();
+            game.getAudioManager().play(AudioId.UI_CLICK);
+            return;
+        }
+        tradingController.close();
         if (chestInteractionController.canOpen(player, world, camera, viewport)) {
             craftingController.closeCrafting(inventory);
             openFurnaceState = null;
             openChestState = chestManager.getOrCreate(world,
                 chestInteractionController.getHoveredTileX(),
                 chestInteractionController.getHoveredTileY());
+            getChestRenderer();
             inventoryController.open();
+            game.getAudioManager().play(AudioId.CHEST_OPEN);
             return;
         }
         openChestState = null;
@@ -332,33 +479,49 @@ public class GameScreen extends BaseScreen {
             openFurnaceState = furnaceManager.getOrCreate(world,
                 furnaceInteractionController.getHoveredTileX(),
                 furnaceInteractionController.getHoveredTileY());
+            getFurnaceRenderer();
             inventoryController.open();
+            game.getAudioManager().play(AudioId.UTILITY_BLOCK_OPEN);
             return;
         }
         openFurnaceState = null;
         if (craftingTableInteractionController.canOpen(player, world, camera, viewport)) {
             craftingController.openTableCrafting(inventory);
+            game.getAudioManager().play(AudioId.UTILITY_BLOCK_OPEN);
         } else {
             craftingController.openPlayerCrafting(inventory);
+            game.getAudioManager().play(AudioId.UI_CLICK);
         }
         inventoryController.open();
     }
 
     private void handleInventoryClosed() {
+        if (tradingController != null && tradingController.isOpen()) {
+            game.getAudioManager().play(AudioId.UI_CLICK);
+            tradingInteractionHandler.onCloseInventory(inventory);
+            tradingController.close();
+            return;
+        }
         if (openFurnaceState != null) {
+            game.getAudioManager().play(AudioId.UTILITY_BLOCK_CLOSE);
             furnaceInteractionHandler.onCloseInventory(inventory);
             openFurnaceState = null;
             return;
         }
         if (openChestState != null) {
+            game.getAudioManager().play(AudioId.CHEST_CLOSE);
             chestInteractionHandler.onCloseInventory(inventory);
             openChestState = null;
             return;
         }
+        game.getAudioManager().play(craftingController.isTableCrafting()
+            ? AudioId.UTILITY_BLOCK_CLOSE
+            : AudioId.UI_CLICK);
         inventoryInteractionHandler.onCloseInventory(inventory, craftingController);
     }
 
     private void handleBlockBroken(AbstractBlock block, World worldRef) {
+        playBlockBreakSound(block);
         if (block != null && "furnace".equals(block.getBlockId())) {
             furnaceManager.dropContents(block, worldRef, droppedItemManager);
         }
@@ -368,12 +531,96 @@ public class GameScreen extends BaseScreen {
         droppedItemManager.spawn(BlockDropFactory.createDrop(block, worldRef, getHeldItemId()), worldRef);
     }
 
+    private void handleMobHit(Mob mob) {
+        if (mob != null && mob.isAlive()) {
+            game.getAudioManager().playMobHurt(mob.getType());
+        }
+    }
+
+    private void handleMobDamagedPlayer(Mob mob) {
+        if (mob != null) {
+            game.getAudioManager().playMobAttack(mob.getType());
+        }
+    }
+
+    private void handleProjectileHitPlayer(ProjectileType projectileType) {
+        if (projectileType == ProjectileType.EVOKER_MAGIC) {
+            game.getAudioManager().playMobAttack(Mob.MobType.EVOKER);
+        } else if (projectileType == ProjectileType.PILLAGER_ARROW) {
+            game.getAudioManager().playMobAttack(Mob.MobType.PILLAGER);
+        }
+    }
+
+    private boolean trySummonVex(Mob caster, Player target) {
+        if (!canSummonVex(caster, target)) {
+            return false;
+        }
+
+        float casterCenterX = caster.getX() + caster.getWidth() * 0.5f;
+        float targetCenterX = target == null ? casterCenterX : target.getX() + target.getWidth() * 0.5f;
+        float side = targetCenterX < casterCenterX ? -1f : 1f;
+        float spawnX = clamp(caster.getX() + side * VEX_SUMMON_HORIZONTAL_OFFSET,
+            0f, Math.max(0f, world.width - 1f));
+        float spawnY = vexHoverY(spawnX, caster.getY() + 1f);
+        Player vexTarget = target == null ? player : target;
+
+        entityManager.addMob(new Mob(spawnX, spawnY, Mob.MobType.VEX, vexTarget, physics, world));
+        return true;
+    }
+
+    private boolean canSummonVex(Mob caster, Player target) {
+        return caster != null
+            && caster.isAlive()
+            && entityManager != null
+            && world != null
+            && physics != null
+            && countActiveVex() < MAX_ACTIVE_VEX;
+    }
+
+    private int countActiveVex() {
+        int count = 0;
+        for (Mob mob : entityManager.getMobs()) {
+            if (mob != null && mob.isAlive() && mob.getType() == Mob.MobType.VEX) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private float vexHoverY(float x, float fallbackY) {
+        int tileX = Math.max(0, Math.min(world.width - 1, (int) Math.floor(x + 0.5f)));
+        int surfaceY = world.getSurfaceY(tileX);
+        float y = surfaceY >= 0 ? surfaceY + VEX_HOVER_ABOVE_SURFACE : fallbackY;
+        return clamp(y, 0f, Math.max(0f, world.height - Mob.getRequiredSpawnHeight(Mob.MobType.VEX)));
+    }
+
     private void handleMobKilled(Mob mob) {
         if (mob == null || world == null || droppedItemManager == null || mobDropRandom == null) {
             return;
         }
+        game.getAudioManager().playMobDeath(mob.getType());
         for (HarvestEntry entry : MobDropFactory.createDrops(mob, world, mobDropRandom)) {
             droppedItemManager.spawn(entry, world);
+        }
+    }
+
+    private void handleRaidAudio(int spawnedRaidMobs) {
+        if (raidController == null) {
+            return;
+        }
+        if (spawnedRaidMobs > 0) {
+            game.getAudioManager().play(AudioId.RAID_WAVE_HORN);
+        }
+        RaidState state = raidController.getState();
+        if (state != lastRaidAudioState && state == RaidState.FAILED) {
+            game.getAudioManager().play(AudioId.RAID_CELEBRATE);
+        }
+        lastRaidAudioState = state;
+    }
+
+    private void handleBlockPlaced(String blockId, int tileX, int tileY) {
+        if (raidController != null && raidController.tryStartFromBanner(world, blockId, tileX, tileY)) {
+            game.getAudioManager().play(AudioId.UI_CLICK);
         }
     }
 
@@ -427,7 +674,33 @@ public class GameScreen extends BaseScreen {
             return false;
         }
         reduceHeldStack();
+        game.getAudioManager().play(AudioId.PLAYER_EAT);
         return true;
+    }
+
+    private void updatePlayerDamageAudio() {
+        if (player == null) {
+            return;
+        }
+        int health = player.getHealth();
+        if (health < lastPlayerHealthForAudio) {
+            game.getAudioManager().play(health <= 0 ? AudioId.PLAYER_DEATH : AudioId.PLAYER_HURT);
+        }
+        lastPlayerHealthForAudio = health;
+    }
+
+    private void playHoveredBlockBreakSound() {
+        if (world == null || blockBreaker == null || !blockBreaker.hasHoveredBlock()) {
+            return;
+        }
+        AbstractBlock block = world.getBlock(blockBreaker.getHoveredBlockX(), blockBreaker.getHoveredBlockY());
+        playBlockBreakSound(block);
+    }
+
+    private void playBlockBreakSound(AbstractBlock block) {
+        if (block != null) {
+            game.getAudioManager().playBlockBreak(block.getBlockId());
+        }
     }
 
     private void reduceHeldStack() {
@@ -460,20 +733,70 @@ public class GameScreen extends BaseScreen {
         return from + (to - from) * t;
     }
 
+    private float clamp(float value, float min, float max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    private void logPerformanceSnapshot(long seed, long setupStartNanos, long worldGenerateNanos, long mobSpawnNanos) {
+        TextureManager textureManager = TextureManager.getInstance();
+        Gdx.app.log(PERF_LOG_TAG,
+            "seed=" + seed
+                + ", setupMs=" + formatMillis(System.nanoTime() - setupStartNanos)
+                + ", worldGenerateMs=" + formatMillis(worldGenerateNanos)
+                + ", initialMobSpawnMs=" + formatMillis(mobSpawnNanos)
+                + ", textureCache=" + textureManager.getCachedTextureCount()
+                + ", ownedTextures=" + textureManager.getOwnedTextureCount()
+                + ", generatedFallbacks=" + textureManager.getGeneratedFallbackCount()
+                + ", mobAssetTypes=" + Mob.getCachedAssetTypeCount()
+                + ", mobAssetTextures=" + Mob.getLoadedAssetTextureCount()
+                + ", initialMobs=" + (entityManager == null ? 0 : entityManager.aliveMobCount()));
+    }
+
+    private static String formatMillis(long nanos) {
+        return String.format(Locale.ROOT, "%.2f", nanos / 1_000_000f);
+    }
+
+    private ChestRenderer getChestRenderer() {
+        if (chestRenderer == null) {
+            chestRenderer = new ChestRenderer();
+        }
+        return chestRenderer;
+    }
+
+    private FurnaceRenderer getFurnaceRenderer() {
+        if (furnaceRenderer == null) {
+            furnaceRenderer = new FurnaceRenderer();
+        }
+        return furnaceRenderer;
+    }
+
+    private TradingRenderer getTradingRenderer() {
+        if (tradingRenderer == null) {
+            tradingRenderer = new TradingRenderer();
+        }
+        return tradingRenderer;
+    }
+
     @Override
     public void dispose() {
         super.dispose();
         BlockPalette.dispose();
         if (hudRenderer != null) hudRenderer.dispose();
         if (overlayRenderer != null) overlayRenderer.dispose();
+        if (raidHudRenderer != null) raidHudRenderer.dispose();
         if (blockBreakOverlay != null) blockBreakOverlay.dispose();
         if (droppedItemManager != null) droppedItemManager.clear();
         if (inventoryRenderer != null) inventoryRenderer.dispose();
         if (chestRenderer != null) chestRenderer.dispose();
+        if (tradingRenderer != null) tradingRenderer.dispose();
         if (chestManager != null) chestManager.clear();
         if (furnaceRenderer != null) furnaceRenderer.dispose();
         if (furnaceManager != null) furnaceManager.clear();
+        if (evokerSpellManager != null) evokerSpellManager.dispose();
+        if (projectileManager != null) projectileManager.dispose();
+        if (gameplayMusicController != null) gameplayMusicController.stop(game.getAudioManager());
         entityManager.dispose();
+        Mob.disposeSharedAssets();
     }
 
     @Override

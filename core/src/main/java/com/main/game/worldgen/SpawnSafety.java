@@ -1,6 +1,7 @@
 package com.main.game.worldgen;
 
 import com.badlogic.gdx.math.Vector2;
+import com.main.game.blocks.AbstractBlock;
 import com.main.game.world.World;
 
 public final class SpawnSafety {
@@ -34,6 +35,20 @@ public final class SpawnSafety {
         return hasSolidGround(world, x, y, width) && isAreaClear(world, x, y, width, height);
     }
 
+    public static boolean hasGrassGround(World world, int x, int y, int width) {
+        if (world == null || y <= 0) return false;
+        for (int tx = x; tx < x + width; tx++) {
+            if (!world.isInBounds(tx, y - 1)) {
+                return false;
+            }
+            AbstractBlock ground = world.getBlock(tx, y - 1);
+            if (ground == null || !"grass".equals(ground.getBlockId())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public static Vector2 findSurfaceSpawn(World world, int startX, int searchRadius, int width, int height) {
         if (world == null) return null;
         int clampedStart = Math.max(1, Math.min(world.width - width - 1, startX));
@@ -44,7 +59,9 @@ public final class SpawnSafety {
             for (int x : candidates) {
                 if (x < 1 || x + width >= world.width - 1) continue;
                 int y = findSurfaceY(world, x);
-                if (y > 0 && isSafeEntitySpawn(world, x, y, width, height)) {
+                if (y > 0
+                    && hasGrassGround(world, x, y, width)
+                    && isSafeEntitySpawn(world, x, y, width, height)) {
                     return new Vector2(x + 0.1f, y);
                 }
             }

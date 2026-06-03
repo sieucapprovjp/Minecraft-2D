@@ -1,6 +1,8 @@
 package com.main.game.worldgen;
 
 import com.main.game.world.World;
+import com.main.game.worldgen.village.VillagePlacer;
+import com.main.game.worldgen.village.VillageState;
 import java.util.Random;
 
 public final class WorldGenerator {
@@ -31,6 +33,10 @@ public final class WorldGenerator {
     private static final int SPRUCE_TREE_SPACING = 13;
     private static final float SPRUCE_TREE_CHANCE = 0.72f;
     private static final int FILLER_LAYER_DEPTH = 2;
+    private static final int GUARANTEED_PLAINS_CENTER_OFFSET = 70;
+    private static final int GUARANTEED_PLAINS_HALF_WIDTH = 48;
+    private static final int GUARANTEED_PLAINS_EDGE_BLEND_WIDTH = 16;
+    private static final int GUARANTEED_PLAINS_SURFACE_OFFSET = -5;
 
     private WorldGenerator() {
     }
@@ -39,16 +45,25 @@ public final class WorldGenerator {
         if (world == null) return;
         Random random = new Random(seed);
         int baseGround = world.height / 2;
+        int guaranteedPlainsCenterX = guaranteedPlainsCenterX(world.width);
 
         for (int x = 0; x < world.width; x++) {
-            BiomeType biome = chooseBiome(x, seed);
+            BiomeType naturalBiome = chooseBiome(x, seed);
+            BiomeType biome = chooseBiome(x, seed, guaranteedPlainsCenterX);
             BiomeProfile profile = BiomeProfile.forType(biome);
             world.setBiome(x, biome);
 
             float terrainNoise = WorldNoise.smoothNoise1D(x * TERRAIN_FREQUENCY, seed);
             float detailNoise = WorldNoise.smoothNoise1D(x * TERRAIN_FREQUENCY * 3f, seed + 1);
-            int surface = baseGround + profile.heightOffset
-                + (int) (terrainNoise * profile.terrainAmplitude + detailNoise * profile.detailStrength);
+            int surface = naturalSurface(baseGround, BiomeProfile.forType(naturalBiome), terrainNoise, detailNoise);
+            if (isGuaranteedPlainsColumn(x, guaranteedPlainsCenterX)) {
+                surface = blendedGuaranteedPlainsSurface(
+                    guaranteedPlainsSurface(baseGround, x, seed),
+                    surface,
+                    x,
+                    guaranteedPlainsCenterX
+                );
+            }
             surface = Math.max(8, Math.min(world.height - 8, surface));
             world.setSurfaceY(x, surface);
 
@@ -56,12 +71,57 @@ public final class WorldGenerator {
             decorateSurface(world, x, surface, biome, profile, random, seed);
         }
 
-        StructurePlacer.placeVillageHouse(world, seed);
+        VillageState village = VillagePlacer.place(world, seed, guaranteedPlainsCenterX, GUARANTEED_PLAINS_HALF_WIDTH);
+        world.setVillageState(village);
     }
 
     private static BiomeType chooseBiome(int x, long seed) {
         float noise = WorldNoise.smoothNoise1D(x * BIOME_FREQUENCY, seed + 9001);
         return chooseBiomeForNoise(noise);
+    }
+
+    static BiomeType chooseBiome(int x, long seed, int guaranteedPlainsCenterX) {
+        if (isGuaranteedPlainsColumn(x, guaranteedPlainsCenterX)) return BiomeType.PLAINS;
+        return chooseBiome(x, seed);
+    }
+
+    static int guaranteedPlainsCenterX(int worldWidth) {
+        return Math.max(GUARANTEED_PLAINS_HALF_WIDTH + 2,
+            Math.min(worldWidth - GUARANTEED_PLAINS_HALF_WIDTH - 3,
+                worldWidth / 2 + GUARANTEED_PLAINS_CENTER_OFFSET));
+    }
+
+    static int guaranteedPlainsHalfWidth() {
+        return GUARANTEED_PLAINS_HALF_WIDTH;
+    }
+
+    static boolean isGuaranteedPlainsColumn(int x, int guaranteedPlainsCenterX) {
+        return Math.abs(x - guaranteedPlainsCenterX) <= GUARANTEED_PLAINS_HALF_WIDTH;
+    }
+
+    static int guaranteedPlainsSurface(int baseGround, int x, long seed) {
+        float local = WorldNoise.smoothNoise1D(x * 0.10f, seed + 44011);
+        return baseGround + GUARANTEED_PLAINS_SURFACE_OFFSET + Math.round(local);
+    }
+
+    static int blendedGuaranteedPlainsSurface(int targetSurface, int naturalSurface, int x, int guaranteedPlainsCenterX) {
+        int distanceFromCenter = Math.abs(x - guaranteedPlainsCenterX);
+        int distanceFromEdge = GUARANTEED_PLAINS_HALF_WIDTH - distanceFromCenter;
+        if (distanceFromEdge >= GUARANTEED_PLAINS_EDGE_BLEND_WIDTH) {
+            return targetSurface;
+        }
+        float progress = Math.max(0f, Math.min(1f, distanceFromEdge / (float) GUARANTEED_PLAINS_EDGE_BLEND_WIDTH));
+        float smoothProgress = progress * progress * (3f - 2f * progress);
+        return Math.round(lerp(naturalSurface, targetSurface, smoothProgress));
+    }
+
+    private static int naturalSurface(int baseGround, BiomeProfile profile, float terrainNoise, float detailNoise) {
+        return baseGround + profile.heightOffset
+            + (int) (terrainNoise * profile.terrainAmplitude + detailNoise * profile.detailStrength);
+    }
+
+    private static float lerp(float from, float to, float progress) {
+        return from + (to - from) * progress;
     }
 
     static BiomeType chooseBiomeForNoise(float noise) {
