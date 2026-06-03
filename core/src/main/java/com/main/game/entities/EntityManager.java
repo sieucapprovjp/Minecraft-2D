@@ -2,7 +2,9 @@ package com.main.game.entities;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.main.game.entities.mob.Mob;
+import com.main.game.entities.mob.MobCastSpellListener;
 import com.main.game.entities.mob.MobHitboxDebugRenderer;
+import com.main.game.entities.mob.MobMeleeAttackListener;
 import com.main.game.entities.mob.MobRangedAttackListener;
 import com.main.game.entities.player.Player;
 import java.util.ArrayList;
@@ -52,6 +54,8 @@ public class EntityManager {
     private final List<Entity> toRemove = new ArrayList<>();
     private MobHitboxDebugRenderer mobHitboxDebugRenderer;
     private MobRangedAttackListener mobRangedAttackListener;
+    private MobCastSpellListener mobCastSpellListener;
+    private MobMeleeAttackListener mobMeleeAttackListener;
 
     // ─── Quản lý Player ───────────────────────────────────────
 
@@ -71,6 +75,8 @@ public class EntityManager {
             return;
         }
         mob.setRangedAttackListener(mobRangedAttackListener);
+        mob.setCastSpellListener(mobCastSpellListener);
+        mob.setMeleeAttackListener(mobMeleeAttackListener);
         toAdd.add(mob);
         mobs.add(mob);
     }
@@ -87,6 +93,20 @@ public class EntityManager {
         this.mobRangedAttackListener = mobRangedAttackListener;
         for (Mob mob : mobs) {
             mob.setRangedAttackListener(mobRangedAttackListener);
+        }
+    }
+
+    public void setMobCastSpellListener(MobCastSpellListener mobCastSpellListener) {
+        this.mobCastSpellListener = mobCastSpellListener;
+        for (Mob mob : mobs) {
+            mob.setCastSpellListener(mobCastSpellListener);
+        }
+    }
+
+    public void setMobMeleeAttackListener(MobMeleeAttackListener mobMeleeAttackListener) {
+        this.mobMeleeAttackListener = mobMeleeAttackListener;
+        for (Mob mob : mobs) {
+            mob.setMeleeAttackListener(mobMeleeAttackListener);
         }
     }
 

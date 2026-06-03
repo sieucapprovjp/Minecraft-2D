@@ -61,24 +61,50 @@ public class AudioManager {
         if (!soundEnabled || blockId == null) {
             return;
         }
-        String[] paths = AudioCatalog.blockBreakPaths(blockId);
-        if (paths.length == 0) {
-            return;
-        }
-        Sound[] sounds = pathGroupCache.computeIfAbsent(cacheKey(paths), key -> loadSounds(paths));
-        playRandom(sounds, DEFAULT_SOUND_VOLUME);
+        playPathGroup(AudioCatalog.blockBreakPaths(blockId), DEFAULT_SOUND_VOLUME);
     }
 
     public void playMobHurt(Mob.MobType type) {
         if (!soundEnabled || type == null) {
             return;
         }
-        String[] paths = AudioCatalog.mobHurtPaths(type);
+        playPathGroup(AudioCatalog.mobHurtPaths(type), DEFAULT_SOUND_VOLUME);
+    }
+
+    public void playMobDeath(Mob.MobType type) {
+        if (!soundEnabled || type == null) {
+            return;
+        }
+        playPathGroup(AudioCatalog.mobDeathPaths(type), DEFAULT_SOUND_VOLUME);
+    }
+
+    public void playMobIdle(Mob.MobType type, float volume) {
+        if (!soundEnabled || type == null) {
+            return;
+        }
+        playPathGroup(AudioCatalog.mobIdlePaths(type), volume);
+    }
+
+    public void playMobStep(Mob.MobType type, float volume) {
+        if (!soundEnabled || type == null) {
+            return;
+        }
+        playPathGroup(AudioCatalog.mobStepPaths(type), volume);
+    }
+
+    public void playMobAttack(Mob.MobType type) {
+        if (!soundEnabled || type == null) {
+            return;
+        }
+        playPathGroup(AudioCatalog.mobAttackPaths(type), DEFAULT_SOUND_VOLUME);
+    }
+
+    private void playPathGroup(String[] paths, float volume) {
         if (paths.length == 0) {
             return;
         }
         Sound[] sounds = pathGroupCache.computeIfAbsent(cacheKey(paths), key -> loadSounds(paths));
-        playRandom(sounds, DEFAULT_SOUND_VOLUME);
+        playRandom(sounds, volume);
     }
 
     public void playMusic(AudioId id) {

@@ -6,11 +6,13 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.math.Vector2;
 import com.main.game.MainGame;
 import com.main.game.audio.AudioId;
+import com.main.game.audio.MobAmbientAudioController;
 import com.main.game.blocks.AbstractBlock;
 import com.main.game.combat.PlayerAttackController;
 import com.main.game.crafting.CraftingController;
 import com.main.game.entities.EntityManager;
 import com.main.game.entities.player.Player;
+import com.main.game.evoker.EvokerSpellManager;
 import com.main.game.utilityblock.chest.ChestInteractionController;
 import com.main.game.utilityblock.chest.ChestInteractionHandler;
 import com.main.game.utilityblock.chest.ChestManager;
@@ -39,8 +41,9 @@ import com.main.game.items.MobDropFactory;
 import com.main.game.navigation.ScreenId;
 import com.main.game.physics.PhysicsEngine;
 import com.main.game.projectile.ProjectileManager;
+import com.main.game.projectile.ProjectileType;
 import com.main.game.raid.RaidController;
-import com.main.game.raid.RaidMobSpawner;
+import com.main.game.raid.RaidState;
 import com.main.game.time.DayNightCycle;
 import com.main.game.trading.TradingController;
 import com.main.game.trading.TradingInteractionHandler;
@@ -102,12 +105,15 @@ public class GameScreen extends BaseScreen {
     private DayNightCycle dayNightCycle;
     private RaidController raidController;
     private ProjectileManager projectileManager;
+    private EvokerSpellManager evokerSpellManager;
+    private MobAmbientAudioController mobAmbientAudioController;
     private VillageVillagerSpawner villageVillagerSpawner;
     private Random mobDropRandom;
     private boolean paused;
     private boolean dead;
     private boolean debugMode;
     private int lastPlayerHealthForAudio;
+    private RaidState lastRaidAudioState;
 
     private float deathBtnX, deathBtnY, deathBtnW, deathBtnH;
 
@@ -147,8 +153,23 @@ public class GameScreen extends BaseScreen {
         entityManager = new EntityManager();
         entityManager.setPlayer(player);
         projectileManager = new ProjectileManager(new Random(currentSeed + 8819L));
+        projectileManager.setHitListener(this::handleProjectileHitPlayer);
+        evokerSpellManager = new EvokerSpellManager();
+        evokerSpellManager.setFangHitListener(() -> game.getAudioManager().playMobAttack(Mob.MobType.EVOKER));
         entityManager.setMobRangedAttackListener(projectileManager::spawnFromMobAttack);
+        entityManager.setMobCastSpellListener((mob, target, damage) -> {
+            EvokerSpellManager.CastResult castResult = evokerSpellManager.cast(mob, target, damage, world, projectileManager);
+            if (castResult != EvokerSpellManager.CastResult.NONE) {
+                game.getAudioManager().play(AudioId.EVOKER_CAST);
+            }
+            if (castResult == EvokerSpellManager.CastResult.FANGS) {
+                game.getAudioManager().play(AudioId.EVOKER_FANGS);
+            }
+        });
+        entityManager.setMobMeleeAttackListener(this::handleMobDamagedPlayer);
+        mobAmbientAudioController = new MobAmbientAudioController(new Random(currentSeed + 9929L));
         raidController = new RaidController();
+        lastRaidAudioState = raidController.getState();
         villageVillagerSpawner = new VillageVillagerSpawner();
         blockBreaker = new BlockBreaker();
         blockPlacementController = new BlockPlacementController();
@@ -221,6 +242,9 @@ public class GameScreen extends BaseScreen {
             }
             furnaceManager.update(delta);
             entityManager.update(delta);
+            if (mobAmbientAudioController != null) {
+                mobAmbientAudioController.update(delta, entityManager, player, game.getAudioManager());
+            }
             if (mobSpawner != null) {
                 mobSpawner.update(delta, world, player, physics, entityManager,
                     dayNightCycle == null || dayNightCycle.isNight());
@@ -233,6 +257,18 @@ public class GameScreen extends BaseScreen {
             }
             if (projectileManager != null) {
                 projectileManager.update(delta, world, player);
+            }
+            if (evokerSpellManager != null) {
+                evokerSpellManager.update(delta, world, player);
+            }
+            if (raidController != null) {
+                int spawnedRaidMobs = raidController.update(delta, world, player, physics, entityManager);
+                handleRaidAudio(spawnedRaidMobs);
+                if (spawnedRaidMobs > 0) {
+                    Gdx.app.log(PERF_LOG_TAG, "spawnedRaidMobs=" + spawnedRaidMobs
+                        + ", raidWave=" + raidController.getCurrentWave()
+                        + "/" + raidController.getMaxWaves());
+                }
             }
             spawnSafetyController.update(delta, world, player);
             droppedItemManager.update(delta, world, player, inventory);
@@ -332,6 +368,7 @@ public class GameScreen extends BaseScreen {
         furnaceManager.render(batch, world, camera);
         droppedItemManager.render(batch);
         entityManager.render(batch);
+        if (evokerSpellManager != null) evokerSpellManager.render(batch);
         if (projectileManager != null) projectileManager.render(batch);
         if (debugMode) entityManager.renderMobHitboxes(batch);
         blockBreakOverlay.render(batch, blockBreaker, blockPlacementController);
@@ -463,8 +500,22 @@ public class GameScreen extends BaseScreen {
     }
 
     private void handleMobHit(Mob mob) {
-        if (mob != null) {
+        if (mob != null && mob.isAlive()) {
             game.getAudioManager().playMobHurt(mob.getType());
+        }
+    }
+
+    private void handleMobDamagedPlayer(Mob mob) {
+        if (mob != null) {
+            game.getAudioManager().playMobAttack(mob.getType());
+        }
+    }
+
+    private void handleProjectileHitPlayer(ProjectileType projectileType) {
+        if (projectileType == ProjectileType.EVOKER_MAGIC) {
+            game.getAudioManager().playMobAttack(Mob.MobType.EVOKER);
+        } else if (projectileType == ProjectileType.PILLAGER_ARROW) {
+            game.getAudioManager().playMobAttack(Mob.MobType.PILLAGER);
         }
     }
 
@@ -472,18 +523,28 @@ public class GameScreen extends BaseScreen {
         if (mob == null || world == null || droppedItemManager == null || mobDropRandom == null) {
             return;
         }
+        game.getAudioManager().playMobDeath(mob.getType());
         for (HarvestEntry entry : MobDropFactory.createDrops(mob, world, mobDropRandom)) {
             droppedItemManager.spawn(entry, world);
         }
     }
 
+    private void handleRaidAudio(int spawnedRaidMobs) {
+        if (raidController == null) {
+            return;
+        }
+        if (spawnedRaidMobs > 0) {
+            game.getAudioManager().play(AudioId.RAID_WAVE_HORN);
+        }
+        RaidState state = raidController.getState();
+        if (state != lastRaidAudioState && state == RaidState.FAILED) {
+            game.getAudioManager().play(AudioId.RAID_CELEBRATE);
+        }
+        lastRaidAudioState = state;
+    }
+
     private void handleBlockPlaced(String blockId, int tileX, int tileY) {
         if (raidController != null && raidController.tryStartFromBanner(world, blockId, tileX, tileY)) {
-            int spawnedRaidMobs = RaidMobSpawner.spawnOneOfEach(world, player, physics, entityManager);
-            if (spawnedRaidMobs > 0) {
-                raidController.markWaveActive();
-                Gdx.app.log(PERF_LOG_TAG, "spawnedRaidMobs=" + spawnedRaidMobs);
-            }
             game.getAudioManager().play(AudioId.UI_CLICK);
         }
     }
@@ -651,6 +712,7 @@ public class GameScreen extends BaseScreen {
         if (chestManager != null) chestManager.clear();
         if (furnaceRenderer != null) furnaceRenderer.dispose();
         if (furnaceManager != null) furnaceManager.clear();
+        if (evokerSpellManager != null) evokerSpellManager.dispose();
         if (projectileManager != null) projectileManager.dispose();
         entityManager.dispose();
         Mob.disposeSharedAssets();

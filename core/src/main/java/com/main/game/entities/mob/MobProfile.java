@@ -111,7 +111,8 @@ final class MobProfile {
                     DEFAULT_ATTACK_RANGE, 1.5f, DEFAULT_PATROL_RANGE, 5, 24, MobAllegiance.HOSTILE, 0.8f, 1.8f);
             case EVOKER:
                 return new MobProfile(1.6f, 2.1f, HOSTILE_AGGRO_RADIUS, 18f,
-                    6f, 2.5f, 5f, 4, 24, MobAllegiance.HOSTILE, 0.8f, 1.8f);
+                    6f, 2.6f, 5f, 3, 24, MobAllegiance.HOSTILE, 0.8f, 1.8f,
+                    MobAttackStyle.CASTER, DEFAULT_RENDER_PIXELS_PER_TILE, 0f, 0f);
             case RAVAGER:
                 return new MobProfile(1.8f, 2.5f, HOSTILE_AGGRO_RADIUS, DEFAULT_DEAGGRO,
                     1.5f, 1.4f, 6f, 7, 40, MobAllegiance.HOSTILE, 2.0f, 2.2f);

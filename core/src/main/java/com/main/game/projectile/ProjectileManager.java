@@ -15,10 +15,15 @@ public class ProjectileManager {
     private static final float PILLAGER_ARROW_SPEED = 9f;
     private static final float PILLAGER_ARROW_LIFETIME = 3f;
     private static final float MAX_SPREAD_DEGREES = 4f;
+    private static final float EVOKER_MAGIC_WIDTH = 0.32f;
+    private static final float EVOKER_MAGIC_HEIGHT = 0.2f;
+    private static final float EVOKER_MAGIC_SPEED = 8.5f;
+    private static final float EVOKER_MAGIC_LIFETIME = 3f;
 
     private final Array<Projectile> projectiles = new Array<>();
     private final Random random;
     private ProjectileRenderer renderer;
+    private ProjectileHitListener hitListener;
 
     public ProjectileManager() {
         this(new Random());
@@ -47,12 +52,39 @@ public class ProjectileManager {
             PILLAGER_ARROW_LIFETIME));
     }
 
+    public void spawnEvokerMagic(Mob shooter, Player target, int damage) {
+        if (shooter == null || target == null || !shooter.isAlive() || !target.isAlive()) {
+            return;
+        }
+        float spread = randomSpreadDegrees() * 0.5f;
+        Vector2 direction = ProjectileAim.directionToPlayer(shooter, target, spread);
+        Vector2 center = ProjectileAim.spawnCenter(shooter, direction);
+        projectiles.add(new Projectile(
+            ProjectileType.EVOKER_MAGIC,
+            center.x - EVOKER_MAGIC_WIDTH * 0.5f,
+            center.y - EVOKER_MAGIC_HEIGHT * 0.5f,
+            EVOKER_MAGIC_WIDTH,
+            EVOKER_MAGIC_HEIGHT,
+            direction.x * EVOKER_MAGIC_SPEED,
+            direction.y * EVOKER_MAGIC_SPEED,
+            damage,
+            EVOKER_MAGIC_LIFETIME));
+    }
+
+    public void setHitListener(ProjectileHitListener hitListener) {
+        this.hitListener = hitListener;
+    }
+
     public void update(float delta, World world, Player player) {
         for (int i = projectiles.size - 1; i >= 0; i--) {
             Projectile projectile = projectiles.get(i);
             projectile.update(delta, world);
             if (player != null && player.isAlive() && projectile.overlaps(player.getBounds())) {
+                int healthBefore = player.getHealth();
                 player.takeDamage(projectile.getDamage());
+                if (player.getHealth() < healthBefore && hitListener != null) {
+                    hitListener.onProjectileHitPlayer(projectile.getType());
+                }
                 projectile.kill();
             }
             if (!projectile.isAlive()) {

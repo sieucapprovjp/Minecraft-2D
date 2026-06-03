@@ -10,5 +10,10 @@ public enum AudioId {
     SWORD_SWING,
     CHEST_OPEN,
     CHEST_CLOSE,
-    ITEM_PICKUP
+    ITEM_PICKUP,
+    EVOKER_CAST,
+    EVOKER_FANGS,
+    EVOKER_IDLE,
+    RAID_WAVE_HORN,
+    RAID_CELEBRATE
 }

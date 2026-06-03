@@ -60,6 +60,104 @@ public final class AudioCatalog {
     private static final String[] SHEEP_HURT = {
         "audio/mobs/sheephurt.wav"
     };
+    private static final String[] EVOKER_IDLE = {
+        "audio/mobs/evoker/idle1.mp3",
+        "audio/mobs/evoker/idle2.mp3"
+    };
+    private static final String[] EVOKER_HURT = {
+        "audio/mobs/evoker/hurt1.mp3"
+    };
+    private static final String[] EVOKER_DEATH = {
+        "audio/mobs/evoker/death1.mp3"
+    };
+    private static final String[] EVOKER_CELEBRATE = {
+        "audio/mobs/evoker/celebrate.mp3"
+    };
+    private static final String[] PILLAGER_IDLE = {
+        "audio/mobs/pillager/idle1.ogg",
+        "audio/mobs/pillager/idle2.ogg",
+        "audio/mobs/pillager/idle3.ogg",
+        "audio/mobs/pillager/idle4.ogg"
+    };
+    private static final String[] PILLAGER_HURT = {
+        "audio/mobs/pillager/hurt1.ogg",
+        "audio/mobs/pillager/hurt2.ogg",
+        "audio/mobs/pillager/hurt3.ogg"
+    };
+    private static final String[] PILLAGER_DEATH = {
+        "audio/mobs/pillager/death1.ogg",
+        "audio/mobs/pillager/death2.ogg"
+    };
+    private static final String[] PILLAGER_CELEBRATE = {
+        "audio/mobs/pillager/celebrate1.ogg",
+        "audio/mobs/pillager/celebrate2.ogg",
+        "audio/mobs/pillager/celebrate3.ogg",
+        "audio/mobs/pillager/celebrate4.ogg"
+    };
+    private static final String[] PILLAGER_HORN_CELEBRATE = {
+        "audio/mobs/pillager/horn_celebrate.ogg"
+    };
+    private static final String[] VINDICATOR_IDLE = {
+        "audio/mobs/vindicator/idle1.ogg",
+        "audio/mobs/vindicator/idle2.ogg",
+        "audio/mobs/vindicator/idle3.ogg",
+        "audio/mobs/vindicator/idle4.ogg",
+        "audio/mobs/vindicator/idle5.ogg"
+    };
+    private static final String[] VINDICATOR_HURT = {
+        "audio/mobs/vindicator/hurt1.ogg",
+        "audio/mobs/vindicator/hurt2.ogg",
+        "audio/mobs/vindicator/hurt3.ogg"
+    };
+    private static final String[] VINDICATOR_DEATH = {
+        "audio/mobs/vindicator/death1.ogg"
+    };
+    private static final String[] VINDICATOR_CELEBRATE = {
+        "audio/mobs/vindicator/celebrate1.ogg"
+    };
+    private static final String[] RAVAGER_IDLE = {
+        "audio/mobs/ravager/idle1.ogg",
+        "audio/mobs/ravager/idle2.ogg",
+        "audio/mobs/ravager/idle3.ogg",
+        "audio/mobs/ravager/idle4.ogg",
+        "audio/mobs/ravager/idle5.ogg",
+        "audio/mobs/ravager/idle6.ogg",
+        "audio/mobs/ravager/idle7.ogg",
+        "audio/mobs/ravager/idle8.ogg"
+    };
+    private static final String[] RAVAGER_HURT = {
+        "audio/mobs/ravager/hurt1.ogg",
+        "audio/mobs/ravager/hurt2.ogg",
+        "audio/mobs/ravager/hurt3.ogg",
+        "audio/mobs/ravager/hurt4.ogg"
+    };
+    private static final String[] RAVAGER_DEATH = {
+        "audio/mobs/ravager/death1.ogg",
+        "audio/mobs/ravager/death2.ogg",
+        "audio/mobs/ravager/death3.ogg"
+    };
+    private static final String[] RAVAGER_STEP = {
+        "audio/mobs/ravager/step1.ogg",
+        "audio/mobs/ravager/step2.ogg",
+        "audio/mobs/ravager/step3.ogg",
+        "audio/mobs/ravager/step4.ogg",
+        "audio/mobs/ravager/step5.ogg"
+    };
+    private static final String[] RAVAGER_BITE = {
+        "audio/mobs/ravager/bite1.ogg",
+        "audio/mobs/ravager/bite2.ogg",
+        "audio/mobs/ravager/bite3.ogg"
+    };
+    private static final String[] RAVAGER_CELEBRATE = {
+        "audio/mobs/ravager/celebrate1.ogg",
+        "audio/mobs/ravager/celebrate2.ogg"
+    };
+    private static final String[] RAID_CELEBRATE = concat(
+        PILLAGER_CELEBRATE,
+        VINDICATOR_CELEBRATE,
+        RAVAGER_CELEBRATE,
+        EVOKER_CELEBRATE
+    );
 
     private AudioCatalog() {
     }
@@ -85,6 +183,16 @@ public final class AudioCatalog {
                 return new String[] {"audio/chest_inventory/chestclosed.mp3"};
             case ITEM_PICKUP:
                 return new String[] {"audio/other/collect.mp3"};
+            case EVOKER_CAST:
+                return new String[] {"audio/mobs/evoker/cast2.mp3"};
+            case EVOKER_FANGS:
+                return new String[] {"audio/mobs/evoker/fangs.mp3"};
+            case EVOKER_IDLE:
+                return EVOKER_IDLE;
+            case RAID_WAVE_HORN:
+                return PILLAGER_HORN_CELEBRATE;
+            case RAID_CELEBRATE:
+                return RAID_CELEBRATE;
             default:
                 return EMPTY;
         }
@@ -141,8 +249,96 @@ public final class AudioCatalog {
                 return CHICKEN_HURT;
             case SHEEP:
                 return SHEEP_HURT;
+            case EVOKER:
+                return EVOKER_HURT;
+            case PILLAGER:
+                return PILLAGER_HURT;
+            case VINDICATOR:
+                return VINDICATOR_HURT;
+            case RAVAGER:
+                return RAVAGER_HURT;
             default:
                 return EMPTY;
         }
+    }
+
+    public static String[] mobDeathPaths(Mob.MobType type) {
+        if (type == null) {
+            return EMPTY;
+        }
+        if (type == Mob.MobType.EVOKER) {
+            return EVOKER_DEATH;
+        }
+        if (type == Mob.MobType.PILLAGER) {
+            return PILLAGER_DEATH;
+        }
+        if (type == Mob.MobType.VINDICATOR) {
+            return VINDICATOR_DEATH;
+        }
+        if (type == Mob.MobType.RAVAGER) {
+            return RAVAGER_DEATH;
+        }
+        return mobHurtPaths(type);
+    }
+
+    public static String[] mobIdlePaths(Mob.MobType type) {
+        if (type == null) {
+            return EMPTY;
+        }
+        switch (type) {
+            case EVOKER:
+                return EVOKER_IDLE;
+            case PILLAGER:
+                return PILLAGER_IDLE;
+            case VINDICATOR:
+                return VINDICATOR_IDLE;
+            case RAVAGER:
+                return RAVAGER_IDLE;
+            default:
+                return EMPTY;
+        }
+    }
+
+    public static String[] mobStepPaths(Mob.MobType type) {
+        if (type == Mob.MobType.RAVAGER) {
+            return RAVAGER_STEP;
+        }
+        return EMPTY;
+    }
+
+    public static String[] mobAttackPaths(Mob.MobType type) {
+        if (type == null) {
+            return EMPTY;
+        }
+        if (type == Mob.MobType.RAVAGER) {
+            return RAVAGER_BITE;
+        }
+        if (type == Mob.MobType.PILLAGER || type == Mob.MobType.VINDICATOR || type == Mob.MobType.EVOKER) {
+            return mobIdlePaths(type);
+        }
+        return EMPTY;
+    }
+
+    public static boolean hasMobAmbientPaths(Mob.MobType type) {
+        return mobIdlePaths(type).length > 0 || mobStepPaths(type).length > 0;
+    }
+
+    private static String[] concat(String[]... groups) {
+        int length = 0;
+        for (String[] group : groups) {
+            if (group != null) {
+                length += group.length;
+            }
+        }
+        String[] merged = new String[length];
+        int index = 0;
+        for (String[] group : groups) {
+            if (group == null) {
+                continue;
+            }
+            System.arraycopy(group, 0, merged, index, group.length);
+            index += group.length;
+        }
+        return merged;
     }
 }
