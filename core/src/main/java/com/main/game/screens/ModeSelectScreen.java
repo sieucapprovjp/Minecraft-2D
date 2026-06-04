@@ -70,7 +70,7 @@ public class ModeSelectScreen extends BaseScreen {
 
         GameState gameState = game.getGameState();
         menuChoices[0] = gameState.peaceful ? 1 : 0;
-        menuChoices[1] = gameState.bonusChest;
+        menuChoices[1] = gameState.worldType;  // 0=Default, 1=Flat
         menuChoices[2] = gameState.skin;
         menuChoices[3] = gameState.loot;
     }
@@ -187,7 +187,7 @@ public class ModeSelectScreen extends BaseScreen {
                 maxChoice = 1; // Survival(0), Peaceful(1)
                 break;
             case 2:
-                maxChoice = 2;
+                maxChoice = 1; // World Type: Default(0), Flat(1)
                 break;
             case 3:
                 maxChoice = 1;
@@ -265,7 +265,7 @@ public class ModeSelectScreen extends BaseScreen {
         gameState.hardcore = false;
         gameState.peaceful = (gameMode == 1);
 
-        gameState.bonusChest = menuChoices[1];
+        gameState.worldType = menuChoices[1];  // 0=Default, 1=Flat
         gameState.skin = menuChoices[2];
         gameState.loot = menuChoices[3];
     }
