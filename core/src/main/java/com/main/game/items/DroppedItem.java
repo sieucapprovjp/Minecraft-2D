@@ -13,7 +13,7 @@ public class DroppedItem {
 
     private static final float ITEM_SIZE = 0.4f;
     private static final float GRAVITY_PER_TICK = -0.03f;
-    private static final float MAX_FALL_SPEED = -0.6f;
+    private static final float MAX_FALL_SPEED = -0.2f;
     private static final float GROUND_FRICTION = 0.5f;
     private static final float SUCK_RANGE = 4f;
     private static final float SUCK_STRENGTH = 0.012f;
@@ -48,6 +48,15 @@ public class DroppedItem {
 
         velocity.y = Math.max(MAX_FALL_SPEED, velocity.y + GRAVITY_PER_TICK * tickStep);
         position.y += velocity.y * tickStep;
+
+        // Why: prevent dropped items from clipping through blocks above (e.g. when
+        // the broken block has another block directly on top). Without Y collision,
+        // the item rises through the upper block then lands on top of it instead of
+        // falling to the broken block's height.
+        if (velocity.y > 0f && collides(world)) {
+            position.y -= velocity.y * tickStep;
+            velocity.y = 0f;
+        }
 
         if (isOnSolidGround(world)) {
             float centerY = (float) Math.floor(getCenterY() - 0.4f) + 1.41f;

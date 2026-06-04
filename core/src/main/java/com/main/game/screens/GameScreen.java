@@ -9,6 +9,7 @@ import com.main.game.audio.AudioId;
 import com.main.game.blocks.AbstractBlock;
 import com.main.game.combat.PlayerAttackController;
 import com.main.game.crafting.CraftingController;
+import com.main.game.crafting.CraftingListener;
 import com.main.game.entities.EntityManager;
 import com.main.game.entities.player.Player;
 import com.main.game.utilityblock.chest.ChestInteractionController;
@@ -40,6 +41,9 @@ import com.main.game.navigation.ScreenId;
 import com.main.game.physics.PhysicsEngine;
 import com.main.game.raid.RaidController;
 import com.main.game.raid.RaidMobSpawner;
+import com.main.game.raid.RaidState;
+import com.main.game.tutorial.TutorialManager;
+import com.main.game.tutorial.TutorialUI;
 import com.main.game.time.DayNightCycle;
 import com.main.game.trading.TradingController;
 import com.main.game.trading.TradingInteractionHandler;
@@ -102,6 +106,8 @@ public class GameScreen extends BaseScreen {
     private RaidController raidController;
     private VillageVillagerSpawner villageVillagerSpawner;
     private Random mobDropRandom;
+    private TutorialManager tutorialManager;
+    private TutorialUI tutorialUI;
     private boolean paused;
     private boolean dead;
     private int lastPlayerHealthForAudio;
@@ -172,6 +178,11 @@ public class GameScreen extends BaseScreen {
         tradingController = new TradingController();
         tradingInteractionHandler = new TradingInteractionHandler();
         craftingController = new CraftingController();
+        craftingController.setCraftingListener((outputItemId, count) -> {
+            if (tutorialManager != null) {
+                tutorialManager.onCraftingCompleted(outputItemId, count);
+            }
+        });
         cameraController = new GameCameraController();
         syncHeldItem();
         blockBreaker.setBlockBreakListener(this::handleBlockBroken);
@@ -187,6 +198,8 @@ public class GameScreen extends BaseScreen {
         camera.zoom = CAMERA_ZOOM;
         hudRenderer = new GameHudRenderer();
         overlayRenderer = new GameOverlayRenderer();
+        tutorialManager = new TutorialManager();
+        tutorialUI = new TutorialUI();
         lastPlayerHealthForAudio = player.getHealth();
         logPerformanceSnapshot(currentSeed, setupStartNanos, worldGenerateNanos, mobSpawnNanos);
     }
@@ -195,9 +208,20 @@ public class GameScreen extends BaseScreen {
     public void update(float delta) {
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || Gdx.input.isKeyJustPressed(Input.Keys.P)) paused = !paused;
         if (Gdx.input.isKeyJustPressed(Input.Keys.M)) game.getScreenRouter().request(ScreenId.MENU);
+        if (Gdx.input.isKeyJustPressed(Input.Keys.F1)) game.getScreenRouter().request(ScreenId.HELP);
         if (Gdx.input.isKeyJustPressed(Input.Keys.O)) DemoBlockViewer.populateDemo(world, Math.max(2, (int) player.getX()), Math.max(2, (int) player.getY()));
         if (Gdx.input.isKeyJustPressed(Input.Keys.K)) player.kill();
         if (Gdx.input.isKeyJustPressed(Input.Keys.B)) player.ban();
+
+        // Tutorial popup click — xử lý trước để click được dù đang pause/dead
+        if (tutorialManager != null && tutorialManager.isShowing() && Gdx.input.justTouched()) {
+            float mx = Gdx.input.getX();
+            float my = Gdx.graphics.getHeight() - Gdx.input.getY();
+            if (tutorialUI != null && tutorialUI.handleClick(mx, my)) {
+                game.getAudioManager().play(AudioId.UI_CLICK);
+                tutorialManager.dismissPopup();
+            }
+        }
 
         boolean inventoryKeyPressed = inventoryController.update();
         if (inventoryKeyPressed) handleInventoryKey();
@@ -215,6 +239,16 @@ public class GameScreen extends BaseScreen {
             }
             furnaceManager.update(delta);
             entityManager.update(delta);
+            if (raidController != null && raidController.getState() == RaidState.WAVE_ACTIVE) {
+                boolean raidMobsAlive = entityManager.getMobs().stream()
+                    .anyMatch(m -> m.isAlive() && isRaidMobType(m.getType()));
+                if (!raidMobsAlive) {
+                    raidController.markVictory();
+                    if (tutorialManager != null) {
+                        tutorialManager.onRaidVictory();
+                    }
+                }
+            }
             if (mobSpawner != null) {
                 mobSpawner.update(delta, world, player, physics, entityManager,
                     dayNightCycle == null || dayNightCycle.isNight());
@@ -339,6 +373,10 @@ public class GameScreen extends BaseScreen {
         if (paused) overlayRenderer.renderPause(batch);
         else if (dead) overlayRenderer.renderDeath(batch);
         overlayRenderer.renderBrightness(batch, game.getGameState());
+
+        if (tutorialUI != null && tutorialManager != null) {
+            tutorialUI.render(batch, tutorialManager);
+        }
     }
 
     private void handlePauseClick(float mx, float my) {
@@ -442,6 +480,9 @@ public class GameScreen extends BaseScreen {
 
     private void handleBlockBroken(AbstractBlock block, World worldRef) {
         playBlockBreakSound(block);
+        if (tutorialManager != null && block != null) {
+            tutorialManager.onBlockBroken(block);
+        }
         if (block != null && "furnace".equals(block.getBlockId())) {
             furnaceManager.dropContents(block, worldRef, droppedItemManager);
         }
@@ -467,6 +508,9 @@ public class GameScreen extends BaseScreen {
     }
 
     private void handleBlockPlaced(String blockId, int tileX, int tileY) {
+        if (tutorialManager != null) {
+            tutorialManager.onBlockPlaced(blockId, tileX, tileY);
+        }
         if (raidController != null && raidController.tryStartFromBanner(world, blockId, tileX, tileY)) {
             int spawnedRaidMobs = RaidMobSpawner.spawnOneOfEach(world, player, physics, entityManager);
             if (spawnedRaidMobs > 0) {
@@ -626,6 +670,13 @@ public class GameScreen extends BaseScreen {
         return tradingRenderer;
     }
 
+    private boolean isRaidMobType(Mob.MobType type) {
+        return type == Mob.MobType.PILLAGER
+            || type == Mob.MobType.VINDICATOR
+            || type == Mob.MobType.EVOKER
+            || type == Mob.MobType.RAVAGER;
+    }
+
     @Override
     public void dispose() {
         super.dispose();
@@ -640,6 +691,7 @@ public class GameScreen extends BaseScreen {
         if (chestManager != null) chestManager.clear();
         if (furnaceRenderer != null) furnaceRenderer.dispose();
         if (furnaceManager != null) furnaceManager.clear();
+        if (tutorialUI != null) tutorialUI.dispose();
         entityManager.dispose();
         Mob.disposeSharedAssets();
     }
