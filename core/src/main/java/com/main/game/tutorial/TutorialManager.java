@@ -3,84 +3,89 @@ package com.main.game.tutorial;
 import com.main.game.blocks.AbstractBlock;
 
 /**
- * State machine quản lý 6 bước hướng dẫn (tutorial) cho người chơi.
- * Mỗi bước chỉ xuất hiện sau khi bước trước được hoàn thành.
- * Không phải singleton — được sở hữu bởi GameScreen.
+ * Tracks the six tutorial milestones described in doc/TUTORIAL_DESIGN.md.
+ * The current step is shown first, then completing its gameplay condition
+ * unlocks the next step popup.
  */
 public class TutorialManager {
 
     public static final int MAX_STEPS = 6;
 
-    private int activeStep; // 0 = không có popup, 1-6 = bước đang hiển thị
-    private int nextStep;   // 1-6 = bước đang chờ trigger, 7 = hoàn thành
+    private int currentStep;
+    private boolean popupVisible;
+    private boolean raidVictoryAchieved;
 
     public TutorialManager() {
-        this.activeStep = 0;
-        this.nextStep = 1;
+        currentStep = 1;
+        popupVisible = true;
+        raidVictoryAchieved = false;
     }
 
-    // ─── Event Handlers ─────────────────────────────
-
-    /** Gọi khi player phá bất kỳ block nào. Kiểm tra step 1 (chặt gỗ) và step 5 (khai thác). */
     public void onBlockBroken(AbstractBlock block) {
-        if (activeStep > 0 || nextStep > MAX_STEPS) return;
-        if (block == null) return;
+        if (isComplete() || block == null) {
+            return;
+        }
         String id = block.getBlockId();
-        if (nextStep == 1 && isWoodLog(id)) {
-            activeStep = 1;
-        } else if (nextStep == 5 && (isStoneBlock(id) || isOreBlock(id))) {
-            activeStep = 5;
+        if (currentStep == 1 && isWoodLog(id)) {
+            advanceStep();
+        } else if (currentStep == 5 && (isStoneBlock(id) || isOreBlock(id))) {
+            advanceStep();
         }
     }
 
-    /** Gọi khi player chế tạo item. Kiểm tra step 2 (que) và step 4 (cúp gỗ). */
     public void onCraftingCompleted(String outputItemId, int count) {
-        if (activeStep > 0 || nextStep > MAX_STEPS || outputItemId == null) return;
-        if (nextStep == 2 && "stick".equals(outputItemId)) {
-            activeStep = 2;
-        } else if (nextStep == 4 && "wood_pickaxe".equals(outputItemId)) {
-            activeStep = 4;
+        if (isComplete() || outputItemId == null) {
+            return;
+        }
+        if (currentStep == 2 && "stick".equals(outputItemId) && count >= 4) {
+            advanceStep();
+        } else if (currentStep == 4 && "wood_pickaxe".equals(outputItemId)) {
+            advanceStep();
         }
     }
 
-    /** Gọi khi player đặt block. Kiểm tra step 3 (bàn chế tạo). */
     public void onBlockPlaced(String blockId, int tileX, int tileY) {
-        if (activeStep > 0 || nextStep > MAX_STEPS || blockId == null) return;
-        if (nextStep == 3 && "crafting_table".equals(blockId)) {
-            activeStep = 3;
+        if (isComplete() || blockId == null) {
+            return;
+        }
+        if (currentStep == 3 && "crafting_table".equals(blockId)) {
+            advanceStep();
         }
     }
 
-    /** Gọi khi raid kết thúc thắng lợi. Kiểm tra step 6. */
     public void onRaidVictory() {
-        if (activeStep > 0 || nextStep > MAX_STEPS) return;
-        if (nextStep == 6) {
-            activeStep = 6;
+        if (!isComplete() && currentStep == 6) {
+            raidVictoryAchieved = true;
+            popupVisible = true;
         }
     }
 
-    /** Gọi khi player click "Đã hiểu!" trên popup. */
     public void dismissPopup() {
-        if (activeStep <= 0) return;
-        activeStep = 0;
-        nextStep++;
+        popupVisible = false;
+        if (currentStep == MAX_STEPS && raidVictoryAchieved) {
+            currentStep++;
+        }
     }
-
-    // ─── Getters ─────────────────────────────────────
 
     public boolean isShowing() {
-        return activeStep > 0;
+        return popupVisible && !isComplete();
     }
 
     public int getActiveStep() {
-        return activeStep;
+        return isComplete() ? 0 : currentStep;
     }
 
     public boolean isComplete() {
-        return nextStep > MAX_STEPS;
+        return currentStep > MAX_STEPS;
     }
 
-    // ─── Block Classification Helpers ────────────────
+    private void advanceStep() {
+        if (currentStep >= MAX_STEPS) {
+            return;
+        }
+        currentStep++;
+        popupVisible = true;
+    }
 
     private static boolean isWoodLog(String id) {
         return "wood".equals(id)

@@ -120,6 +120,11 @@ public class GameScreen extends BaseScreen {
 
     @Override
     public void show() {
+        if (world != null) {
+            camera.zoom = CAMERA_ZOOM;
+            return;
+        }
+
         long setupStartNanos = System.nanoTime();
         game.getAudioManager().stopMusic();
 
@@ -220,6 +225,7 @@ public class GameScreen extends BaseScreen {
             if (tutorialUI != null && tutorialUI.handleClick(mx, my)) {
                 game.getAudioManager().play(AudioId.UI_CLICK);
                 tutorialManager.dismissPopup();
+                return;
             }
         }
 
