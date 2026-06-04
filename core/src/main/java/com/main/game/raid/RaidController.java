@@ -47,4 +47,13 @@ public final class RaidController {
             state = RaidState.WAVE_ACTIVE;
         }
     }
+
+    public void markVictory() {
+        if (state == RaidState.WAVE_ACTIVE) {
+            state = RaidState.VICTORY;
+            if (Gdx.app != null) {
+                Gdx.app.log("RaidController", "Raid victory achieved!");
+            }
+        }
+    }
 }
