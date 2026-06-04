@@ -135,7 +135,7 @@ public class GameScreen extends BaseScreen {
 
         // Sinh toàn bộ finite world trước khi tìm spawn để cave/ore không bị lỗi seam.
         long worldGenerateStartNanos = System.nanoTime();
-        world.generate();
+        world.generate(game.getGameState().worldType);
         long worldGenerateNanos = System.nanoTime() - worldGenerateStartNanos;
         camera.position.set(world.width / 2f, world.height / 2f, 0f);
         camera.update();

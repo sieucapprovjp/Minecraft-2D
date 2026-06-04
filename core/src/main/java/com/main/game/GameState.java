@@ -8,6 +8,7 @@ public class GameState {
     public int bonusChest = 0;
     public int skin = 0;
     public int loot = 0;
+    public int worldType = 0;
 
     public boolean soundEnabled = true;
     public boolean musicEnabled = true;
