@@ -144,7 +144,8 @@ public class GameScreen extends BaseScreen {
         float spawnX = spawn.x;
         float spawnY = spawn.y;
 
-        player = new Player(spawnX, spawnY, physics, world);
+        player = new Player(spawnX, spawnY, physics, world, game.getGameState().skin);
+        player.setPeaceful(game.getGameState().peaceful);
         spawnSafetyController = new SpawnSafetyController();
         spawnSafetyController.beginInitialSpawn(world, player);
 
@@ -194,6 +195,7 @@ public class GameScreen extends BaseScreen {
 
         dayNightCycle = new DayNightCycle();
         mobSpawner = new BiomeMobSpawner(currentSeed);
+        mobSpawner.setPeaceful(game.getGameState().peaceful);
         long mobSpawnStartNanos = System.nanoTime();
         mobSpawner.spawnInitial(world, player, physics, entityManager, dayNightCycle.isNight());
         long mobSpawnNanos = System.nanoTime() - mobSpawnStartNanos;

@@ -68,11 +68,11 @@ public class Player extends Entity {
 
     // ───────────────────────────────────────────────────────────
 
-    public Player(float x, float y, PhysicsEngine physics, World world) {
+    public Player(float x, float y, PhysicsEngine physics, World world, int skinId) {
         super(x, y, PLAYER_W, PLAYER_H);
         this.physics = physics;
         this.world   = world;
-        this.renderer = new PlayerRenderer();
+        this.renderer = new PlayerRenderer(skinId);
     }
 
     // ─── Vòng đời ──────────────────────────────────────────────
@@ -260,6 +260,10 @@ public class Player extends Entity {
 
     public boolean eat(String itemId) {
         return foodMeter.eat(itemId);
+    }
+
+    public void setPeaceful(boolean peaceful) {
+        foodMeter.setPeaceful(peaceful);
     }
 
     public void heal(int amount) {

@@ -3,6 +3,7 @@ package com.main.game;
 public class GameState {
     public boolean creative = false;
     public boolean survival = true;
+    public boolean peaceful = false;
     public boolean hardcore = false;
     public int bonusChest = 0;
     public int skin = 0;
