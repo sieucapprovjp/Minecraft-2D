@@ -437,14 +437,16 @@
   - `core/src/test/java/com/main/game/inventory/StarterInventoryKitTest.java`
 
 ### Audio System V1
-- `AudioManager` centralizes runtime SFX and menu music playback.
+- `AudioManager` centralizes runtime SFX, menu music, and path-based gameplay music playback.
 - `MainGame` owns and disposes the shared audio manager.
 - Settings toggles now control sound and music through `GameState.soundEnabled` and `GameState.musicEnabled`.
 - Menu music plays from `assets/audio/ui_menu/music.mp3` while in the menu flow.
-- Gameplay music assets exist under `assets/audio/ui_menu/ingame_music/`, but background music is not yet wired into `GameScreen`; entering `GameScreen` still stops menu music.
-- SFX are implemented for UI clicks/toggles, player hurt/death/eating/sword swing, block breaking, block placement assets, chest open/close, item pickup, and mob hit/death behavior.
+- Gameplay music is wired through `GameplayMusicController`.
+- Normal gameplay music plays a random full track from `assets/audio/ui_menu/ingame_music/` after a random cooldown from `30s` to `100s`; the next cooldown starts only after the current track has finished.
+- Raid music overrides normal gameplay music: starting a raid stops the current track, waits about `5s`, then plays `assets/audio/ui_menu/rubedo.ogg`; normal gameplay music resumes after the raid ends.
+- SFX are implemented for UI clicks/toggles, player hurt/death/eating/sword swing, block breaking, utility block open/close, furnace crackle-on-start, chest open/close, item pickup, and mob hit/death behavior.
 - Player death reuses the player hurt sound for V1.
-- Mob death reuses the mob hurt sound path for V1 by playing the hit sound on the killing hit.
+- Mob death uses dedicated death assets where available and otherwise falls back to hurt audio.
 - Block breaking uses material-specific asset groups for stone, deepslate, sand, snow, and wood.
 - Block placement audio assets exist under `assets/audio/placing_block/`; placement playback should be verified before treating this as complete gameplay behavior.
 - Missing audio assets are skipped safely with a log message instead of crashing gameplay.
@@ -452,6 +454,8 @@
   - `core/src/main/java/com/main/game/audio/AudioId.java`
   - `core/src/main/java/com/main/game/audio/AudioCatalog.java`
   - `core/src/main/java/com/main/game/audio/AudioManager.java`
+  - `core/src/main/java/com/main/game/audio/GameplayMusicController.java`
+  - `core/src/main/java/com/main/game/audio/MobAmbientAudioController.java`
   - `core/src/main/java/com/main/game/MainGame.java`
   - `core/src/main/java/com/main/game/screens/MenuScreen.java`
   - `core/src/main/java/com/main/game/screens/ModeSelectScreen.java`
@@ -462,6 +466,8 @@
   - `core/src/main/java/com/main/game/combat/MobHitListener.java`
   - `core/src/main/java/com/main/game/items/DroppedItemManager.java`
   - `core/src/test/java/com/main/game/audio/AudioCatalogTest.java`
+  - `core/src/test/java/com/main/game/audio/GameplayMusicControllerTest.java`
+  - `core/src/test/java/com/main/game/audio/MobAmbientAudioControllerTest.java`
   - `assets/audio/`
 
 ### Asset Resource Layout
@@ -482,6 +488,9 @@
 - `UtilityBlockInteractionController` provides shared reachable-hover checks for utility blocks.
 - Crafting table, furnace, and chest each keep their own focused subpackage.
 - `GameScreen` wires utility blocks through short calls for open, update, render, drop, clear, and dispose behavior.
+- Crafting table and furnace open/close now use utility block door audio.
+- Chest open/close uses dedicated chest audio.
+- Furnace plays a random fire crackle sound when it starts burning fuel.
 - Related files:
   - `core/src/main/java/com/main/game/utilityblock/UtilityBlockInteractionController.java`
   - `core/src/main/java/com/main/game/utilityblock/craftingtable/CraftingTableInteractionController.java`
@@ -585,6 +594,7 @@
 - Validated work was merged into `main`.
 - `main` pull/conflict issues were resolved as requested.
 - Unneeded local-only commits were removed as requested.
+- `feat/village` was merged into `main` and pushed to `origin/main`.
 - A `doc/` folder was created and documentation/spec files were moved there, except `README.md`.
 - Related files:
   - `README.md`
@@ -599,13 +609,14 @@
 ## Latest Verification
 - `.\gradlew.bat --no-daemon classes` passed.
 - `.\gradlew.bat --no-daemon test` passed.
+- `.\gradlew.bat --no-daemon core:test` passed after merging `feat/village` into `main`.
 - `.\gradlew.bat --no-daemon lwjgl3:processResources lwjgl3:classes` passed.
 - `git diff --check` passed.
 - `.\gradlew.bat --no-daemon lwjgl3:run` no longer exited with missing `stage/sky.png`; the command was stopped by timeout after the game stayed running.
-- Manual gameplay verification was reported working for crafting, furnace, chest, block metadata behavior, shared slot interaction/rendering, armor visuals, mob spawning, food usage, cooked food, and sword swing behavior.
+- Manual gameplay verification was reported working for crafting, furnace, chest, block metadata behavior, shared slot interaction/rendering, armor visuals, mob spawning, food usage, cooked food, sword swing behavior, and audio behavior.
 
 ## Known Gaps
 - XP system has not been implemented yet.
-- Audio V1 has no wired gameplay music, volume sliders, full footstep system, ambient biome/cave sounds, or positional audio yet.
+- Audio V1 has no volume sliders, full footstep system, ambient biome/cave sounds, positional audio, or complete block placement sound routing yet.
 - Food V1 has no potion/debuff effects yet, so rotten flesh is currently just food.
 - Food and day/night state are runtime-only and do not persist after leaving `GameScreen`.

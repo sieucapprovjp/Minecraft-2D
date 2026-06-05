@@ -29,6 +29,12 @@ public final class AudioCatalog {
         "audio/block/snow3.mp3",
         "audio/block/snow4.mp3"
     };
+    private static final String[] GRASS_BREAK = {
+        "audio/block/grass1.ogg",
+        "audio/block/grass2.ogg",
+        "audio/block/grass3.ogg",
+        "audio/block/grass4.ogg"
+    };
     private static final String[] WOOD_BREAK = {
         "audio/block/wood1.mp3",
         "audio/block/wood2.mp3",
@@ -287,14 +293,24 @@ public final class AudioCatalog {
         if (normalized.contains("snow")) {
             return SNOW_BREAK;
         }
+        if ("grass".equals(normalized)
+            || "dirt".equals(normalized)
+            || normalized.contains("grass")) {
+            return GRASS_BREAK;
+        }
         if (normalized.contains("wood")
             || normalized.contains("log")
             || normalized.contains("planks")
-            || "chest".equals(normalized)
-            || "crafting_table".equals(normalized)) {
+            || normalized.contains("door")
+            || normalized.contains("chest")
+            || normalized.contains("crafting_table")
+            || normalized.contains("jukebox")) {
             return WOOD_BREAK;
         }
-        if ("stone".equals(normalized) || normalized.endsWith("_ore") || normalized.contains("stone")) {
+        if ("stone".equals(normalized)
+            || normalized.endsWith("_ore")
+            || normalized.contains("stone")
+            || normalized.contains("furnace")) {
             return STONE_BREAK;
         }
         return EMPTY;

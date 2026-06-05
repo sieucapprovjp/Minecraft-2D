@@ -28,8 +28,34 @@ public class VillageDecorationRegistryTest {
         assertTrue(BlockRegistry.isSolid("village_roof_stair_right"));
     }
 
+    @Test
+    public void villageDoorStateControlsCollision() {
+        assertFalse(BlockRegistry.isPlaceable("village_door_bottom_closed"));
+        assertFalse(BlockRegistry.isPlaceable("village_door_top_closed"));
+        assertTrue(BlockRegistry.isSolid("village_door_bottom_closed"));
+        assertTrue(BlockRegistry.isSolid("village_door_top_closed"));
+
+        assertFalse(BlockRegistry.isPlaceable("village_door_bottom_open"));
+        assertFalse(BlockRegistry.isPlaceable("village_door_top_open"));
+        assertFalse(BlockRegistry.isSolid("village_door_bottom_open"));
+        assertFalse(BlockRegistry.isSolid("village_door_top_open"));
+    }
+
+    @Test
+    public void villageUtilityBlocksArePassThroughAliases() {
+        assertPassThroughAlias("village_crafting_table", "crafting_table");
+        assertPassThroughAlias("village_furnace", "furnace");
+        assertPassThroughAlias("village_chest", "chest");
+    }
+
     private void assertPassThroughDecoration(String blockId) {
         assertTrue(BlockRegistry.isPlaceable(blockId));
         assertFalse(BlockRegistry.isSolid(blockId));
+    }
+
+    private void assertPassThroughAlias(String blockId, String expectedDropItemId) {
+        assertFalse(BlockRegistry.isPlaceable(blockId));
+        assertFalse(BlockRegistry.isSolid(blockId));
+        assertTrue(expectedDropItemId.equals(BlockRegistry.getDropItemId(blockId)));
     }
 }

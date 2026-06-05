@@ -14,6 +14,8 @@ final class MobProfile {
     private static final float RANGED_HOSTILE_ATTACK_COOL = 3.0f;
     private static final float DEFAULT_RENDER_PIXELS_PER_TILE = 80f;
     private static final float SCRATCH_RENDER_PIXELS_PER_TILE = 40f;
+    private static final float SKELETON_RENDER_SCALE = 0.7f;
+    private static final float SKELETON_RENDER_PIXELS_PER_TILE = DEFAULT_RENDER_PIXELS_PER_TILE / SKELETON_RENDER_SCALE;
 
     final float patrolSpeed;
     final float chaseSpeed;
@@ -98,7 +100,8 @@ final class MobProfile {
                     DEFAULT_ATTACK_RANGE, MELEE_HOSTILE_ATTACK_COOL, DEFAULT_PATROL_RANGE, LIGHT_HOSTILE_DAMAGE, 20, MobAllegiance.HOSTILE, 0.8f, 1.8f);
             case SKELETON:
                 return new MobProfile(1.8f, 2.4f, HOSTILE_AGGRO_RADIUS, 18f,
-                    5f, RANGED_HOSTILE_ATTACK_COOL, 5f, LIGHT_HOSTILE_DAMAGE, 20, MobAllegiance.HOSTILE, 0.8f, 1.8f);
+                    5f, RANGED_HOSTILE_ATTACK_COOL, 5f, LIGHT_HOSTILE_DAMAGE, 20, MobAllegiance.HOSTILE, 0.8f, 1.8f,
+                    SKELETON_RENDER_PIXELS_PER_TILE, 0f, 0f);
             case STRAY:
                 return new MobProfile(1.7f, 2.3f, HOSTILE_AGGRO_RADIUS, 18f,
                     5f, RANGED_HOSTILE_ATTACK_COOL, 5f, LIGHT_HOSTILE_DAMAGE, 22, MobAllegiance.HOSTILE, 0.8f, 1.8f);

@@ -24,6 +24,15 @@ public class MobProfileTest {
     }
 
     @Test
+    public void skeletonUsesReducedRenderScaleForLargeAsset() {
+        MobProfile skeleton = MobProfile.forType(Mob.MobType.SKELETON);
+
+        assertEquals(80f / 0.7f, skeleton.renderPixelsPerTile, EPSILON);
+        assertEquals(0.8f, skeleton.width, EPSILON);
+        assertEquals(1.8f, skeleton.height, EPSILON);
+    }
+
+    @Test
     public void vindicatorIsFastHardHittingMeleeHostile() {
         MobProfile zombie = MobProfile.forType(Mob.MobType.ZOMBIE);
         MobProfile vindicator = MobProfile.forType(Mob.MobType.VINDICATOR);
