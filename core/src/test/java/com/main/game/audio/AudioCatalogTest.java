@@ -67,7 +67,16 @@ public class AudioCatalogTest {
             },
             AudioCatalog.blockBreakPaths("stone")
         );
-        assertEquals(0, AudioCatalog.blockBreakPaths("grass").length);
+        assertArrayEquals(
+            new String[] {
+                "audio/block/grass1.ogg",
+                "audio/block/grass2.ogg",
+                "audio/block/grass3.ogg",
+                "audio/block/grass4.ogg"
+            },
+            AudioCatalog.blockBreakPaths("grass")
+        );
+        assertArrayEquals(AudioCatalog.blockBreakPaths("grass"), AudioCatalog.blockBreakPaths("dirt"));
     }
 
     @Test

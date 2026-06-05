@@ -34,6 +34,26 @@ public class StarterInventoryKitTest {
     }
 
     @Test
+    public void grantsJukeboxAndMusicDiscForTesting() {
+        Inventory inventory = new Inventory();
+
+        StarterInventoryKit.grant(inventory);
+
+        ItemStack jukebox = findStack(inventory, "jukebox");
+        ItemStack pigstep = findStack(inventory, "pigstep");
+        ItemStack lavaChicken = findStack(inventory, "lava_chicken");
+        assertNotNull(jukebox);
+        assertEquals(1, jukebox.getCount());
+        assertTrue(ItemRegistry.isPlaceableBlock("jukebox"));
+        assertNotNull(pigstep);
+        assertEquals(1, pigstep.getCount());
+        assertTrue(MusicDiscRegistry.isMusicDisc("pigstep"));
+        assertNotNull(lavaChicken);
+        assertEquals(1, lavaChicken.getCount());
+        assertTrue(MusicDiscRegistry.isMusicDisc("lava_chicken"));
+    }
+
+    @Test
     public void grantsEmeraldsForTradingTesting() {
         Inventory inventory = new Inventory();
 

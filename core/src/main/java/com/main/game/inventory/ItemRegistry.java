@@ -17,7 +17,9 @@ public final class ItemRegistry {
     }
 
     public static int getMaxStack(String itemId) {
-        if (ToolRegistry.isTool(itemId) || ArmorRegistry.isArmor(itemId)) {
+        if (ToolRegistry.isTool(itemId)
+            || ArmorRegistry.isArmor(itemId)
+            || MusicDiscRegistry.isMusicDisc(itemId)) {
             return 1;
         }
         return 64;
@@ -81,6 +83,8 @@ public final class ItemRegistry {
     private static String toTextureName(String itemId) {
         if ("cobblestone".equals(itemId)) return "cobble_stone";
         if ("stick".equals(itemId)) return "stick";
+        MusicDiscRegistry.MusicDiscDefinition disc = MusicDiscRegistry.get(itemId);
+        if (disc != null) return disc.getTextureName();
         String blockTextureName = BlockRegistry.getTextureName(itemId);
         if (blockTextureName != null) return blockTextureName;
         return itemId;

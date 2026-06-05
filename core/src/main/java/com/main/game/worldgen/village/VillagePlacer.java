@@ -1,10 +1,12 @@
 package com.main.game.worldgen.village;
 
 import com.main.game.blocks.AbstractBlock;
+import com.main.game.utilityblock.door.DoorInteractionController;
 import com.main.game.world.World;
 import com.main.game.worldgen.BiomeType;
 import com.main.game.worldgen.WorldBlockFactory;
 import java.util.List;
+import java.util.Random;
 
 public final class VillagePlacer {
 
@@ -20,6 +22,9 @@ public final class VillagePlacer {
     private static final String MOSS_STONE_FLOOR_BLOCK = "village_moss_stone";
     private static final String ROOF_BLOCK = "planks";
     private static final String SIDE_SUPPORT_BLOCK = "village_cobblestone";
+    private static final String[] GARDEN_FLOWERS = {
+        "dandelion", "poppy", "blue_orchid", "azure_bluet", "cornflower", "oxeye_daisy"
+    };
 
     private VillagePlacer() {
     }
@@ -47,12 +52,13 @@ public final class VillagePlacer {
         placeLargeHouse(world, houseBaseX, floorY);
         placeSmallHouse(world, leftHouseBaseX, floorY, false);
         placeSmallHouse(world, rightHouseBaseX, floorY, true);
+        placeVillageExteriorDecorations(world, seed, houseBaseX, leftHouseBaseX, rightHouseBaseX, floorY);
 
         int centerX = houseBaseX + HOUSE_WIDTH / 2;
         return VillageState.present(centerX, floorY + 1, houseBaseX, floorY, HOUSE_WIDTH, VILLAGE_RADIUS,
             List.of(
                 new VillageSpawnPoint(leftHouseBaseX + SMALL_HOUSE_WIDTH / 2, floorY + 1),
-                new VillageSpawnPoint(centerX, floorY + 1),
+                new VillageSpawnPoint(houseBaseX + 10, floorY + 1),
                 new VillageSpawnPoint(rightHouseBaseX + SMALL_HOUSE_WIDTH / 2, floorY + 1)
             ));
     }
@@ -157,8 +163,12 @@ public final class VillagePlacer {
 
         world.setBlock(baseX + 3, floorY + 1, WorldBlockFactory.create(baseX + 3, floorY + 1, "village_bookshelf"));
         world.setBlock(baseX + 4, floorY + 1, WorldBlockFactory.create(baseX + 4, floorY + 1, "village_bookshelf"));
-        world.setBlock(baseX + 15, floorY + 1, WorldBlockFactory.create(baseX + 15, floorY + 1, "village_bed_left"));
-        world.setBlock(baseX + 16, floorY + 1, WorldBlockFactory.create(baseX + 16, floorY + 1, "village_bed_right"));
+        placeEndDoors(world, baseX, HOUSE_WIDTH, floorY);
+        world.setBlock(baseX + 5, floorY + 1, WorldBlockFactory.create(baseX + 5, floorY + 1, "village_crafting_table"));
+        world.setBlock(baseX + 6, floorY + 1, WorldBlockFactory.create(baseX + 6, floorY + 1, "village_furnace"));
+        world.setBlock(baseX + 12, floorY + 1, WorldBlockFactory.create(baseX + 12, floorY + 1, "village_chest"));
+        world.setBlock(baseX + 13, floorY + 1, WorldBlockFactory.create(baseX + 13, floorY + 1, "village_bed_left"));
+        world.setBlock(baseX + 14, floorY + 1, WorldBlockFactory.create(baseX + 14, floorY + 1, "village_bed_right"));
     }
 
     private static void placeSmallHouseDecorations(World world, int baseX, int floorY, boolean mirrorInterior) {
@@ -176,8 +186,54 @@ public final class VillagePlacer {
         int shelfX = mirrorInterior ? baseX + 5 : baseX + 2;
         world.setBlock(shelfX, floorY + 1, WorldBlockFactory.create(shelfX, floorY + 1, "village_bookshelf"));
         world.setBlock(shelfX + 1, floorY + 1, WorldBlockFactory.create(shelfX + 1, floorY + 1, "village_bookshelf"));
+        placeEndDoors(world, baseX, SMALL_HOUSE_WIDTH, floorY);
         world.setBlock(bedLeftX, floorY + 1, WorldBlockFactory.create(bedLeftX, floorY + 1, "village_bed_left"));
         world.setBlock(bedLeftX + 1, floorY + 1, WorldBlockFactory.create(bedLeftX + 1, floorY + 1, "village_bed_right"));
+    }
+
+    private static void placeEndDoors(World world, int baseX, int width, int floorY) {
+        placeDoor(world, baseX, floorY + 1);
+        placeDoor(world, baseX + width - 1, floorY + 1);
+    }
+
+    private static void placeDoor(World world, int x, int bottomY) {
+        world.setBlock(x, bottomY, WorldBlockFactory.create(x, bottomY, DoorInteractionController.BOTTOM_CLOSED));
+        world.setBlock(x, bottomY + 1, WorldBlockFactory.create(x, bottomY + 1, DoorInteractionController.TOP_CLOSED));
+    }
+
+    private static void placeVillageExteriorDecorations(World world, long seed, int mainBaseX,
+                                                        int leftBaseX, int rightBaseX, int floorY) {
+        placePath(world, leftBaseX + SMALL_HOUSE_WIDTH, mainBaseX - 1, floorY);
+        placePath(world, mainBaseX + HOUSE_WIDTH, rightBaseX - 1, floorY);
+
+        Random random = new Random(seed ^ 0x5EEDC0DEL);
+        placeGarden(world, random, leftBaseX + SMALL_HOUSE_WIDTH + 1, mainBaseX - 2, floorY);
+        placeGarden(world, random, mainBaseX + HOUSE_WIDTH + 1, rightBaseX - 2, floorY);
+
+        placePorchAccent(world, mainBaseX - 1, floorY);
+        placePorchAccent(world, mainBaseX + HOUSE_WIDTH, floorY);
+    }
+
+    private static void placePath(World world, int minX, int maxX, int floorY) {
+        for (int x = minX; x <= maxX; x++) {
+            String blockId = (x % 3 == 0) ? MOSS_STONE_FLOOR_BLOCK : COBBLESTONE_FLOOR_BLOCK;
+            world.setBlock(x, floorY, WorldBlockFactory.create(x, floorY, blockId));
+        }
+    }
+
+    private static void placeGarden(World world, Random random, int minX, int maxX, int floorY) {
+        for (int x = minX; x <= maxX; x++) {
+            if ((x - minX) % 2 == 0) {
+                continue;
+            }
+            String flower = GARDEN_FLOWERS[random.nextInt(GARDEN_FLOWERS.length)];
+            world.setBlock(x, floorY + 1, WorldBlockFactory.create(x, floorY + 1, flower));
+        }
+    }
+
+    private static void placePorchAccent(World world, int x, int floorY) {
+        world.setBlock(x, floorY, WorldBlockFactory.create(x, floorY, MOSS_STONE_FLOOR_BLOCK));
+        world.setBlock(x, floorY + 1, null);
     }
 
     private static void placeFloor(World world, int baseX, int floorY, int width) {
