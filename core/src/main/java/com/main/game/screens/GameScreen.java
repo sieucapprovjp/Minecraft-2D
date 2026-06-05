@@ -591,12 +591,12 @@ public class GameScreen extends BaseScreen {
         }
     }
 
-    private boolean trySummonVex(Mob caster, Player target) {
+    private  boolean trySummonVex(Mob caster, Player target) {
         if (!canSummonVex(caster, target)) {
             return false;
         }
 
-        float casterCenterX = caster.getX() + caster.getWidth() * 0.5f;
+        float casterCenterX =  caster.getX() + caster.getWidth() * 0.5f;
         float targetCenterX = target == null ? casterCenterX : target.getX() + target.getWidth() * 0.5f;
         float side = targetCenterX < casterCenterX ? -1f : 1f;
         float spawnX = clamp(caster.getX() + side * VEX_SUMMON_HORIZONTAL_OFFSET,
