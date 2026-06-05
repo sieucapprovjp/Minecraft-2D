@@ -29,6 +29,8 @@ public class VillagePlacerTest {
         VillageState village = VillagePlacer.place(world, 123L, centerX, plainsHalfWidth);
 
         assertTrue(village.isPresent());
+        assertEquals(VillagePlacer.HOUSE_WIDTH, village.getHouseWidth());
+        assertEquals(VillagePlacer.VILLAGE_RADIUS, village.getRadius());
         assertEquals(3, village.getVillagerSpawnPoints().size());
         int spawnWidth = Mob.getRequiredSpawnWidth(Mob.MobType.VILLAGER);
         int spawnHeight = Mob.getRequiredSpawnHeight(Mob.MobType.VILLAGER);

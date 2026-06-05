@@ -164,13 +164,14 @@ final class MobAssetPack {
                 hurtAnim = single(loadedTextures, "mvp/mob/cow/cow_hurt.png");
                 break;
             case PILLAGER:
-                idleAnim = single(loadedTextures, "mobs/pillager/mobs/pillager-face.png");
+                idleAnim = single(loadedTextures, "mobs/pillager/mobs/pillager_raid_captain_look.png");
                 walkAnim = sequenceWithFallback(loadedTextures, 0.12f,
-                    "mobs/pillager/mobs/pillager_walk_2.png",
-                    "mobs/pillager/mobs/pillager_walk_3.png",
-                    "mobs/pillager/mobs/pillager_walk_4.png",
-                    "mobs/pillager/mobs/pillager_walk_5.png");
-                hurtAnim = single(loadedTextures, "mobs/pillager/mobs/pillager_hurt.png");
+                    "mobs/pillager/mobs/pillager_raid_captain2.png",
+                    "mobs/pillager/mobs/pillager_raid_captain3.png",
+                    "mobs/pillager/mobs/pillager_raid_captain4.png",
+                    "mobs/pillager/mobs/pillager_raid_captain5.png",
+                    "mobs/pillager/mobs/pillager_raid_captain6.png");
+                hurtAnim = single(loadedTextures, "mobs/pillager/mobs/pillager_raid_captain_hurt.png");
                 break;
             case VINDICATOR:
                 idleAnim = single(loadedTextures, "mobs/vindicator/mobs/vindicator_face.png");
@@ -184,24 +185,26 @@ final class MobAssetPack {
             case EVOKER:
                 idleAnim = single(loadedTextures, "mobs/evoker/mobs/evoker-face2.png");
                 walkAnim = sequenceWithFallback(loadedTextures, 0.12f,
+                    "mobs/evoker/mobs/evoker_walk1.png",
                     "mobs/evoker/mobs/evoker_walk_2.png",
                     "mobs/evoker/mobs/evoker_walk_3.png",
-                    "mobs/evoker/mobs/evoker_walk_4.png",
-                    "mobs/evoker/mobs/evoker_walk_5.png");
+                    "mobs/evoker/mobs/evoker_walk_4.png");
                 hurtAnim = single(loadedTextures, "mobs/evoker/mobs/evoker_hurt_attack.png");
                 break;
-            case RAVAGER:
-                idleAnim = single(loadedTextures, "mobs/ravager/mobs/ravager_idle.png");
+            case VEX:
+                idleAnim = single(loadedTextures, "mobs/vex/vex_idle.png");
                 walkAnim = sequenceWithFallback(loadedTextures, 0.12f,
-                    "mobs/ravager/mobs/ravager2.png",
-                    "mobs/ravager/mobs/ravager4.png",
-                    "mobs/ravager/mobs/ravager5.png",
-                    "mobs/ravager/mobs/ravager6.png",
-                    "mobs/ravager/mobs/ravager7.png",
-                    "mobs/ravager/mobs/ravager8.png",
-                    "mobs/ravager/mobs/ravager9.png",
-                    "mobs/ravager/mobs/ravager10.png");
-                hurtAnim = single(loadedTextures, "mobs/ravager/mobs/ravager_idle.png");
+                    "mobs/vex/vex2.png",
+                    "mobs/vex/vex4.png",
+                    "mobs/vex/vex5.png");
+                hurtAnim = single(loadedTextures, "mobs/vex/vex_idle.png");
+                break;
+            case RAVAGER:
+                idleAnim = sequenceWithFallback(loadedTextures, 0.35f,
+                    "mobs/ravager/mobs/ravager_idle.png",
+                    "mobs/ravager/mobs/ravager_idle_2.png");
+                walkAnim = sequence(loadedTextures, "mobs/ravager/mobs/ravager_walk_%d.png", 1, 6, 0.12f);
+                hurtAnim = single(loadedTextures, "mobs/ravager/mobs/ravager_hurt.png");
                 break;
             case ZOMBIE:
             default:

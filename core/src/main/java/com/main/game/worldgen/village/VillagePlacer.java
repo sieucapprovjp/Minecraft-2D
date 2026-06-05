@@ -8,12 +8,12 @@ import java.util.List;
 
 public final class VillagePlacer {
 
-    public static final int HOUSE_WIDTH = 21;
+    public static final int HOUSE_WIDTH = 17;
     public static final int HOUSE_HEIGHT = 9;
-    public static final int VILLAGE_RADIUS = 42;
+    public static final int VILLAGE_RADIUS = 36;
 
-    private static final int SMALL_HOUSE_WIDTH = 13;
-    private static final int SIDE_HOUSE_GAP = 6;
+    private static final int SMALL_HOUSE_WIDTH = 9;
+    private static final int SIDE_HOUSE_GAP = 5;
     private static final int HOUSE_CLEAR_PADDING = 2;
     private static final int MAX_SITE_SURFACE_DELTA = 2;
     private static final String COBBLESTONE_FLOOR_BLOCK = "village_cobblestone";
@@ -169,11 +169,11 @@ public final class VillagePlacer {
         world.setBlock(baseX + SMALL_HOUSE_WIDTH - 1, floorY + 5,
             WorldBlockFactory.create(baseX + SMALL_HOUSE_WIDTH - 1, floorY + 5, "village_roof_stair_right"));
 
-        world.setBlock(baseX + 5, floorY + 3, WorldBlockFactory.create(baseX + 5, floorY + 3, "village_glass2"));
-        world.setBlock(baseX + 6, floorY + 3, WorldBlockFactory.create(baseX + 6, floorY + 3, "village_glass3"));
+        world.setBlock(baseX + 4, floorY + 3, WorldBlockFactory.create(baseX + 4, floorY + 3, "village_glass2"));
+        world.setBlock(baseX + 5, floorY + 3, WorldBlockFactory.create(baseX + 5, floorY + 3, "village_glass3"));
 
-        int bedLeftX = mirrorInterior ? baseX + 2 : baseX + 8;
-        int shelfX = mirrorInterior ? baseX + 8 : baseX + 2;
+        int bedLeftX = mirrorInterior ? baseX + 2 : baseX + 5;
+        int shelfX = mirrorInterior ? baseX + 5 : baseX + 2;
         world.setBlock(shelfX, floorY + 1, WorldBlockFactory.create(shelfX, floorY + 1, "village_bookshelf"));
         world.setBlock(shelfX + 1, floorY + 1, WorldBlockFactory.create(shelfX + 1, floorY + 1, "village_bookshelf"));
         world.setBlock(bedLeftX, floorY + 1, WorldBlockFactory.create(bedLeftX, floorY + 1, "village_bed_left"));

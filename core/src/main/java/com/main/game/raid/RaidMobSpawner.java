@@ -14,12 +14,39 @@ public final class RaidMobSpawner {
     private static final int SPAWN_SEARCH_RADIUS = 16;
     private static final int SPAWN_EDGE_GAP = 5;
     private static final int SPAWN_PAIR_SPACING = 5;
-    private static final int[] HOUSE_PREVIEW_OFFSETS = {2, 6, 12, 17};
     private static final Mob.MobType[] PREVIEW_RAID_MOBS = {
         Mob.MobType.PILLAGER,
         Mob.MobType.VINDICATOR,
         Mob.MobType.EVOKER,
         Mob.MobType.RAVAGER
+    };
+    private static final Mob.MobType[][] RAID_WAVES = {
+        {
+            Mob.MobType.PILLAGER,
+            Mob.MobType.PILLAGER,
+            Mob.MobType.VINDICATOR,
+            Mob.MobType.VINDICATOR
+        },
+        {
+            Mob.MobType.EVOKER,
+            Mob.MobType.PILLAGER,
+            Mob.MobType.PILLAGER,
+            Mob.MobType.PILLAGER,
+            Mob.MobType.VINDICATOR,
+            Mob.MobType.VINDICATOR,
+            Mob.MobType.VINDICATOR
+        },
+        {
+            Mob.MobType.RAVAGER,
+            Mob.MobType.EVOKER,
+            Mob.MobType.EVOKER,
+            Mob.MobType.PILLAGER,
+            Mob.MobType.PILLAGER,
+            Mob.MobType.PILLAGER,
+            Mob.MobType.VINDICATOR,
+            Mob.MobType.VINDICATOR,
+            Mob.MobType.VINDICATOR
+        }
     };
 
     private RaidMobSpawner() {
@@ -27,6 +54,16 @@ public final class RaidMobSpawner {
 
     public static int spawnOneOfEach(World world, Player player, PhysicsEngine physics,
                                      EntityManager entityManager) {
+        return spawnTypes(world, player, physics, entityManager, PREVIEW_RAID_MOBS);
+    }
+
+    public static int spawnWave(World world, Player player, PhysicsEngine physics,
+                                EntityManager entityManager, int waveNumber) {
+        return spawnTypes(world, player, physics, entityManager, waveMobs(waveNumber));
+    }
+
+    private static int spawnTypes(World world, Player player, PhysicsEngine physics,
+                                  EntityManager entityManager, Mob.MobType[] mobTypes) {
         if (world == null || entityManager == null) {
             return 0;
         }
@@ -36,8 +73,8 @@ public final class RaidMobSpawner {
         }
 
         int spawned = 0;
-        for (int i = 0; i < PREVIEW_RAID_MOBS.length; i++) {
-            Mob.MobType type = PREVIEW_RAID_MOBS[i];
+        for (int i = 0; i < mobTypes.length; i++) {
+            Mob.MobType type = mobTypes[i];
             Vector2 spawn = findRaidMobSpawn(world, village, type, i);
             if (spawn == null) {
                 continue;
@@ -46,6 +83,27 @@ public final class RaidMobSpawner {
             spawned++;
         }
         return spawned;
+    }
+
+    public static boolean isRaidMobType(Mob.MobType type) {
+        return type == Mob.MobType.PILLAGER
+            || type == Mob.MobType.VINDICATOR
+            || type == Mob.MobType.EVOKER
+            || type == Mob.MobType.VEX
+            || type == Mob.MobType.RAVAGER;
+    }
+
+    static int maxWaveCount() {
+        return RAID_WAVES.length;
+    }
+
+    static Mob.MobType[] waveMobs(int waveNumber) {
+        int index = Math.max(1, Math.min(waveNumber, RAID_WAVES.length)) - 1;
+        return RAID_WAVES[index].clone();
+    }
+
+    static int waveMobCount(int waveNumber) {
+        return waveMobs(waveNumber).length;
     }
 
     static Mob.MobType[] previewRaidMobs() {
@@ -64,11 +122,6 @@ public final class RaidMobSpawner {
     private static Vector2 findRaidMobSpawn(World world, VillageState village, Mob.MobType type, int index) {
         int width = Mob.getRequiredSpawnWidth(type);
         int height = Mob.getRequiredSpawnHeight(type);
-        Vector2 houseSpawn = findHousePreviewSpawn(world, village, width, height, index);
-        if (houseSpawn != null) {
-            return houseSpawn;
-        }
-
         Vector2 spawn = SpawnSafety.findSurfaceSpawn(world,
             preferredSpawnX(village, index), SPAWN_SEARCH_RADIUS, width, height);
         if (spawn != null) {
@@ -76,21 +129,5 @@ public final class RaidMobSpawner {
         }
         return SpawnSafety.findSurfaceSpawn(world,
             preferredSpawnX(village, index + 1), SPAWN_SEARCH_RADIUS, width, height);
-    }
-
-    private static Vector2 findHousePreviewSpawn(World world, VillageState village, int width, int height, int index) {
-        if (world == null || village == null || HOUSE_PREVIEW_OFFSETS.length == 0) {
-            return null;
-        }
-        int baseX = village.getHouseBaseX();
-        int y = village.getHouseFloorY() + 1;
-        for (int attempt = 0; attempt < HOUSE_PREVIEW_OFFSETS.length; attempt++) {
-            int offsetIndex = (index + attempt) % HOUSE_PREVIEW_OFFSETS.length;
-            int x = baseX + HOUSE_PREVIEW_OFFSETS[offsetIndex];
-            if (SpawnSafety.isSafeEntitySpawn(world, x, y, width, height)) {
-                return new Vector2(x + 0.1f, y);
-            }
-        }
-        return null;
     }
 }

@@ -33,7 +33,7 @@ public class Mob extends Entity {
     public enum MobType {
         DOG, TAMED_HORSE,
         COW, PIG, SHEEP, CHICKEN, HORSE, WOLF, CAT, VILLAGER, COD, SALMON, TROPICAL_FISH, PUFFERFISH, DOLPHIN,
-        ZOMBIE, HUSK, SKELETON, STRAY, PILLAGER, VINDICATOR, EVOKER, RAVAGER
+        ZOMBIE, HUSK, SKELETON, STRAY, PILLAGER, VINDICATOR, EVOKER, VEX, RAVAGER
     }
 
     private static final float JUMP_IMPULSE = 10f;
@@ -41,6 +41,7 @@ public class Mob extends Entity {
     private static final float HURT_DURATION = 0.3f;
     private static final float DAMAGE_INVULN_DURATION = 0.8f;
     private static final float PASSIVE_PANIC_DURATION = 5f;
+    private static final float VEX_HOVER_ABOVE_SURFACE = 2f;
 
     // ─── AI state ─────────────────────────────────────────────
     public enum AIState { PATROL, CHASE, ATTACK }
@@ -67,6 +68,9 @@ public class Mob extends Entity {
     private final MobType type;
     private final VillagerProfession villagerProfession;
     private final MobProfile profile;
+    private MobRangedAttackListener rangedAttackListener;
+    private MobCastSpellListener castSpellListener;
+    private MobMeleeAttackListener meleeAttackListener;
 
     // ─── Refs ─────────────────────────────────────────────────
     private Player          target;
@@ -139,7 +143,11 @@ public class Mob extends Entity {
         stateTime += delta;
         tickTimers(delta);
         brain.update(this);
-        physics.update(this, world, delta);
+        if (isPseudoFlying()) {
+            updatePseudoFlying(delta);
+        } else if (physics != null && world != null) {
+            physics.update(this, world, delta);
+        }
         updateEntityState();
         updateBounds();
     }
@@ -171,7 +179,7 @@ public class Mob extends Entity {
             return;
         }
         velocity.x = facingRight ? profile.patrolSpeed : -profile.patrolSpeed;
-        if (MobMovementHelper.shouldJumpOverObstacle(this, world, facingRight)) {
+        if (!isPseudoFlying() && MobMovementHelper.shouldJumpOverObstacle(this, world, facingRight)) {
             velocity.y = JUMP_IMPULSE;
             onGround = false;
         }
@@ -183,7 +191,7 @@ public class Mob extends Entity {
         boolean playerRight = target.getX() > position.x;
         facingRight = playerRight;
         velocity.x  = playerRight ? profile.chaseSpeed : -profile.chaseSpeed;
-        if (MobMovementHelper.shouldJumpOverObstacle(this, world, facingRight)) {
+        if (!isPseudoFlying() && MobMovementHelper.shouldJumpOverObstacle(this, world, facingRight)) {
             velocity.y = JUMP_IMPULSE;
             onGround = false;
         }
@@ -193,7 +201,7 @@ public class Mob extends Entity {
         patrolIdleTimer = 0f;
         facingRight = panicDirection > 0f;
         velocity.x = panicDirection * profile.patrolSpeed * 1.35f;
-        if (MobMovementHelper.shouldJumpOverObstacle(this, world, facingRight)) {
+        if (!isPseudoFlying() && MobMovementHelper.shouldJumpOverObstacle(this, world, facingRight)) {
             velocity.y = JUMP_IMPULSE;
             onGround = false;
         }
@@ -205,7 +213,22 @@ public class Mob extends Entity {
             return;
         }
         if (attackTimer <= 0f) {
-            target.takeDamage(profile.attackDamage);
+            faceTarget();
+            if (profile.attackStyle == MobAttackStyle.RANGED) {
+                if (rangedAttackListener != null) {
+                    rangedAttackListener.onMobRangedAttack(this, target, profile.attackDamage);
+                }
+            } else if (profile.attackStyle == MobAttackStyle.CASTER) {
+                if (castSpellListener != null) {
+                    castSpellListener.onMobCastSpell(this, target, profile.attackDamage);
+                }
+            } else {
+                int healthBefore = target.getHealth();
+                target.takeDamage(profile.attackDamage);
+                if (target.getHealth() < healthBefore && meleeAttackListener != null) {
+                    meleeAttackListener.onMobMeleeHitPlayer(this);
+                }
+            }
             attackTimer = profile.attackCooldown;
         }
     }
@@ -233,6 +256,30 @@ public class Mob extends Entity {
         else if (!onGround){ state = velocity.y > 0 ? EntityState.JUMP : EntityState.FALL; }
         else               { state = Math.abs(velocity.x) > 0.01f ? EntityState.RUN : EntityState.IDLE; }
         if (state != prev) stateTime = 0f;
+    }
+
+    private void faceTarget() {
+        if (target != null) {
+            facingRight = target.getX() + target.getWidth() * 0.5f >= position.x + width * 0.5f;
+        }
+    }
+
+    private void updatePseudoFlying(float delta) {
+        position.x += velocity.x * Math.max(0f, delta);
+        if (world != null) {
+            position.x = Math.max(0f, Math.min(Math.max(0f, world.width - width), position.x));
+            int tileX = Math.max(0, Math.min(world.width - 1, (int) Math.floor(position.x + width * 0.5f)));
+            int surfaceY = world.getSurfaceY(tileX);
+            if (surfaceY >= 0) {
+                position.y = Math.min(world.height - height, surfaceY + VEX_HOVER_ABOVE_SURFACE);
+            }
+        }
+        velocity.y = 0f;
+        onGround = true;
+    }
+
+    private boolean isPseudoFlying() {
+        return type == MobType.VEX;
     }
 
     // ─── Nhận damage ──────────────────────────────────────────
@@ -285,8 +332,20 @@ public class Mob extends Entity {
     public boolean     isHostile()  { return profile.allegiance == MobAllegiance.HOSTILE; }
     boolean isPanicking() { return panicTimer > 0f; }
     float getStateTime() { return stateTime; }
+    float getRenderPixelsPerTile() { return profile.renderPixelsPerTile; }
+    float getMaxRenderWidth() { return profile.maxRenderWidth; }
+    float getMaxRenderHeight() { return profile.maxRenderHeight; }
 
     public void setTarget(Player p)   { this.target  = p;   }
+    public void setRangedAttackListener(MobRangedAttackListener rangedAttackListener) {
+        this.rangedAttackListener = rangedAttackListener;
+    }
+    public void setCastSpellListener(MobCastSpellListener castSpellListener) {
+        this.castSpellListener = castSpellListener;
+    }
+    public void setMeleeAttackListener(MobMeleeAttackListener meleeAttackListener) {
+        this.meleeAttackListener = meleeAttackListener;
+    }
     Player getTarget() { return target; }
     void setAiState(AIState aiState) { this.aiState = aiState; }
     float getAggroRadius() { return profile.aggroRadius; }
