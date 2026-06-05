@@ -2,6 +2,10 @@ package com.main.game.entities;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.main.game.entities.mob.Mob;
+import com.main.game.entities.mob.MobCastSpellListener;
+import com.main.game.entities.mob.MobHitboxDebugRenderer;
+import com.main.game.entities.mob.MobMeleeAttackListener;
+import com.main.game.entities.mob.MobRangedAttackListener;
 import com.main.game.entities.player.Player;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -48,6 +52,10 @@ public class EntityManager {
     // Hàng chờ thêm/xoá an toàn trong lúc iterate
     private final List<Entity> toAdd    = new ArrayList<>();
     private final List<Entity> toRemove = new ArrayList<>();
+    private MobHitboxDebugRenderer mobHitboxDebugRenderer;
+    private MobRangedAttackListener mobRangedAttackListener;
+    private MobCastSpellListener mobCastSpellListener;
+    private MobMeleeAttackListener mobMeleeAttackListener;
 
     // ─── Quản lý Player ───────────────────────────────────────
 
@@ -63,6 +71,12 @@ public class EntityManager {
 
     /** Thêm mob vào hàng chờ — sẽ được insert đầu frame tiếp theo */
     public void addMob(Mob mob) {
+        if (mob == null) {
+            return;
+        }
+        mob.setRangedAttackListener(mobRangedAttackListener);
+        mob.setCastSpellListener(mobCastSpellListener);
+        mob.setMeleeAttackListener(mobMeleeAttackListener);
         toAdd.add(mob);
         mobs.add(mob);
     }
@@ -74,6 +88,27 @@ public class EntityManager {
     }
 
     public List<Mob> getMobs() { return mobs; }
+
+    public void setMobRangedAttackListener(MobRangedAttackListener mobRangedAttackListener) {
+        this.mobRangedAttackListener = mobRangedAttackListener;
+        for (Mob mob : mobs) {
+            mob.setRangedAttackListener(mobRangedAttackListener);
+        }
+    }
+
+    public void setMobCastSpellListener(MobCastSpellListener mobCastSpellListener) {
+        this.mobCastSpellListener = mobCastSpellListener;
+        for (Mob mob : mobs) {
+            mob.setCastSpellListener(mobCastSpellListener);
+        }
+    }
+
+    public void setMobMeleeAttackListener(MobMeleeAttackListener mobMeleeAttackListener) {
+        this.mobMeleeAttackListener = mobMeleeAttackListener;
+        for (Mob mob : mobs) {
+            mob.setMeleeAttackListener(mobMeleeAttackListener);
+        }
+    }
 
     // ─── Update ───────────────────────────────────────────────
 
@@ -115,6 +150,13 @@ public class EntityManager {
         if (player != null) player.render(batch);
     }
 
+    /** Vẽ hitbox debug của mob. Chỉ gọi khi debug mode đang bật. */
+    public void renderMobHitboxes(SpriteBatch batch) {
+        for (Mob mob : mobs) {
+            getMobHitboxDebugRenderer().render(batch, mob);
+        }
+    }
+
     // ─── Dispose ──────────────────────────────────────────────
 
     /** Giải phóng tài nguyên tất cả entity. Gọi khi thoát GameScreen. */
@@ -124,6 +166,10 @@ public class EntityManager {
         mobs.clear();
         toAdd.clear();
         toRemove.clear();
+        if (mobHitboxDebugRenderer != null) {
+            mobHitboxDebugRenderer.dispose();
+            mobHitboxDebugRenderer = null;
+        }
         player = null;
     }
 
@@ -142,6 +188,13 @@ public class EntityManager {
         allEntities.removeAll(toRemove);
         mobs.removeAll(toRemove);
         toRemove.clear();
+    }
+
+    private MobHitboxDebugRenderer getMobHitboxDebugRenderer() {
+        if (mobHitboxDebugRenderer == null) {
+            mobHitboxDebugRenderer = new MobHitboxDebugRenderer();
+        }
+        return mobHitboxDebugRenderer;
     }
 
     // ─── Tiện ích query ───────────────────────────────────────

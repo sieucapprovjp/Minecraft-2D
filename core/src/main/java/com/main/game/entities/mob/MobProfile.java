@@ -12,6 +12,8 @@ final class MobProfile {
     private static final int LIGHT_HOSTILE_DAMAGE = 1;
     private static final float MELEE_HOSTILE_ATTACK_COOL = 2.2f;
     private static final float RANGED_HOSTILE_ATTACK_COOL = 3.0f;
+    private static final float DEFAULT_RENDER_PIXELS_PER_TILE = 80f;
+    private static final float SCRATCH_RENDER_PIXELS_PER_TILE = 40f;
 
     final float patrolSpeed;
     final float chaseSpeed;
@@ -25,10 +27,33 @@ final class MobProfile {
     final int attackDamage;
     final int maxHealth;
     final int allegiance;
+    final MobAttackStyle attackStyle;
+    final float renderPixelsPerTile;
+    final float maxRenderWidth;
+    final float maxRenderHeight;
 
     private MobProfile(float patrolSpeed, float chaseSpeed, float aggroRadius, float deAggroRadius,
                        float attackRange, float attackCooldown, float patrolRange, int attackDamage,
                        int maxHealth, int allegiance, float width, float height) {
+        this(patrolSpeed, chaseSpeed, aggroRadius, deAggroRadius, attackRange, attackCooldown, patrolRange,
+            attackDamage, maxHealth, allegiance, width, height, MobAttackStyle.MELEE,
+            DEFAULT_RENDER_PIXELS_PER_TILE, 0f, 0f);
+    }
+
+    private MobProfile(float patrolSpeed, float chaseSpeed, float aggroRadius, float deAggroRadius,
+                       float attackRange, float attackCooldown, float patrolRange, int attackDamage,
+                       int maxHealth, int allegiance, float width, float height,
+                       float renderPixelsPerTile, float maxRenderWidth, float maxRenderHeight) {
+        this(patrolSpeed, chaseSpeed, aggroRadius, deAggroRadius, attackRange, attackCooldown, patrolRange,
+            attackDamage, maxHealth, allegiance, width, height, MobAttackStyle.MELEE,
+            renderPixelsPerTile, maxRenderWidth, maxRenderHeight);
+    }
+
+    private MobProfile(float patrolSpeed, float chaseSpeed, float aggroRadius, float deAggroRadius,
+                       float attackRange, float attackCooldown, float patrolRange, int attackDamage,
+                       int maxHealth, int allegiance, float width, float height,
+                       MobAttackStyle attackStyle, float renderPixelsPerTile,
+                       float maxRenderWidth, float maxRenderHeight) {
         this.patrolSpeed = patrolSpeed;
         this.chaseSpeed = chaseSpeed;
         this.aggroRadius = aggroRadius;
@@ -41,6 +66,10 @@ final class MobProfile {
         this.attackDamage = attackDamage;
         this.maxHealth = maxHealth;
         this.allegiance = allegiance;
+        this.attackStyle = attackStyle == null ? MobAttackStyle.MELEE : attackStyle;
+        this.renderPixelsPerTile = renderPixelsPerTile <= 0f ? DEFAULT_RENDER_PIXELS_PER_TILE : renderPixelsPerTile;
+        this.maxRenderWidth = maxRenderWidth;
+        this.maxRenderHeight = maxRenderHeight;
     }
 
     static MobProfile forType(Mob.MobType type) {
@@ -74,23 +103,29 @@ final class MobProfile {
                 return new MobProfile(1.7f, 2.3f, HOSTILE_AGGRO_RADIUS, 18f,
                     5f, RANGED_HOSTILE_ATTACK_COOL, 5f, LIGHT_HOSTILE_DAMAGE, 22, MobAllegiance.HOSTILE, 0.8f, 1.8f);
             case PILLAGER:
-                return new MobProfile(1.9f, 2.4f, HOSTILE_AGGRO_RADIUS, 18f,
-                    6f, 2.0f, 5f, 3, 24, MobAllegiance.HOSTILE, 0.8f, 1.8f);
+                return new MobProfile(1.8f, 2.4f, HOSTILE_AGGRO_RADIUS, 18f,
+                    5f, RANGED_HOSTILE_ATTACK_COOL, 5f, 3, 24, MobAllegiance.HOSTILE, 0.8f, 1.8f,
+                    MobAttackStyle.RANGED, SCRATCH_RENDER_PIXELS_PER_TILE, 0f, 0f);
             case VINDICATOR:
                 return new MobProfile(2.1f, 2.7f, HOSTILE_AGGRO_RADIUS, DEFAULT_DEAGGRO,
-                    DEFAULT_ATTACK_RANGE, 1.2f, DEFAULT_PATROL_RANGE, 5, 24, MobAllegiance.HOSTILE, 0.8f, 1.8f);
+                    DEFAULT_ATTACK_RANGE, 1.5f, DEFAULT_PATROL_RANGE, 5, 24, MobAllegiance.HOSTILE, 0.8f, 1.8f);
             case EVOKER:
                 return new MobProfile(1.6f, 2.1f, HOSTILE_AGGRO_RADIUS, 18f,
-                    6f, 2.5f, 5f, 4, 24, MobAllegiance.HOSTILE, 0.8f, 1.8f);
+                    6f, 2.6f, 5f, 3, 24, MobAllegiance.HOSTILE, 0.8f, 1.8f,
+                    MobAttackStyle.CASTER, DEFAULT_RENDER_PIXELS_PER_TILE, 0f, 0f);
+            case VEX:
+                return new MobProfile(2.4f, 3.1f, HOSTILE_AGGRO_RADIUS, DEFAULT_DEAGGRO,
+                    1.0f, 1.6f, 4f, 2, 12, MobAllegiance.HOSTILE, 0.55f, 1.1f,
+                    MobAttackStyle.MELEE, SCRATCH_RENDER_PIXELS_PER_TILE, 0f, 0f);
             case RAVAGER:
                 return new MobProfile(1.8f, 2.5f, HOSTILE_AGGRO_RADIUS, DEFAULT_DEAGGRO,
                     1.5f, 1.4f, 6f, 7, 40, MobAllegiance.HOSTILE, 2.0f, 2.2f);
             case COW:
                 return passive(1.6f, 5f, 18, 1.4f, 1.4f);
             case PIG:
-                return passive(1.7f, 5f, 14, 1.5f, 1.0f);
+                return passive(1.7f, 5f, 14, 1.5f, 1.0f, 1.35f, 0.95f);
             case SHEEP:
-                return passive(1.7f, 5f, 14, 1.3f, 1.3f);
+                return passive(1.7f, 5f, 14, 1.3f, 1.3f, 1.3f, 1.25f);
             case CHICKEN:
                 return passive(1.9f, 4f, 8, 0.6f, 0.8f);
             case ZOMBIE:
@@ -106,5 +141,11 @@ final class MobProfile {
 
     private static MobProfile passive(float speed, float patrolRange, int maxHealth, float width, float height) {
         return new MobProfile(speed, speed, 0f, 0f, 0f, 0f, patrolRange, 0, maxHealth, MobAllegiance.PASSIVE, width, height);
+    }
+
+    private static MobProfile passive(float speed, float patrolRange, int maxHealth, float width, float height,
+                                      float maxRenderWidth, float maxRenderHeight) {
+        return new MobProfile(speed, speed, 0f, 0f, 0f, 0f, patrolRange, 0, maxHealth,
+            MobAllegiance.PASSIVE, width, height, DEFAULT_RENDER_PIXELS_PER_TILE, maxRenderWidth, maxRenderHeight);
     }
 }

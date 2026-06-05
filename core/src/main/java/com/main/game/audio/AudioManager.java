@@ -26,7 +26,10 @@ public class AudioManager {
     private boolean soundEnabled = true;
     private boolean musicEnabled = true;
     private AudioId requestedMusicId;
+    private String requestedMusicPath;
+    private boolean requestedMusicLooping;
     private AudioId currentMusicId;
+    private String currentMusicPath;
     private Music currentMusic;
 
     public void updateSettings(GameState gameState) {
@@ -39,6 +42,8 @@ public class AudioManager {
             musicEnabled = nextMusicEnabled;
             if (!musicEnabled) {
                 stopActiveMusic();
+            } else if (requestedMusicPath != null) {
+                playMusicPath(requestedMusicPath, requestedMusicLooping);
             } else if (requestedMusicId != null) {
                 playMusic(requestedMusicId);
             }
@@ -61,44 +66,88 @@ public class AudioManager {
         if (!soundEnabled || blockId == null) {
             return;
         }
-        String[] paths = AudioCatalog.blockBreakPaths(blockId);
-        if (paths.length == 0) {
-            return;
-        }
-        Sound[] sounds = pathGroupCache.computeIfAbsent(cacheKey(paths), key -> loadSounds(paths));
-        playRandom(sounds, DEFAULT_SOUND_VOLUME);
+        playPathGroup(AudioCatalog.blockBreakPaths(blockId), DEFAULT_SOUND_VOLUME);
     }
 
     public void playMobHurt(Mob.MobType type) {
         if (!soundEnabled || type == null) {
             return;
         }
-        String[] paths = AudioCatalog.mobHurtPaths(type);
+        playPathGroup(AudioCatalog.mobHurtPaths(type), DEFAULT_SOUND_VOLUME);
+    }
+
+    public void playMobDeath(Mob.MobType type) {
+        if (!soundEnabled || type == null) {
+            return;
+        }
+        playPathGroup(AudioCatalog.mobDeathPaths(type), DEFAULT_SOUND_VOLUME);
+    }
+
+    public void playMobIdle(Mob.MobType type, float volume) {
+        if (!soundEnabled || type == null) {
+            return;
+        }
+        playPathGroup(AudioCatalog.mobIdlePaths(type), volume);
+    }
+
+    public void playMobStep(Mob.MobType type, float volume) {
+        if (!soundEnabled || type == null) {
+            return;
+        }
+        playPathGroup(AudioCatalog.mobStepPaths(type), volume);
+    }
+
+    public void playMobAttack(Mob.MobType type) {
+        if (!soundEnabled || type == null) {
+            return;
+        }
+        playPathGroup(AudioCatalog.mobAttackPaths(type), DEFAULT_SOUND_VOLUME);
+    }
+
+    private void playPathGroup(String[] paths, float volume) {
         if (paths.length == 0) {
             return;
         }
         Sound[] sounds = pathGroupCache.computeIfAbsent(cacheKey(paths), key -> loadSounds(paths));
-        playRandom(sounds, DEFAULT_SOUND_VOLUME);
+        playRandom(sounds, volume);
     }
 
     public void playMusic(AudioId id) {
         requestedMusicId = id;
+        requestedMusicPath = null;
         if (!musicEnabled || id == null) {
             stopActiveMusic();
             return;
         }
-        if (currentMusic != null && currentMusicId == id) {
+        String path = AudioCatalog.musicPath(id);
+        if (path == null) {
+            return;
+        }
+        playMusicPath(path, true, id);
+    }
+
+    public void playMusicPath(String path, boolean looping) {
+        playMusicPath(path, looping, null);
+    }
+
+    private void playMusicPath(String path, boolean looping, AudioId id) {
+        requestedMusicId = id;
+        requestedMusicPath = path;
+        requestedMusicLooping = looping;
+        if (!musicEnabled || path == null) {
+            stopActiveMusic();
+            return;
+        }
+        if (currentMusic != null && path.equals(currentMusicPath)) {
+            currentMusic.setLooping(looping);
             if (!currentMusic.isPlaying()) {
+                currentMusic.setPosition(0f);
                 currentMusic.play();
             }
             return;
         }
 
         stopActiveMusic();
-        String path = AudioCatalog.musicPath(id);
-        if (path == null) {
-            return;
-        }
         FileHandle file = Gdx.files.internal(path);
         if (!file.exists()) {
             Gdx.app.log("AudioManager", "Missing music asset: " + path);
@@ -107,19 +156,26 @@ public class AudioManager {
         try {
             currentMusic = Gdx.audio.newMusic(file);
             currentMusicId = id;
-            currentMusic.setLooping(true);
+            currentMusicPath = path;
+            currentMusic.setLooping(looping);
             currentMusic.setVolume(MUSIC_VOLUME);
             currentMusic.play();
         } catch (RuntimeException ex) {
             Gdx.app.error("AudioManager", "Failed to load music asset: " + path, ex);
             currentMusic = null;
             currentMusicId = null;
+            currentMusicPath = null;
         }
     }
 
     public void stopMusic() {
         requestedMusicId = null;
+        requestedMusicPath = null;
         stopActiveMusic();
+    }
+
+    public boolean isMusicPlaying() {
+        return currentMusic != null && currentMusic.isPlaying();
     }
 
     public void dispose() {
@@ -178,6 +234,7 @@ public class AudioManager {
             currentMusic = null;
         }
         currentMusicId = null;
+        currentMusicPath = null;
     }
 
     private void disposeSounds(Sound[] sounds) {

@@ -23,6 +23,8 @@ public class BiomeMobSpawnerPersistenceTest {
         assertTrue(BiomeMobSpawner.isPersistentMob(new Mob(100f, 50f,
             Mob.MobType.EVOKER, null, null, null)));
         assertTrue(BiomeMobSpawner.isPersistentMob(new Mob(100f, 50f,
+            Mob.MobType.VEX, null, null, null)));
+        assertTrue(BiomeMobSpawner.isPersistentMob(new Mob(100f, 50f,
             Mob.MobType.RAVAGER, null, null, null)));
     }
 

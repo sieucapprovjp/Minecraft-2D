@@ -51,15 +51,15 @@ public final class ArmorRegistry {
     private static final Map<String, ArmorDefinition> ARMOR = new HashMap<>();
 
     static {
-        register("leather_cap", ArmorSlot.HELMET, "leather", 1, 45, "tools/stone/leather_cap");
-        register("leather_chestplate", ArmorSlot.CHESTPLATE, "leather", 3, 45, "tools/stone/leather_chestplate");
-        register("leather_pants", ArmorSlot.LEGGINGS, "leather", 2, 45, "tools/stone/leather_pants");
-        register("leather_boots", ArmorSlot.BOOTS, "leather", 1, 45, "tools/stone/leather_boots");
-        registerMaterial("copper", 2, 5, 4, 1, 60);
-        registerMaterial("iron", 2, 6, 5, 2, 75);
-        registerMaterial("gold", 2, 5, 3, 1, 24);
-        registerMaterial("diamond", 3, 8, 6, 3, 110);
-        registerMaterial("netherite", 3, 8, 6, 3, 140);
+        register("leather_cap", ArmorSlot.HELMET, "leather", 1, 90, "tools/stone/leather_cap");
+        register("leather_chestplate", ArmorSlot.CHESTPLATE, "leather", 3, 90, "tools/stone/leather_chestplate");
+        register("leather_pants", ArmorSlot.LEGGINGS, "leather", 2, 90, "tools/stone/leather_pants");
+        register("leather_boots", ArmorSlot.BOOTS, "leather", 1, 90, "tools/stone/leather_boots");
+        registerMaterial("copper", 2, 5, 4, 1, 120);
+        registerMaterial("iron", 2, 6, 5, 2, 160);
+        registerMaterial("gold", 2, 5, 3, 1, 80);
+        registerMaterial("diamond", 3, 8, 6, 3, 260);
+        registerMaterial("netherite", 3, 8, 6, 3, 320);
     }
 
     private ArmorRegistry() {
