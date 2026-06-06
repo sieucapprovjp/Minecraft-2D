@@ -17,7 +17,6 @@ import java.util.Map;
 
 public class FurnaceManager {
 
-    private static final String FURNACE_ID = "furnace";
     private static final float COOK_SECONDS = 10f;
 
     private final Map<Integer, FurnaceState> furnaces = new HashMap<>();
@@ -60,7 +59,7 @@ public class FurnaceManager {
             int tileX = (key - 1) % world.width;
             int tileY = (key - 1) / world.width;
             AbstractBlock block = world.getBlock(tileX, tileY);
-            if (block != null && FURNACE_ID.equals(block.getBlockId())) {
+            if (block != null && FurnaceInteractionController.isFurnaceBlock(block.getBlockId())) {
                 batch.draw(litTexture, tileX, tileY, 1f, 1f);
             }
         }

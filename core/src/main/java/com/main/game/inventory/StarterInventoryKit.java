@@ -14,7 +14,12 @@ public final class StarterInventoryKit {
         "netherite_boots"
     };
     private static final String[] STARTER_BLOCKS = {
-        "raid_banner"
+        "raid_banner",
+        "jukebox"
+    };
+    private static final String[] STARTER_MUSIC_DISCS = {
+        "pigstep",
+        "lava_chicken"
     };
 
     private StarterInventoryKit() {
@@ -31,6 +36,9 @@ public final class StarterInventoryKit {
             inventory.add(itemId, 1);
         }
         for (String itemId : STARTER_BLOCKS) {
+            inventory.add(itemId, 1);
+        }
+        for (String itemId : STARTER_MUSIC_DISCS) {
             inventory.add(itemId, 1);
         }
         inventory.add("emerald", STARTER_EMERALD_COUNT);

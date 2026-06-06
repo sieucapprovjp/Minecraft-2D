@@ -21,11 +21,14 @@ import com.main.game.utilityblock.chest.ChestInteractionHandler;
 import com.main.game.utilityblock.chest.ChestManager;
 import com.main.game.utilityblock.chest.ChestRenderer;
 import com.main.game.utilityblock.chest.ChestState;
+import com.main.game.utilityblock.door.DoorInteractionController;
 import com.main.game.utilityblock.furnace.FurnaceInteractionController;
 import com.main.game.utilityblock.furnace.FurnaceInteractionHandler;
 import com.main.game.utilityblock.furnace.FurnaceManager;
 import com.main.game.utilityblock.furnace.FurnaceRenderer;
 import com.main.game.utilityblock.furnace.FurnaceState;
+import com.main.game.utilityblock.jukebox.JukeboxInteractionController;
+import com.main.game.utilityblock.jukebox.JukeboxManager;
 import com.main.game.interaction.BlockBreakOverlay;
 import com.main.game.interaction.BlockBreaker;
 import com.main.game.interaction.BlockPlacementController;
@@ -78,6 +81,7 @@ public class GameScreen extends BaseScreen {
     private static final int MAX_ACTIVE_VEX = 2;
     private static final float VEX_SUMMON_HORIZONTAL_OFFSET = 1.2f;
     private static final float VEX_HOVER_ABOVE_SURFACE = 2f;
+    private static final float JUKEBOX_TOAST_SECONDS = 3f;
 
     private World world;
     private PhysicsEngine physics;
@@ -88,6 +92,9 @@ public class GameScreen extends BaseScreen {
     private CraftingTableInteractionController craftingTableInteractionController;
     private ChestInteractionController chestInteractionController;
     private FurnaceInteractionController furnaceInteractionController;
+    private DoorInteractionController doorInteractionController;
+    private JukeboxInteractionController jukeboxInteractionController;
+    private JukeboxManager jukeboxManager;
     private BlockBreakOverlay blockBreakOverlay;
     private PlayerAttackController playerAttackController;
     private DroppedItemManager droppedItemManager;
@@ -129,6 +136,8 @@ public class GameScreen extends BaseScreen {
     private boolean debugMode;
     private int lastPlayerHealthForAudio;
     private RaidState lastRaidAudioState;
+    private String jukeboxToastMessage;
+    private float jukeboxToastTimer;
 
     private float deathBtnX, deathBtnY, deathBtnW, deathBtnH;
 
@@ -210,6 +219,9 @@ public class GameScreen extends BaseScreen {
         craftingTableInteractionController = new CraftingTableInteractionController();
         chestInteractionController = new ChestInteractionController();
         furnaceInteractionController = new FurnaceInteractionController();
+        doorInteractionController = new DoorInteractionController();
+        jukeboxManager = new JukeboxManager();
+        jukeboxInteractionController = new JukeboxInteractionController(jukeboxManager);
         blockBreakOverlay = new BlockBreakOverlay();
         playerAttackController = new PlayerAttackController();
         playerAttackController.setMobDeathListener(this::handleMobKilled);
@@ -268,6 +280,7 @@ public class GameScreen extends BaseScreen {
         if (Gdx.input.isKeyJustPressed(Input.Keys.K)) player.kill();
         if (Gdx.input.isKeyJustPressed(Input.Keys.B)) player.ban();
         if (Gdx.input.isKeyJustPressed(Input.Keys.F3)) debugMode = !debugMode;
+        updateJukeboxToast(delta);
 
         // Tutorial popup click — xử lý trước để click được dù đang pause/dead
         if (tutorialManager != null && tutorialManager.isShowing() && Gdx.input.justTouched()) {
@@ -371,8 +384,18 @@ public class GameScreen extends BaseScreen {
         String heldItemId = getHeldItemId();
         player.setHeldItemId(heldItemId);
         boolean consumedFood = tryConsumeHeldFood(heldItemId);
+        boolean playedJukebox = false;
+        if (!consumedFood && jukeboxInteractionController != null) {
+            JukeboxInteractionController.InteractionResult interactionResult = jukeboxInteractionController.update(
+                player, world, camera, viewport, heldItemId, inventoryController.isInventoryOpen());
+            if (interactionResult != null) {
+                handleJukeboxInteraction(interactionResult);
+                player.playPlaceAnimation(mouseWorldX(), heldItemId);
+                playedJukebox = true;
+            }
+        }
         boolean placedBlock = false;
-        if (!consumedFood && blockPlacementController.update(player, world, camera, viewport, heldItemId,
+        if (!consumedFood && !playedJukebox && blockPlacementController.update(player, world, camera, viewport, heldItemId,
             inventoryController.isInventoryOpen())) {
             player.playPlaceAnimation(blockPlacementController.getHoveredPlaceX() + 0.5f, heldItemId);
             reduceHeldStack();
@@ -386,7 +409,7 @@ public class GameScreen extends BaseScreen {
             player.playAttackAnimation(mouseWorldX(), heldItemId);
         }
         boolean brokeBlock = false;
-        if (consumedFood || placedBlock || attacked || inventoryController.isInventoryOpen()) {
+        if (consumedFood || playedJukebox || placedBlock || attacked || inventoryController.isInventoryOpen()) {
             blockBreaker.cancel();
         } else {
             brokeBlock = blockBreaker.update(delta, player, world, camera, viewport, heldItemId);
@@ -448,6 +471,7 @@ public class GameScreen extends BaseScreen {
         if (paused) overlayRenderer.renderPause(batch);
         else if (dead) overlayRenderer.renderDeath(batch);
         if (raidHudRenderer != null) raidHudRenderer.render(batch, raidController, entityManager);
+        overlayRenderer.renderToast(batch, jukeboxToastMessage, jukeboxToastTimer / JUKEBOX_TOAST_SECONDS);
         overlayRenderer.renderBrightness(batch, game.getGameState());
 
         if (tutorialUI != null && tutorialManager != null) {
@@ -498,6 +522,12 @@ public class GameScreen extends BaseScreen {
             return;
         }
         tradingController.close();
+        if (doorInteractionController.toggleHovered(player, world, camera, viewport)) {
+            game.getAudioManager().play(doorInteractionController.wasLastToggleOpened()
+                ? AudioId.UTILITY_BLOCK_OPEN
+                : AudioId.UTILITY_BLOCK_CLOSE);
+            return;
+        }
         if (chestInteractionController.canOpen(player, world, camera, viewport)) {
             craftingController.closeCrafting(inventory);
             openFurnaceState = null;
@@ -518,13 +548,13 @@ public class GameScreen extends BaseScreen {
                 furnaceInteractionController.getHoveredTileY());
             getFurnaceRenderer();
             inventoryController.open();
-            game.getAudioManager().play(AudioId.UTILITY_BLOCK_OPEN);
+            game.getAudioManager().play(AudioId.UI_CLICK);
             return;
         }
         openFurnaceState = null;
         if (craftingTableInteractionController.canOpen(player, world, camera, viewport)) {
             craftingController.openTableCrafting(inventory);
-            game.getAudioManager().play(AudioId.UTILITY_BLOCK_OPEN);
+            game.getAudioManager().play(AudioId.UI_CLICK);
         } else {
             craftingController.openPlayerCrafting(inventory);
             game.getAudioManager().play(AudioId.UI_CLICK);
@@ -540,7 +570,7 @@ public class GameScreen extends BaseScreen {
             return;
         }
         if (openFurnaceState != null) {
-            game.getAudioManager().play(AudioId.UTILITY_BLOCK_CLOSE);
+            game.getAudioManager().play(AudioId.UI_CLICK);
             furnaceInteractionHandler.onCloseInventory(inventory);
             openFurnaceState = null;
             return;
@@ -551,22 +581,24 @@ public class GameScreen extends BaseScreen {
             openChestState = null;
             return;
         }
-        game.getAudioManager().play(craftingController.isTableCrafting()
-            ? AudioId.UTILITY_BLOCK_CLOSE
-            : AudioId.UI_CLICK);
+        game.getAudioManager().play(AudioId.UI_CLICK);
         inventoryInteractionHandler.onCloseInventory(inventory, craftingController);
     }
 
     private void handleBlockBroken(AbstractBlock block, World worldRef) {
         playBlockBreakSound(block);
-        if (tutorialManager != null && block != null) {
-            tutorialManager.onBlockBroken(block);
-        }
-        if (block != null && "furnace".equals(block.getBlockId())) {
+        DoorInteractionController.removeDoorPair(worldRef, block);
+        if (block != null && FurnaceInteractionController.isFurnaceBlock(block.getBlockId())) {
             furnaceManager.dropContents(block, worldRef, droppedItemManager);
         }
-        if (block != null && "chest".equals(block.getBlockId())) {
+        if (block != null && ChestInteractionController.isChestBlock(block.getBlockId())) {
             chestManager.dropContents(block, worldRef, droppedItemManager);
+        }
+        if (block != null && JukeboxInteractionController.JUKEBOX_ID.equals(block.getBlockId())) {
+            String droppedDisc = jukeboxManager == null ? null : jukeboxManager.dropDisc(block, worldRef, droppedItemManager);
+            if (droppedDisc != null) {
+                game.getAudioManager().stopMusic();
+            }
         }
         droppedItemManager.spawn(BlockDropFactory.createDrop(block, worldRef, getHeldItemId()), worldRef);
     }
@@ -659,11 +691,47 @@ public class GameScreen extends BaseScreen {
     }
 
     private void handleBlockPlaced(String blockId, int tileX, int tileY) {
-        if (tutorialManager != null) {
-            tutorialManager.onBlockPlaced(blockId, tileX, tileY);
-        }
+        game.getAudioManager().playBlockBreak(blockId);
         if (raidController != null && raidController.tryStartFromBanner(world, blockId, tileX, tileY)) {
             game.getAudioManager().play(AudioId.UI_CLICK);
+        }
+    }
+
+    private void handleJukeboxInteraction(JukeboxInteractionController.InteractionResult interactionResult) {
+        if (interactionResult == null) {
+            return;
+        }
+        if (interactionResult.getType() == JukeboxInteractionController.InteractionType.INSERT) {
+            reduceHeldStack();
+            game.getAudioManager().playMusicPath(interactionResult.getMusicPath(), false);
+            jukeboxToastMessage = "Now playing: " + interactionResult.getDisplayName();
+            jukeboxToastTimer = JUKEBOX_TOAST_SECONDS;
+            return;
+        }
+        if (interactionResult.getType() == JukeboxInteractionController.InteractionType.EJECT) {
+            dropJukeboxDisc(interactionResult);
+            game.getAudioManager().stopMusic();
+            jukeboxToastMessage = "Ejected: " + interactionResult.getDisplayName();
+            jukeboxToastTimer = JUKEBOX_TOAST_SECONDS;
+        }
+    }
+
+    private void dropJukeboxDisc(JukeboxInteractionController.InteractionResult interactionResult) {
+        if (jukeboxManager == null || interactionResult == null) {
+            return;
+        }
+        jukeboxManager.spawnDiscDrop(world, interactionResult.getTileX(), interactionResult.getTileY(),
+            interactionResult.getDiscItemId(), droppedItemManager);
+    }
+
+    private void updateJukeboxToast(float delta) {
+        if (jukeboxToastTimer <= 0f) {
+            jukeboxToastMessage = null;
+            return;
+        }
+        jukeboxToastTimer = Math.max(0f, jukeboxToastTimer - Math.max(0f, delta));
+        if (jukeboxToastTimer <= 0f) {
+            jukeboxToastMessage = null;
         }
     }
 

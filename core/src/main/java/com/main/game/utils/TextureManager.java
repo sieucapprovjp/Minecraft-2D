@@ -125,6 +125,13 @@ public class TextureManager {
         nameMap.put("village_moss_stone", "tiles/plain/village/moss_stone");
         nameMap.put("village_roof_stair_left", "tiles/plain/village/stair_l_wood");
         nameMap.put("village_roof_stair_right", "tiles/plain/village/stair_r_wood_1");
+        nameMap.put("village_door_bottom_closed", "tiles/plain/village/door_bottom_closed");
+        nameMap.put("village_door_top_closed", "tiles/plain/village/door_top_closed");
+        nameMap.put("village_door_bottom_open", "tiles/plain/village/doorbottom");
+        nameMap.put("village_door_top_open", "tiles/plain/village/door_top");
+        nameMap.put("jukebox", "util_block/jukebox");
+        nameMap.put("pigstep", "pigstep");
+        nameMap.put("lava_chicken", "util_block/lava_chicken");
         nameMap.put("cherry_grass", "tiles/cherry/grass_cherry");
         nameMap.put("cherry_log", "tiles/cherry/cherry_log");
         nameMap.put("natural_cherry_log", "tiles/cherry/cherry_log");

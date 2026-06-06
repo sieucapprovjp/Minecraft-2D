@@ -17,9 +17,15 @@ public class UtilityBlockInteractionController {
     private int hoveredTileY = -1;
 
     public boolean canOpen(String blockId, Player player, World world, OrthographicCamera camera, Viewport viewport) {
+        return canOpenAny(new String[] {blockId}, player, world, camera, viewport);
+    }
+
+    public boolean canOpenAny(String[] blockIds, Player player, World world,
+                              OrthographicCamera camera, Viewport viewport) {
         hoveredTileX = -1;
         hoveredTileY = -1;
-        if (blockId == null
+        if (blockIds == null
+            || blockIds.length == 0
             || player == null
             || world == null
             || camera == null
@@ -36,7 +42,7 @@ public class UtilityBlockInteractionController {
         int tileY = (int) Math.floor(mouseWorld.y);
         AbstractBlock block = world.getBlock(tileX, tileY);
         if (block == null
-            || !blockId.equals(block.getBlockId())
+            || !matchesAny(block.getBlockId(), blockIds)
             || !isWithinReach(player, tileX, tileY)) {
             return false;
         }
@@ -44,6 +50,18 @@ public class UtilityBlockInteractionController {
         hoveredTileX = tileX;
         hoveredTileY = tileY;
         return true;
+    }
+
+    private boolean matchesAny(String blockId, String[] blockIds) {
+        if (blockId == null) {
+            return false;
+        }
+        for (String candidate : blockIds) {
+            if (blockId.equals(candidate)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public int getHoveredTileX() {

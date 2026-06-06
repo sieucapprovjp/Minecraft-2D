@@ -49,10 +49,6 @@ public class DroppedItem {
         velocity.y = Math.max(MAX_FALL_SPEED, velocity.y + GRAVITY_PER_TICK * tickStep);
         position.y += velocity.y * tickStep;
 
-        // Why: prevent dropped items from clipping through blocks above (e.g. when
-        // the broken block has another block directly on top). Without Y collision,
-        // the item rises through the upper block then lands on top of it instead of
-        // falling to the broken block's height.
         if (velocity.y > 0f && collides(world)) {
             position.y -= velocity.y * tickStep;
             velocity.y = 0f;
@@ -105,6 +101,7 @@ public class DroppedItem {
         }
         return false;
     }
+
 
     private boolean isOnSolidGround(World world) {
         int tileX = (int) Math.floor(getCenterX());
