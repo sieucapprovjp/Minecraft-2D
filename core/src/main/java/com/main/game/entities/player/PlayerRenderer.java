@@ -38,8 +38,8 @@ class PlayerRenderer {
     private final Map<String, TextureRegion> armorRegionCache = new HashMap<>();
     private final List<Texture> armorTextures = new ArrayList<>();
 
-    PlayerRenderer() {
-        loadAssets();
+    public PlayerRenderer(int skinId) {
+        loadAssets(skinId);
     }
 
     void render(SpriteBatch batch, Player player, EntityState state, float stateTime,
@@ -183,17 +183,30 @@ class PlayerRenderer {
         armorRegionCache.clear();
     }
 
-    private void loadAssets() {
-        tBodyL = new Texture(Gdx.files.internal("mvp/player/body4.png"));
-        tBodyR = new Texture(Gdx.files.internal("mvp/player/body4.png"));
-        tArmL = new Texture(Gdx.files.internal("mvp/player/arm4.png"));
-        tArmR = new Texture(Gdx.files.internal("mvp/player/arm4.png"));
-        tLegL = new Texture(Gdx.files.internal("mvp/player/leg.png"));
-        tLegR = new Texture(Gdx.files.internal("mvp/player/leg.png"));
-        tHeadR = new Texture(Gdx.files.internal("mvp/player/right.png"));
-        tHeadL = new Texture(Gdx.files.internal("mvp/player/left.png"));
-        tBootL = new Texture(Gdx.files.internal("mvp/player/boot.png"));
-        tBootR = new Texture(Gdx.files.internal("mvp/player/boot1.png"));
+    private void loadAssets(int skinId) {
+        if (skinId == 0) { // Steve
+            tBodyL = new Texture(Gdx.files.internal("mvp/player/body4.png"));
+            tBodyR = new Texture(Gdx.files.internal("mvp/player/body4.png"));
+            tArmL = new Texture(Gdx.files.internal("mvp/player/arm4.png"));
+            tArmR = new Texture(Gdx.files.internal("mvp/player/arm4.png"));
+            tLegL = new Texture(Gdx.files.internal("mvp/player/leg.png"));
+            tLegR = new Texture(Gdx.files.internal("mvp/player/leg.png"));
+            tHeadR = new Texture(Gdx.files.internal("mvp/player/right.png"));
+            tHeadL = new Texture(Gdx.files.internal("mvp/player/left.png"));
+            tBootL = new Texture(Gdx.files.internal("mvp/player/boot.png"));
+            tBootR = new Texture(Gdx.files.internal("mvp/player/boot1.png"));
+        } else { // Alex (skinId == 1)
+            tBodyL = new Texture(Gdx.files.internal("mvp/player/body2.png"));
+            tBodyR = new Texture(Gdx.files.internal("mvp/player/body2.png"));
+            tArmL = new Texture(Gdx.files.internal("mvp/player/arm5.png"));
+            tArmR = new Texture(Gdx.files.internal("mvp/player/arm5.png"));
+            tLegL = new Texture(Gdx.files.internal("mvp/player/alex1.png"));
+            tLegR = new Texture(Gdx.files.internal("mvp/player/alex1.png"));
+            tHeadR = new Texture(Gdx.files.internal("mvp/player/head1r34.png"));
+            tHeadL = new Texture(Gdx.files.internal("mvp/player/head1r34.png"));
+            tBootL = new Texture(Gdx.files.internal("mvp/player/boot_alex.png"));
+            tBootR = new Texture(Gdx.files.internal("mvp/player/boot_alex.png"));
+        }
 
         regBodyL = new TextureRegion(tBodyL);
         regBodyR = new TextureRegion(tBodyR);

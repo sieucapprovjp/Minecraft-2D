@@ -17,6 +17,7 @@ public final class FoodMeter {
     private float exhaustion;
     private float starvationTimer;
     private float regenerationTimer;
+    private boolean peaceful;
 
     public FoodMeter() {
         this(DEFAULT_MAX_FOOD);
@@ -49,11 +50,17 @@ public final class FoodMeter {
         return true;
     }
 
+    public void setPeaceful(boolean peaceful) {
+        this.peaceful = peaceful;
+    }
+
     public void addMovementExhaustion(float delta) {
+        if (peaceful) return;
         addExhaustion(MOVE_EXHAUSTION_PER_SECOND * Math.max(0f, delta));
     }
 
     public void addJumpExhaustion() {
+        if (peaceful) return;
         addExhaustion(JUMP_EXHAUSTION);
     }
 
@@ -76,7 +83,7 @@ public final class FoodMeter {
     }
 
     public TickResult update(float delta, boolean healthBelowMax) {
-        if (delta <= 0f) {
+        if (delta <= 0f || peaceful) {
             return TickResult.NONE;
         }
 

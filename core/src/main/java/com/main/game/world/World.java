@@ -110,12 +110,70 @@ public class World {
         return block != null && block.isSolid();
     }
 
-    public void generate() {
+    public void generate(int worldType) {
         if (generated) return;
 
-        WorldGenerator.generate(this, seed);
-        CaveGenerator.generate(this, seed);
+        if (worldType == 1) {
+            generateFlat();
+        } else {
+            WorldGenerator.generate(this, seed);
+            CaveGenerator.generate(this, seed);
+        }
         generated = true;
+    }
+
+    private void generateFlat() {
+        // Structure from top to bottom: 1 Grass, 2 Dirt, Stone, 3 Bedrock
+        int surfaceY = height / 2 + 8;
+
+        for (int x = 0; x < width; x++) {
+            setBiome(x, BiomeType.PLAINS);
+            setSurfaceY(x, surfaceY);
+
+            int bedrockBottomY = height - 1; // Start from top of world for bedrock at bottom
+            for (int y = 0; y <= surfaceY; y++) {
+                AbstractBlock block = null;
+
+                if (y == surfaceY) {
+                    // Top layer: GrassBlock
+                    block = new SimpleBlock(x, y, "grass", true, true, 0.6f, BlockPalette.getGrass());
+                } else if (y >= surfaceY - 2 && y < surfaceY) {
+                    // 2 layers: DirtBlock
+                    block = new SimpleBlock(x, y, "dirt", true, true, 0.7f, BlockPalette.getDirt());
+                } else if (y >= 3 && y < surfaceY - 2) {
+                    // Fill: Stone
+                    block = WorldBlockFactory.create(x, y, "stone");
+                } else if (y >= 0 && y < 3) {
+                    // 3 bottom layers: Bedrock
+                    block = new SimpleBlock(x, y, "bedrock", true, false, 999f, BlockPalette.getBedrock());
+                }
+
+                if (block != null) setBlock(x, y, block);
+            }
+        }
+
+        // Place a tree next to spawn point
+        int treeX = width / 2 + 4;
+        int treeY = surfaceY + 1;
+        int trunkHeight = 3;
+        Random random = new Random(seed);
+
+        for (int ty = 0; ty < trunkHeight; ty++) {
+            if (isInBounds(treeX, treeY + ty)) {
+                setBlock(treeX, treeY + ty,
+                    new SimpleBlock(treeX, treeY + ty, "natural_wood", false, true, 0.9f, BlockPalette.getWood()));
+            }
+        }
+
+        int leafBaseY = treeY + trunkHeight;
+        for (int lx = treeX - 1; lx <= treeX + 1; lx++) {
+            for (int ly = leafBaseY - 1; ly <= leafBaseY; ly++) {
+                if (isInBounds(lx, ly) && getBlock(lx, ly) == null) {
+                    setBlock(lx, ly,
+                        new SimpleBlock(lx, ly, "leaves", false, true, 0.2f, BlockPalette.getLeaves()));
+                }
+            }
+        }
     }
 
     public void setSurfaceY(int x, int y) {

@@ -7,5 +7,6 @@ public enum ScreenId {
     SETTINGS,
     GAME,
     PAUSE,
-    GAME_OVER
+    GAME_OVER,
+    HELP
 }
