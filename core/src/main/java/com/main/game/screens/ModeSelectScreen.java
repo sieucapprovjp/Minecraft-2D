@@ -31,6 +31,9 @@ public class ModeSelectScreen extends BaseScreen {
     private float doneScale = 1f;
     private float backScale = 1f;
     private float settingsScale = 1f;
+    private static final float LABEL_OFFSET_X = 30f;
+    private static final float LABEL_OFFSET_Y = 2f;
+
 
     private final int[] menuChoices = {0, 0, 0, 0};
 
@@ -63,7 +66,7 @@ public class ModeSelectScreen extends BaseScreen {
         bgTexture = new Texture(StageBackgrounds.random());
         logoTexture = new Texture(Gdx.files.internal("images/stage_sprite/splash-worldoptions.png"));
         panelTexture = new Texture(Gdx.files.internal("images/menu/world-options2.png"));
-        labelsTexture = new Texture(Gdx.files.internal("images/menu2/world-options-text3.png"));
+        labelsTexture = new Texture(Gdx.files.internal("images/menu2/MenuOption4.png"));
         doneTexture = new Texture(Gdx.files.internal("images/menu/done.png"));
         backTexture = new Texture(Gdx.files.internal("images/menu/back.png"));
         settingsTexture = new Texture(Gdx.files.internal("images/stage_sprite/spl1b-game_settings.png"));
@@ -225,8 +228,8 @@ public class ModeSelectScreen extends BaseScreen {
 
         lblW = labelsTexture.getWidth() * uiScale;
         lblH = labelsTexture.getHeight() * uiScale;
-        lblX = scratchXToScreen(-labelsTexture.getWidth() / 2f);
-        lblY = scratchYToScreen(-labelsTexture.getHeight() / 2f);
+        lblX = scratchXToScreen(-labelsTexture.getWidth() / 2f + LABEL_OFFSET_X);
+        lblY = scratchYToScreen(-labelsTexture.getHeight() / 2f - LABEL_OFFSET_Y);
 
         float baseBtnW = doneTexture.getWidth() * uiScale;
         float baseBtnH = doneTexture.getHeight() * uiScale;
