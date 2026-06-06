@@ -31,6 +31,9 @@ public class ModeSelectScreen extends BaseScreen {
     private float doneScale = 1f;
     private float backScale = 1f;
     private float settingsScale = 1f;
+    private static final float LABEL_OFFSET_X = 30f;
+    private static final float LABEL_OFFSET_Y = 2f;
+
 
     private final int[] menuChoices = {0, 0, 0, 0};
 
@@ -38,7 +41,7 @@ public class ModeSelectScreen extends BaseScreen {
     private static final float SCRATCH_H = 360f;
     private static final float DONE_CENTER_X = -90f;
     private static final float SETTINGS_CENTER_X = 90f;
-    private static final float BUTTON_CENTER_Y = -135f;
+    private static final float BUTTON_CENTER_Y = -105f;
 
     // Cached button rects (computed once per frame in draw)
     private float doneX, doneY, doneW, doneH;
@@ -63,14 +66,14 @@ public class ModeSelectScreen extends BaseScreen {
         bgTexture = new Texture(StageBackgrounds.random());
         logoTexture = new Texture(Gdx.files.internal("images/stage_sprite/splash-worldoptions.png"));
         panelTexture = new Texture(Gdx.files.internal("images/menu/world-options2.png"));
-        labelsTexture = new Texture(Gdx.files.internal("images/menu2/world-options-text.png"));
+        labelsTexture = new Texture(Gdx.files.internal("images/menu2/MenuOption4.png"));
         doneTexture = new Texture(Gdx.files.internal("images/menu/done.png"));
         backTexture = new Texture(Gdx.files.internal("images/menu/back.png"));
         settingsTexture = new Texture(Gdx.files.internal("images/stage_sprite/spl1b-game_settings.png"));
 
         GameState gameState = game.getGameState();
-        menuChoices[0] = gameState.hardcore ? 3 : (gameState.creative ? 1 : 0);
-        menuChoices[1] = gameState.bonusChest;
+        menuChoices[0] = gameState.peaceful ? 1 : 0;
+        menuChoices[1] = gameState.worldType;  // 0=Default, 1=Flat
         menuChoices[2] = gameState.skin;
         menuChoices[3] = gameState.loot;
     }
@@ -168,8 +171,14 @@ public class ModeSelectScreen extends BaseScreen {
         float scratchX = (mx - sw / 2f) / uiScale;
         float scratchY = (my - sh / 2f) / uiScale;
 
-        int optID = Math.round((15f - scratchY) / 34f) + 1;
+        int optID = Math.round((45f - scratchY) / 34f) + 1;
         int choiceID = Math.round((scratchX + 58f) / 72f);
+
+        // DEBUG: In tọa độ ra terminal để kiểm tra hitbox
+        if (optID >= 1 && optID <= 4) {
+            System.out.println("[Debug] Click: x=" + scratchX + ", y=" + scratchY
+                + " -> Row(optID)=" + optID + ", Col(choiceID)=" + choiceID);
+        }
 
         if (optID < 1 || optID > 4) {
             return;
@@ -178,13 +187,13 @@ public class ModeSelectScreen extends BaseScreen {
         int maxChoice;
         switch (optID) {
             case 1:
-                maxChoice = 3;
+                maxChoice = 1; // Survival(0), Peaceful(1)
                 break;
             case 2:
-                maxChoice = 2;
+                maxChoice = 1; // World Type: Default(0), Flat(1)
                 break;
             case 3:
-                maxChoice = 3;
+                maxChoice = 1;
                 break;
             case 4:
                 maxChoice = 1;
@@ -219,8 +228,8 @@ public class ModeSelectScreen extends BaseScreen {
 
         lblW = labelsTexture.getWidth() * uiScale;
         lblH = labelsTexture.getHeight() * uiScale;
-        lblX = scratchXToScreen(-labelsTexture.getWidth() / 2f);
-        lblY = scratchYToScreen(-labelsTexture.getHeight() / 2f);
+        lblX = scratchXToScreen(-labelsTexture.getWidth() / 2f + LABEL_OFFSET_X);
+        lblY = scratchYToScreen(-labelsTexture.getHeight() / 2f - LABEL_OFFSET_Y);
 
         float baseBtnW = doneTexture.getWidth() * uiScale;
         float baseBtnH = doneTexture.getHeight() * uiScale;
@@ -238,7 +247,7 @@ public class ModeSelectScreen extends BaseScreen {
         backW = backTexture.getWidth() * uiScale;
         backH = backTexture.getHeight() * uiScale;
         backX = (sw - backW) / 2f;
-        backY = scratchYToScreen(-170f - backTexture.getHeight() / 2f);
+        backY = scratchYToScreen(-150f - backTexture.getHeight() / 2f);
     }
 
     private float scratchXToScreen(float scratchX) {
@@ -253,32 +262,13 @@ public class ModeSelectScreen extends BaseScreen {
         GameState gameState = game.getGameState();
         int gameMode = menuChoices[0];
 
-        switch (gameMode) {
-            case 0:
-                gameState.creative = false;
-                gameState.survival = true;
-                gameState.hardcore = false;
-                break;
-            case 1:
-                gameState.creative = true;
-                gameState.survival = false;
-                gameState.hardcore = false;
-                break;
-            case 2:
-                gameState.creative = false;
-                gameState.survival = true;
-                gameState.hardcore = false;
-                break;
-            case 3:
-                gameState.creative = false;
-                gameState.survival = true;
-                gameState.hardcore = true;
-                break;
-            default:
-                break;
-        }
+        // 0 = Survival, 1 = Peaceful
+        gameState.creative = false;
+        gameState.survival = true;
+        gameState.hardcore = false;
+        gameState.peaceful = (gameMode == 1);
 
-        gameState.bonusChest = menuChoices[1];
+        gameState.worldType = menuChoices[1];  // 0=Default, 1=Flat
         gameState.skin = menuChoices[2];
         gameState.loot = menuChoices[3];
     }

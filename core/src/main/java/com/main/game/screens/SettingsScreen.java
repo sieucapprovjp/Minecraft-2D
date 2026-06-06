@@ -18,7 +18,7 @@ import com.main.game.navigation.ScreenId;
 public class SettingsScreen extends BaseScreen {
 
     private Texture bgTexture;
-    private Texture panelTexture;
+    private Texture pixelTexture;
     private Texture tickTexture;
     private Texture sliderTrackTexture;
     private Texture sliderThumbTexture;
@@ -49,13 +49,13 @@ public class SettingsScreen extends BaseScreen {
 
     @Override
     public void show() {
-        bgTexture = new Texture(Gdx.files.internal("images/stage_sprite/empty2.png"));
-        panelTexture = new Texture(Gdx.files.internal("images/stage_sprite/blank.png"));
+        bgTexture = new Texture(StageBackgrounds.random());
         tickTexture = new Texture(Gdx.files.internal("images/unnamed/costume6.png"));
 
         Pixmap pix = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
         pix.setColor(Color.WHITE);
         pix.fill();
+        pixelTexture = new Texture(pix);
         sliderTrackTexture = new Texture(pix);
         sliderThumbTexture = new Texture(pix);
         pix.dispose();
@@ -132,9 +132,8 @@ public class SettingsScreen extends BaseScreen {
         batch.getProjectionMatrix().setToOrtho2D(0, 0, sw, sh);
         batch.begin();
 
-        batch.draw(bgTexture, 0, 0, sw, sh);
-
-        batch.draw(panelTexture, panelX, panelY, panelW, panelH);
+        drawBackground(sw, sh);
+        drawPanel();
 
         drawCheckbox(soundBoxX, soundBoxY, soundBoxW, soundBoxH, game.getGameState().soundEnabled, soundBoxScale);
         drawCheckbox(musicBoxX, musicBoxY, musicBoxW, musicBoxH, game.getGameState().musicEnabled, musicBoxScale);
@@ -145,7 +144,7 @@ public class SettingsScreen extends BaseScreen {
         drawLabel("Brightness", sliderX, sliderY + sliderH * 4f);
         drawSlider();
 
-        drawScaledButton(panelTexture, doneX, doneY, doneW, doneH, doneScale, new Color(0.2f, 0.2f, 0.2f, 0.7f));
+        drawScaledButton(doneX, doneY, doneW, doneH, doneScale, new Color(0.36f, 0.23f, 0.23f, 1f));
         drawCenteredText("DONE", doneX, doneY, doneW, doneH);
 
         batch.setColor(Color.WHITE);
@@ -170,8 +169,10 @@ public class SettingsScreen extends BaseScreen {
         float scaledH = h * scale;
         float sx = x + (w - scaledW) / 2f;
         float sy = y + (h - scaledH) / 2f;
-        batch.setColor(new Color(0.15f, 0.15f, 0.15f, 0.85f));
-        batch.draw(panelTexture, sx, sy, scaledW, scaledH);
+        drawBeveledRect(sx, sy, scaledW, scaledH,
+            new Color(0.16f, 0.16f, 0.16f, 1f),
+            new Color(0.45f, 0.45f, 0.45f, 1f),
+            new Color(0.04f, 0.04f, 0.04f, 1f));
         if (checked) {
             float pad = Math.min(scaledW, scaledH) * 0.15f;
             batch.setColor(Color.WHITE);
@@ -191,13 +192,14 @@ public class SettingsScreen extends BaseScreen {
         font.draw(batch, layout, tx, ty);
     }
 
-    private void drawScaledButton(Texture tex, float x, float y, float w, float h, float scale, Color color) {
+    private void drawScaledButton(float x, float y, float w, float h, float scale, Color color) {
         float scaledW = w * scale;
         float scaledH = h * scale;
         float sx = x + (w - scaledW) / 2f;
         float sy = y + (h - scaledH) / 2f;
-        batch.setColor(color);
-        batch.draw(tex, sx, sy, scaledW, scaledH);
+        drawBeveledRect(sx, sy, scaledW, scaledH, color,
+            new Color(0.62f, 0.62f, 0.62f, 1f),
+            new Color(0.06f, 0.06f, 0.06f, 1f));
     }
 
     private void updateBrightness(float mouseX) {
@@ -214,8 +216,8 @@ public class SettingsScreen extends BaseScreen {
     @Override
     public void dispose() {
         super.dispose();
+        if (pixelTexture != null) pixelTexture.dispose();
         if (bgTexture != null) bgTexture.dispose();
-        if (panelTexture != null) panelTexture.dispose();
         if (tickTexture != null) tickTexture.dispose();
         if (sliderTrackTexture != null) sliderTrackTexture.dispose();
         if (sliderThumbTexture != null) sliderThumbTexture.dispose();
@@ -223,32 +225,87 @@ public class SettingsScreen extends BaseScreen {
     }
 
     private void updateLayout(float sw, float sh) {
-        float uiScale = Math.min(sw / 482f, sh / 344f);
+        float uiScale = Math.min(sw / 1280f, sh / 720f);
 
-        panelW = 360f * uiScale;
-        panelH = 240f * uiScale;
+        panelW = Math.min(sw - 72f, 720f * uiScale);
+        panelH = Math.min(sh - 72f, 430f * uiScale);
         panelX = (sw - panelW) / 2f;
         panelY = (sh - panelH) / 2f;
 
-        float boxSize = 28f * uiScale;
+        float boxSize = 30f * uiScale;
+        float formW = 520f * uiScale;
+        float formH = 310f * uiScale;
+        float formX = panelX + (panelW - formW) / 2f;
+        float formY = panelY + (panelH - formH) / 2f;
+
         soundBoxW = boxSize;
         soundBoxH = boxSize;
-        soundBoxX = panelX + 40f * uiScale;
-        soundBoxY = panelY + panelH - 80f * uiScale;
+        soundBoxX = formX + 54f * uiScale;
+        soundBoxY = formY + formH - 74f * uiScale;
 
         musicBoxW = boxSize;
         musicBoxH = boxSize;
         musicBoxX = soundBoxX;
         musicBoxY = soundBoxY - 50f * uiScale;
 
-        sliderW = panelW - 80f * uiScale;
+        sliderW = formW - 90f * uiScale;
         sliderH = 8f * uiScale;
-        sliderX = panelX + 40f * uiScale;
-        sliderY = panelY + 60f * uiScale;
+        sliderX = formX + 45f * uiScale;
+        sliderY = formY + 90f * uiScale;
 
         doneW = 140f * uiScale;
         doneH = 36f * uiScale;
-        doneX = panelX + (panelW - doneW) / 2f;
-        doneY = panelY + 18f * uiScale;
+        doneX = formX + (formW - doneW) / 2f;
+        doneY = formY + 26f * uiScale;
+    }
+
+    private void drawBackground(float sw, float sh) {
+        if (bgTexture != null) {
+            drawCover(bgTexture, sw, sh);
+        } else {
+            batch.setColor(0.04f, 0.04f, 0.05f, 1f);
+            batch.draw(pixelTexture, 0, 0, sw, sh);
+        }
+        batch.setColor(0f, 0f, 0f, 0.58f);
+        batch.draw(pixelTexture, 0, 0, sw, sh);
+        batch.setColor(0.07f, 0.07f, 0.09f, 0.78f);
+        batch.draw(pixelTexture, 0, sh * 0.88f, sw, sh * 0.12f);
+        batch.draw(pixelTexture, 0, 0, sw, sh * 0.10f);
+    }
+
+    private void drawPanel() {
+        drawBeveledRect(panelX, panelY, panelW, panelH,
+            new Color(0.12f, 0.12f, 0.15f, 0.98f),
+            new Color(0.54f, 0.54f, 0.60f, 1f),
+            new Color(0.02f, 0.02f, 0.025f, 1f));
+        batch.setColor(0.07f, 0.07f, 0.09f, 1f);
+        float inset = Math.max(8f, 14f * Math.min(panelW / 720f, panelH / 430f));
+        batch.draw(pixelTexture, panelX + inset, panelY + inset, panelW - inset * 2f, panelH - inset * 2f);
+        drawBeveledRect(sliderX - 34f, doneY - 22f,
+            sliderW + 68f, soundBoxY + soundBoxH - doneY + 54f,
+            new Color(0.18f, 0.18f, 0.20f, 1f),
+            new Color(0.42f, 0.42f, 0.46f, 1f),
+            new Color(0.02f, 0.02f, 0.025f, 1f));
+        batch.setColor(Color.WHITE);
+    }
+
+    private void drawCover(Texture texture, float sw, float sh) {
+        float scale = Math.max(sw / texture.getWidth(), sh / texture.getHeight());
+        float drawW = texture.getWidth() * scale;
+        float drawH = texture.getHeight() * scale;
+        batch.setColor(Color.WHITE);
+        batch.draw(texture, (sw - drawW) / 2f, (sh - drawH) / 2f, drawW, drawH);
+    }
+
+    private void drawBeveledRect(float x, float y, float w, float h, Color fill, Color light, Color dark) {
+        batch.setColor(fill);
+        batch.draw(pixelTexture, x, y, w, h);
+        batch.setColor(light);
+        batch.draw(pixelTexture, x, y + h - 3f, w, 3f);
+        batch.draw(pixelTexture, x, y, 3f, h);
+        batch.setColor(dark);
+        batch.draw(pixelTexture, x, y, w, 3f);
+        batch.draw(pixelTexture, x + w - 3f, y, 3f, h);
+        batch.setColor(Color.WHITE);
     }
 }

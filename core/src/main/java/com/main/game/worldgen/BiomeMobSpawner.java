@@ -37,11 +37,16 @@ public final class BiomeMobSpawner {
     private float spawnTimer;
     private int hostileWaveRemaining;
     private BiomeType lastPlayerBiome;
+    private boolean peaceful;
 
     public BiomeMobSpawner(long seed) {
         this.random = new Random(seed + 404);
         this.spawnTable = new BiomeSpawnTable();
         this.spawnTimer = 1f;
+    }
+
+    public void setPeaceful(boolean peaceful) {
+        this.peaceful = peaceful;
     }
 
     public static void spawnInitialMobs(World world, Player player, PhysicsEngine physics,
@@ -66,7 +71,7 @@ public final class BiomeMobSpawner {
                 Math.min(INITIAL_TARGET_MOBS, PLAINS_PASSIVE_TARGET),
                 INITIAL_MAX_ATTEMPTS, INITIAL_MIN_DISTANCE, INITIAL_DISTANCE_STEP,
                 playerBiome, SpawnGroup.PASSIVE);
-            if (isNight) {
+            if (isNight && !peaceful) {
                 spawnAroundPlayer(world, player, physics, entityManager,
                     1, INITIAL_MAX_ATTEMPTS, INITIAL_MIN_DISTANCE, INITIAL_DISTANCE_STEP,
                     playerBiome, SpawnGroup.HOSTILE);
@@ -75,7 +80,7 @@ public final class BiomeMobSpawner {
             return;
         }
         if (isHostileBiome(playerBiome)) {
-            if (!isNight) {
+            if (!isNight || peaceful) {
                 hostileWaveRemaining = 0;
                 return;
             }
@@ -112,6 +117,12 @@ public final class BiomeMobSpawner {
             return;
         }
 
+        if (peaceful) {
+            updatePeacefulBiome(delta, world, player, physics, entityManager,
+                playerBiome, biomeChanged, nearbyMobs, totalSpace);
+            return;
+        }
+
         if (isHostileBiome(playerBiome)) {
             updateHostileBiome(delta, world, player, physics, entityManager,
                 playerBiome, biomeChanged, nearbyMobs, totalSpace, isNight);
@@ -141,6 +152,34 @@ public final class BiomeMobSpawner {
         spawnTimer = RUNTIME_SPAWN_INTERVAL;
 
         int missing = Math.min(totalSpace, Math.max(0, desiredNearbyMobs - matchingNearbyMobs));
+        if (missing <= 0) {
+            return;
+        }
+        int targetCount = biomeChanged ? Math.min(3, missing) : Math.min(2, missing);
+        spawnAroundPlayer(world, player, physics, entityManager,
+            targetCount, RUNTIME_MAX_ATTEMPTS, RUNTIME_MIN_DISTANCE, RUNTIME_DISTANCE_STEP,
+            playerBiome, SpawnGroup.PASSIVE);
+    }
+
+    private void updatePeacefulBiome(float delta, World world, Player player, PhysicsEngine physics,
+                                      EntityManager entityManager, BiomeType playerBiome,
+                                      boolean biomeChanged, NearbyMobCounts nearbyMobs, int totalSpace) {
+        hostileWaveRemaining = 0;
+        if (biomeChanged) {
+            spawnTimer = 0f;
+        }
+        spawnTimer -= delta;
+        if (spawnTimer > 0f) {
+            return;
+        }
+        spawnTimer = RUNTIME_SPAWN_INTERVAL;
+
+        int desired = targetForBiome(playerBiome);
+        int matching = matchingCountForBiome(nearbyMobs, playerBiome);
+        if (matching >= desired && !biomeChanged) {
+            return;
+        }
+        int missing = Math.min(totalSpace, Math.max(0, desired - matching));
         if (missing <= 0) {
             return;
         }

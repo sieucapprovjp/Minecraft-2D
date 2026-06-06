@@ -8,6 +8,7 @@ public class CraftingController {
 
     private CraftingMode mode;
     private CraftingGrid grid;
+    private CraftingListener craftingListener;
 
     public CraftingController() {
         this(CraftingMode.PLAYER_2X2);
@@ -28,6 +29,10 @@ public class CraftingController {
 
     public CraftingGrid getGrid() {
         return grid;
+    }
+
+    public void setCraftingListener(CraftingListener listener) {
+        this.craftingListener = listener;
     }
 
     public void openPlayerCrafting(Inventory inventory) {
@@ -72,11 +77,14 @@ public class CraftingController {
             }
             carriedStack.add(craftsToTake * recipe.getOutputCount());
             consume(match, craftsToTake);
+            fireCrafted(recipe.getOutputItemId(), craftsToTake * recipe.getOutputCount());
             return carriedStack;
         }
 
         consume(match, craftsToTake);
-        return new ItemStack(recipe.getOutputItemId(), craftsToTake * recipe.getOutputCount());
+        int totalCrafted = craftsToTake * recipe.getOutputCount();
+        fireCrafted(recipe.getOutputItemId(), totalCrafted);
+        return new ItemStack(recipe.getOutputItemId(), totalCrafted);
     }
 
     public void returnInputsToInventory(Inventory inventory) {
@@ -114,6 +122,12 @@ public class CraftingController {
             }
         }
         return true;
+    }
+
+    private void fireCrafted(String outputItemId, int count) {
+        if (craftingListener != null) {
+            craftingListener.onCraftingCompleted(outputItemId, count);
+        }
     }
 
     private void consume(CraftingMatch match, int craftCount) {

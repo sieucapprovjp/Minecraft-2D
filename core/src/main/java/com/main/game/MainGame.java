@@ -10,6 +10,7 @@ import com.main.game.navigation.ScreenRouter;
 import com.main.game.screens.BaseScreen;
 import com.main.game.screens.GameScreen;
 import com.main.game.screens.StateScreen;
+import com.main.game.screens.HelpScreen;
 import com.main.game.screens.LoadingScreen;
 import com.main.game.screens.MenuScreen;
 import com.main.game.screens.ModeSelectScreen;
@@ -67,6 +68,8 @@ public class MainGame extends Game {
                 return new StateScreen(this, id);
             case GAME_OVER:
                 return new StateScreen(this, id);
+            case HELP:
+                return new HelpScreen(this);
             default:
                 throw new IllegalArgumentException("Unsupported screen id: " + id);
         }

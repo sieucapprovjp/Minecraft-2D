@@ -1,6 +1,7 @@
 package com.main.game.screens;
 
 import com.badlogic.gdx.Gdx;
+import com.main.game.crafting.CraftingListener;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.math.Vector2;
@@ -48,6 +49,10 @@ import com.main.game.physics.PhysicsEngine;
 import com.main.game.projectile.ProjectileManager;
 import com.main.game.projectile.ProjectileType;
 import com.main.game.raid.RaidController;
+import com.main.game.raid.RaidMobSpawner;
+import com.main.game.raid.RaidState;
+import com.main.game.tutorial.TutorialManager;
+import com.main.game.tutorial.TutorialUI;
 import com.main.game.raid.RaidState;
 import com.main.game.time.DayNightCycle;
 import com.main.game.trading.TradingController;
@@ -124,6 +129,8 @@ public class GameScreen extends BaseScreen {
     private GameplayMusicController gameplayMusicController;
     private VillageVillagerSpawner villageVillagerSpawner;
     private Random mobDropRandom;
+    private TutorialManager tutorialManager;
+    private TutorialUI tutorialUI;
     private boolean paused;
     private boolean dead;
     private boolean debugMode;
@@ -140,6 +147,11 @@ public class GameScreen extends BaseScreen {
 
     @Override
     public void show() {
+        if (world != null) {
+            camera.zoom = CAMERA_ZOOM;
+            return;
+        }
+
         long setupStartNanos = System.nanoTime();
         game.getAudioManager().stopMusic();
 
@@ -150,7 +162,7 @@ public class GameScreen extends BaseScreen {
 
         // Sinh toàn bộ finite world trước khi tìm spawn để cave/ore không bị lỗi seam.
         long worldGenerateStartNanos = System.nanoTime();
-        world.generate();
+        world.generate(game.getGameState().worldType);
         long worldGenerateNanos = System.nanoTime() - worldGenerateStartNanos;
         camera.position.set(world.width / 2f, world.height / 2f, 0f);
         camera.update();
@@ -159,7 +171,8 @@ public class GameScreen extends BaseScreen {
         float spawnX = spawn.x;
         float spawnY = spawn.y;
 
-        player = new Player(spawnX, spawnY, physics, world);
+        player = new Player(spawnX, spawnY, physics, world, game.getGameState().skin);
+        player.setPeaceful(game.getGameState().peaceful);
         spawnSafetyController = new SpawnSafetyController();
         spawnSafetyController.beginInitialSpawn(world, player);
 
@@ -230,12 +243,18 @@ public class GameScreen extends BaseScreen {
         tradingController = new TradingController();
         tradingInteractionHandler = new TradingInteractionHandler();
         craftingController = new CraftingController();
+        craftingController.setCraftingListener((outputItemId, count) -> {
+            if (tutorialManager != null) {
+                tutorialManager.onCraftingCompleted(outputItemId, count);
+            }
+        });
         cameraController = new GameCameraController();
         syncHeldItem();
         blockBreaker.setBlockBreakListener(this::handleBlockBroken);
 
         dayNightCycle = new DayNightCycle();
         mobSpawner = new BiomeMobSpawner(currentSeed);
+        mobSpawner.setPeaceful(game.getGameState().peaceful);
         long mobSpawnStartNanos = System.nanoTime();
         mobSpawner.spawnInitial(world, player, physics, entityManager, dayNightCycle.isNight());
         long mobSpawnNanos = System.nanoTime() - mobSpawnStartNanos;
@@ -245,6 +264,8 @@ public class GameScreen extends BaseScreen {
         camera.zoom = CAMERA_ZOOM;
         hudRenderer = new GameHudRenderer();
         overlayRenderer = new GameOverlayRenderer();
+        tutorialManager = new TutorialManager();
+        tutorialUI = new TutorialUI();
         raidHudRenderer = new RaidHudRenderer();
         lastPlayerHealthForAudio = player.getHealth();
         logPerformanceSnapshot(currentSeed, setupStartNanos, worldGenerateNanos, mobSpawnNanos);
@@ -254,11 +275,23 @@ public class GameScreen extends BaseScreen {
     public void update(float delta) {
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || Gdx.input.isKeyJustPressed(Input.Keys.P)) paused = !paused;
         if (Gdx.input.isKeyJustPressed(Input.Keys.M)) game.getScreenRouter().request(ScreenId.MENU);
+        if (Gdx.input.isKeyJustPressed(Input.Keys.F1)) game.getScreenRouter().request(ScreenId.HELP);
         if (Gdx.input.isKeyJustPressed(Input.Keys.O)) DemoBlockViewer.populateDemo(world, Math.max(2, (int) player.getX()), Math.max(2, (int) player.getY()));
         if (Gdx.input.isKeyJustPressed(Input.Keys.K)) player.kill();
         if (Gdx.input.isKeyJustPressed(Input.Keys.B)) player.ban();
         if (Gdx.input.isKeyJustPressed(Input.Keys.F3)) debugMode = !debugMode;
         updateJukeboxToast(delta);
+
+        // Tutorial popup click — xử lý trước để click được dù đang pause/dead
+        if (tutorialManager != null && tutorialManager.isShowing() && Gdx.input.justTouched()) {
+            float mx = Gdx.input.getX();
+            float my = Gdx.graphics.getHeight() - Gdx.input.getY();
+            if (tutorialUI != null && tutorialUI.handleClick(mx, my)) {
+                game.getAudioManager().play(AudioId.UI_CLICK);
+                tutorialManager.dismissPopup();
+                return;
+            }
+        }
 
         boolean inventoryKeyPressed = inventoryController.update();
         if (inventoryKeyPressed) handleInventoryKey();
@@ -440,6 +473,10 @@ public class GameScreen extends BaseScreen {
         if (raidHudRenderer != null) raidHudRenderer.render(batch, raidController, entityManager);
         overlayRenderer.renderToast(batch, jukeboxToastMessage, jukeboxToastTimer / JUKEBOX_TOAST_SECONDS);
         overlayRenderer.renderBrightness(batch, game.getGameState());
+
+        if (tutorialUI != null && tutorialManager != null) {
+            tutorialUI.render(batch, tutorialManager);
+        }
     }
 
     private void handlePauseClick(float mx, float my) {
@@ -586,12 +623,12 @@ public class GameScreen extends BaseScreen {
         }
     }
 
-    private boolean trySummonVex(Mob caster, Player target) {
+    private  boolean trySummonVex(Mob caster, Player target) {
         if (!canSummonVex(caster, target)) {
             return false;
         }
 
-        float casterCenterX = caster.getX() + caster.getWidth() * 0.5f;
+        float casterCenterX =  caster.getX() + caster.getWidth() * 0.5f;
         float targetCenterX = target == null ? casterCenterX : target.getX() + target.getWidth() * 0.5f;
         float side = targetCenterX < casterCenterX ? -1f : 1f;
         float spawnX = clamp(caster.getX() + side * VEX_SUMMON_HORIZONTAL_OFFSET,
