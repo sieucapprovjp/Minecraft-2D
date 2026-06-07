@@ -6,8 +6,11 @@ import com.main.game.inventory.ItemStack;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 public class CraftingRecipe {
+
+    private static final Set<String> PLANK_INGREDIENTS = Set.of("planks", "cherry_planks", "spruce_planks");
 
     public enum Type {
         SHAPED,
@@ -118,7 +121,7 @@ public class CraftingRecipe {
                 }
                 int gridSlot = remainingSlots.get(slotIndex);
                 ItemStack stack = grid.getSlot(gridSlot);
-                if (stack != null && input[i].equals(stack.getItemId())) {
+                if (stack != null && ingredientMatches(input[i], stack.getItemId())) {
                     matchedSlots[i] = gridSlot;
                     used[slotIndex] = true;
                     matched = true;
@@ -170,7 +173,7 @@ public class CraftingRecipe {
                     }
                     continue;
                 }
-                if (!expected.equals(actual)) {
+                if (!ingredientMatches(expected, actual)) {
                     return null;
                 }
                 slots.add(gridSlot);
@@ -181,6 +184,16 @@ public class CraftingRecipe {
             result[i] = slots.get(i);
         }
         return result;
+    }
+
+    private static boolean ingredientMatches(String expected, String actual) {
+        if (expected == null) {
+            return actual == null;
+        }
+        if ("planks".equals(expected)) {
+            return PLANK_INGREDIENTS.contains(actual);
+        }
+        return expected.equals(actual);
     }
 
     private Bounds findBounds(CraftingGrid grid) {

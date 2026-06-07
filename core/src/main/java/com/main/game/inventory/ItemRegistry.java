@@ -116,7 +116,6 @@ public final class ItemRegistry {
     }
 
     private static TextureRegion getBlockPaletteTexture(String itemId) {
-        if ("cobblestone".equals(itemId)) return BlockPalette.getStone();
         return BlockRegistry.getPaletteFallbackTexture(itemId);
     }
 }

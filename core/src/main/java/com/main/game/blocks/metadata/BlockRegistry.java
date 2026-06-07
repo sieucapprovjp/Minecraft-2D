@@ -21,6 +21,7 @@ public final class BlockRegistry {
         registerPalette("grass", BlockDefinition.PaletteFallback.GRASS, 0.6f, true);
         registerPalette("dirt", BlockDefinition.PaletteFallback.DIRT, 0.6f, true);
         registerPalette("stone", BlockDefinition.PaletteFallback.STONE, 1.2f, true, "cobblestone", 1);
+        registerTexture("cobblestone", "cobble_stone", BlockDefinition.PaletteFallback.STONE, 1.2f, true, null, 1, false);
         registerTexture("deepslate", "deepslate", BlockDefinition.PaletteFallback.STONE, 1.8f, true, null, 1, false);
         registerPalette("bedrock", BlockDefinition.PaletteFallback.BEDROCK, 999f, false);
         registerPalette("sand", BlockDefinition.PaletteFallback.SAND, 0.6f, true);
