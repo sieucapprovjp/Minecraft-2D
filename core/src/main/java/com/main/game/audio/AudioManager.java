@@ -17,7 +17,7 @@ import java.util.Random;
 public class AudioManager {
 
     private static final float DEFAULT_SOUND_VOLUME = 0.75f;
-    private static final float MUSIC_VOLUME = 0.35f;
+    private static final float MUSIC_VOLUME = 0.18f;
 
     private final EnumMap<AudioId, Sound[]> soundCache = new EnumMap<>(AudioId.class);
     private final Map<String, Sound[]> pathGroupCache = new HashMap<>();
