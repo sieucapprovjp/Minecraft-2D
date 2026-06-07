@@ -47,4 +47,37 @@ public class RecipeRegistryTest {
         assertEquals(15f, FuelRegistry.getBurnSeconds("spruce_log"), 0.001f);
         assertEquals(15f, FuelRegistry.getBurnSeconds("spruce_planks"), 0.001f);
     }
+
+    @Test
+    public void cherryPlanksCanCraftSharedWoodRecipes() {
+        assertRecipeWithPlanks("cherry_planks", new int[] {0, 3}, "stick", 4);
+        assertRecipeWithPlanks("cherry_planks", new int[] {0, 1, 3, 4}, "crafting_table", 1);
+        assertRecipeWithPlanks("cherry_planks", new int[] {0, 1, 2}, "wood_pickaxe", 1);
+        assertRecipeWithPlanks("cherry_planks", new int[] {0, 1, 2, 3, 5, 6, 7, 8}, "chest", 1);
+    }
+
+    @Test
+    public void sprucePlanksCanCraftSharedWoodRecipes() {
+        assertRecipeWithPlanks("spruce_planks", new int[] {0, 3}, "stick", 4);
+        assertRecipeWithPlanks("spruce_planks", new int[] {0, 1, 3, 4}, "crafting_table", 1);
+        assertRecipeWithPlanks("spruce_planks", new int[] {0, 1, 2}, "wood_pickaxe", 1);
+        assertRecipeWithPlanks("spruce_planks", new int[] {0, 1, 2, 3, 5, 6, 7, 8}, "chest", 1);
+    }
+
+    private void assertRecipeWithPlanks(String plankItemId, int[] plankSlots, String outputItemId, int outputCount) {
+        CraftingGrid grid = new CraftingGrid(CraftingMode.TABLE_3X3);
+        for (int slot : plankSlots) {
+            grid.setSlot(slot, new ItemStack(plankItemId, 1));
+        }
+        if ("wood_pickaxe".equals(outputItemId)) {
+            grid.setSlot(4, new ItemStack("stick", 1));
+            grid.setSlot(7, new ItemStack("stick", 1));
+        }
+
+        CraftingMatch match = RecipeRegistry.findMatch(grid);
+
+        assertNotNull(match);
+        assertEquals(outputItemId, match.getRecipe().getOutputItemId());
+        assertEquals(outputCount, match.getTotalOutputCount());
+    }
 }

@@ -54,6 +54,7 @@ public class StarterInventoryKitTest {
         assertArmor(inventory, "netherite_leggings", ArmorSlot.LEGGINGS);
         assertArmor(inventory, "netherite_boots", ArmorSlot.BOOTS);
         assertEquals(64, inventory.countItem("golden_apple"));
+        assertEquals(64, inventory.countItem("emerald"));
         assertEquals(1, inventory.countItem("raid_banner"));
         assertTrue(ItemRegistry.isPlaceableBlock("raid_banner"));
     }

@@ -58,6 +58,7 @@ public final class StarterInventoryKit {
             grantSet(inventory, NETHERITE_TOOLS);
             grantSet(inventory, NETHERITE_ARMOR);
             inventory.add("golden_apple", 64);
+            inventory.add("emerald", 64);
             inventory.add("raid_banner", 1);
         }
     }
