@@ -3,6 +3,7 @@ package com.main.game.screens;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.main.game.GameState;
 import com.main.game.MainGame;
@@ -27,6 +28,7 @@ public class ModeSelectScreen extends BaseScreen {
     private Texture doneTexture;
     private Texture backTexture;
     private Texture settingsTexture;
+    private Texture selectionTexture;
 
     private float doneScale = 1f;
     private float backScale = 1f;
@@ -42,6 +44,15 @@ public class ModeSelectScreen extends BaseScreen {
     private static final float DONE_CENTER_X = -90f;
     private static final float SETTINGS_CENTER_X = 90f;
     private static final float BUTTON_CENTER_Y = -105f;
+    private static final float OPTION_ROW_START_Y = 45f;
+    private static final float OPTION_ROW_STEP_Y = 34f;
+    private static final float OPTION_COL_START_X = -58f;
+    private static final float OPTION_COL_STEP_X = 72f;
+    private static final float OPTION_FRAME_W = 64f;
+    private static final float OPTION_FRAME_H = 24f;
+    private static final float LARGE_CHEST_FRAME_W = 78f;
+    private static final float OPTION_FRAME_OFFSET_X = -8f;
+    private static final float OPTION_FRAME_OFFSET_Y = 5f;
 
     // Cached button rects (computed once per frame in draw)
     private float doneX, doneY, doneW, doneH;
@@ -70,12 +81,13 @@ public class ModeSelectScreen extends BaseScreen {
         doneTexture = new Texture(Gdx.files.internal("images/menu/done.png"));
         backTexture = new Texture(Gdx.files.internal("images/menu/back.png"));
         settingsTexture = new Texture(Gdx.files.internal("images/stage_sprite/spl1b-game_settings.png"));
+        selectionTexture = createSelectionTexture();
 
         GameState gameState = game.getGameState();
         menuChoices[0] = gameState.peaceful ? 1 : 0;
         menuChoices[1] = gameState.worldType;  // 0=Default, 1=Flat
         menuChoices[2] = gameState.skin;
-        menuChoices[3] = gameState.loot;
+        menuChoices[3] = gameState.bonusChest;
     }
 
     @Override
@@ -140,6 +152,7 @@ public class ModeSelectScreen extends BaseScreen {
 
         // Panel and labels use the original Scratch center coordinate system.
         batch.draw(panelTexture, panelX, panelY, panelW, panelH);
+        drawSelectionFrames();
         batch.draw(labelsTexture, lblX, lblY, lblW, lblH);
 
         // Done button
@@ -165,20 +178,46 @@ public class ModeSelectScreen extends BaseScreen {
         batch.draw(tex, sx, sy, scaledW, scaledH);
     }
 
+    private void drawSelectionFrames() {
+        Color prev = new Color(batch.getColor());
+        for (int row = 0; row < menuChoices.length; row++) {
+            int choice = menuChoices[row];
+            float centerX = OPTION_COL_START_X + choice * OPTION_COL_STEP_X + OPTION_FRAME_OFFSET_X;
+            float centerY = OPTION_ROW_START_Y - row * OPTION_ROW_STEP_Y + OPTION_FRAME_OFFSET_Y;
+            float frameW = row == 3 && choice == 2 ? LARGE_CHEST_FRAME_W : OPTION_FRAME_W;
+            drawOptionBorder(centerX, centerY, frameW, OPTION_FRAME_H);
+        }
+        batch.setColor(prev);
+    }
+
+    private void drawOptionBorder(float centerScratchX, float centerScratchY, float scratchW, float scratchH) {
+        float x = scratchXToScreen(centerScratchX - scratchW / 2f);
+        float y = scratchYToScreen(centerScratchY - scratchH / 2f);
+        float w = scratchW * uiScale;
+        float h = scratchH * uiScale;
+        float thickness = Math.max(2f, 2f * uiScale);
+
+        batch.setColor(0f, 0f, 0f, 0.8f);
+        drawBorder(x - thickness, y - thickness, w + thickness * 2f, h + thickness * 2f, thickness);
+        batch.setColor(1f, 1f, 1f, 0.9f);
+        drawBorder(x, y, w, h, Math.max(1f, thickness * 0.65f));
+    }
+
+    private void drawBorder(float x, float y, float w, float h, float thickness) {
+        batch.draw(selectionTexture, x, y, w, thickness);
+        batch.draw(selectionTexture, x, y + h - thickness, w, thickness);
+        batch.draw(selectionTexture, x, y, thickness, h);
+        batch.draw(selectionTexture, x + w - thickness, y, thickness, h);
+    }
+
     private void handleOptionClick(float mx, float my) {
         float sw = Gdx.graphics.getWidth();
         float sh = Gdx.graphics.getHeight();
         float scratchX = (mx - sw / 2f) / uiScale;
         float scratchY = (my - sh / 2f) / uiScale;
 
-        int optID = Math.round((45f - scratchY) / 34f) + 1;
-        int choiceID = Math.round((scratchX + 58f) / 72f);
-
-        // DEBUG: In tọa độ ra terminal để kiểm tra hitbox
-        if (optID >= 1 && optID <= 4) {
-            System.out.println("[Debug] Click: x=" + scratchX + ", y=" + scratchY
-                + " -> Row(optID)=" + optID + ", Col(choiceID)=" + choiceID);
-        }
+        int optID = Math.round((OPTION_ROW_START_Y - scratchY) / OPTION_ROW_STEP_Y) + 1;
+        int choiceID = Math.round((scratchX - OPTION_COL_START_X) / OPTION_COL_STEP_X);
 
         if (optID < 1 || optID > 4) {
             return;
@@ -196,7 +235,7 @@ public class ModeSelectScreen extends BaseScreen {
                 maxChoice = 1;
                 break;
             case 4:
-                maxChoice = 1;
+                maxChoice = 2; // Chest: No(0), Chest(1), Large Chest(2)
                 break;
             default:
                 return;
@@ -270,7 +309,17 @@ public class ModeSelectScreen extends BaseScreen {
 
         gameState.worldType = menuChoices[1];  // 0=Default, 1=Flat
         gameState.skin = menuChoices[2];
+        gameState.bonusChest = menuChoices[3];
         gameState.loot = menuChoices[3];
+    }
+
+    private Texture createSelectionTexture() {
+        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+        pixmap.setColor(Color.WHITE);
+        pixmap.fill();
+        Texture texture = new Texture(pixmap);
+        pixmap.dispose();
+        return texture;
     }
 
     @Override
@@ -289,5 +338,6 @@ public class ModeSelectScreen extends BaseScreen {
         if (doneTexture != null) doneTexture.dispose();
         if (backTexture != null) backTexture.dispose();
         if (settingsTexture != null) settingsTexture.dispose();
+        if (selectionTexture != null) selectionTexture.dispose();
     }
 }

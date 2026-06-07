@@ -2,6 +2,7 @@ package com.main.game.inventory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -9,85 +10,69 @@ import org.junit.Test;
 public class StarterInventoryKitTest {
 
     @Test
-    public void grantsNetheriteSwordWithNineAttackDamage() {
+    public void noChestGrantsNoItems() {
         Inventory inventory = new Inventory();
 
-        StarterInventoryKit.grant(inventory);
+        StarterInventoryKit.grant(inventory, StarterInventoryKit.NO_CHEST);
 
-        ItemStack sword = findStack(inventory, "netherite_sword");
-        assertNotNull(sword);
-        assertEquals(1, sword.getCount());
-        assertTrue(ToolRegistry.isTool("netherite_sword"));
-        assertEquals(9, ToolRegistry.getAttackDamage("netherite_sword", 2));
-    }
-
-    @Test
-    public void grantsRaidBannerForVillageRaidTesting() {
-        Inventory inventory = new Inventory();
-
-        StarterInventoryKit.grant(inventory);
-
-        ItemStack banner = findStack(inventory, "raid_banner");
-        assertNotNull(banner);
-        assertEquals(1, banner.getCount());
-        assertTrue(ItemRegistry.isPlaceableBlock("raid_banner"));
-    }
-
-    @Test
-    public void grantsJukeboxAndMusicDiscForTesting() {
-        Inventory inventory = new Inventory();
-
-        StarterInventoryKit.grant(inventory);
-
-        ItemStack jukebox = findStack(inventory, "jukebox");
-        ItemStack pigstep = findStack(inventory, "pigstep");
-        ItemStack lavaChicken = findStack(inventory, "lava_chicken");
-        assertNotNull(jukebox);
-        assertEquals(1, jukebox.getCount());
-        assertTrue(ItemRegistry.isPlaceableBlock("jukebox"));
-        assertNotNull(pigstep);
-        assertEquals(1, pigstep.getCount());
-        assertTrue(MusicDiscRegistry.isMusicDisc("pigstep"));
-        assertNotNull(lavaChicken);
-        assertEquals(1, lavaChicken.getCount());
-        assertTrue(MusicDiscRegistry.isMusicDisc("lava_chicken"));
-    }
-
-    @Test
-    public void grantsEmeraldsForTradingTesting() {
-        Inventory inventory = new Inventory();
-
-        StarterInventoryKit.grant(inventory);
-
-        assertEquals(64, inventory.countItem("emerald"));
-    }
-
-    @Test
-    public void grantsNetheriteArmorSetForTesting() {
-        Inventory inventory = new Inventory();
-
-        StarterInventoryKit.grant(inventory);
-
-        assertStarterArmor(inventory, "netherite_helmet", ArmorSlot.HELMET);
-        assertStarterArmor(inventory, "netherite_chestplate", ArmorSlot.CHESTPLATE);
-        assertStarterArmor(inventory, "netherite_leggings", ArmorSlot.LEGGINGS);
-        assertStarterArmor(inventory, "netherite_boots", ArmorSlot.BOOTS);
-    }
-
-    @Test
-    public void grantsAllFoods() {
-        Inventory inventory = new Inventory();
-
-        StarterInventoryKit.grant(inventory);
-
-        for (String itemId : FoodRegistry.getFoodItemIds()) {
-            ItemStack stack = findStack(inventory, itemId);
-            assertNotNull(itemId, stack);
-            assertEquals(8, stack.getCount());
+        for (int i = 0; i < inventory.getTotalSize(); i++) {
+            assertNull(inventory.getSlot(i));
         }
     }
 
-    private void assertStarterArmor(Inventory inventory, String itemId, ArmorSlot slot) {
+    @Test
+    public void chestGrantsIronArmorIronToolsAndSteak() {
+        Inventory inventory = new Inventory();
+
+        StarterInventoryKit.grant(inventory, StarterInventoryKit.CHEST);
+
+        assertTool(inventory, "iron_pickaxe");
+        assertTool(inventory, "iron_axe");
+        assertTool(inventory, "iron_shovel");
+        assertTool(inventory, "iron_sword");
+        assertArmor(inventory, "iron_helmet", ArmorSlot.HELMET);
+        assertArmor(inventory, "iron_chestplate", ArmorSlot.CHESTPLATE);
+        assertArmor(inventory, "iron_leggings", ArmorSlot.LEGGINGS);
+        assertArmor(inventory, "iron_boots", ArmorSlot.BOOTS);
+        assertEquals(8, inventory.countItem("cooked_beef"));
+    }
+
+    @Test
+    public void largeChestGrantsNetheriteGearAndGoldenApples() {
+        Inventory inventory = new Inventory();
+
+        StarterInventoryKit.grant(inventory, StarterInventoryKit.LARGE_CHEST);
+
+        assertTool(inventory, "netherite_pickaxe");
+        assertTool(inventory, "netherite_axe");
+        assertTool(inventory, "netherite_shovel");
+        assertTool(inventory, "netherite_sword");
+        assertArmor(inventory, "netherite_helmet", ArmorSlot.HELMET);
+        assertArmor(inventory, "netherite_chestplate", ArmorSlot.CHESTPLATE);
+        assertArmor(inventory, "netherite_leggings", ArmorSlot.LEGGINGS);
+        assertArmor(inventory, "netherite_boots", ArmorSlot.BOOTS);
+        assertEquals(64, inventory.countItem("golden_apple"));
+    }
+
+    @Test
+    public void legacyGrantDefaultsToNoChest() {
+        Inventory inventory = new Inventory();
+
+        StarterInventoryKit.grant(inventory);
+
+        for (int i = 0; i < inventory.getTotalSize(); i++) {
+            assertNull(inventory.getSlot(i));
+        }
+    }
+
+    private void assertTool(Inventory inventory, String itemId) {
+        ItemStack stack = findStack(inventory, itemId);
+        assertNotNull(itemId, stack);
+        assertEquals(1, stack.getCount());
+        assertTrue(ToolRegistry.isTool(itemId));
+    }
+
+    private void assertArmor(Inventory inventory, String itemId, ArmorSlot slot) {
         ItemStack stack = findStack(inventory, itemId);
         assertNotNull(itemId, stack);
         assertEquals(1, stack.getCount());
