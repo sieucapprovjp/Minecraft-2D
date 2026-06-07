@@ -118,6 +118,9 @@
 - Village placement only succeeds on a flat plains site to avoid broken 2D structures.
 - The village currently contains one large center house and two smaller side houses.
 - Village houses use cobblestone/moss-stone mixed floors, plank roofs, glass windows, bookshelves, and beds.
+- Village decoration includes paths/flowers around houses and two doors per house for easier movement.
+- Village doors are two-block structures with bottom/top states; closed doors are solid, open doors are non-solid, and pressing `E` toggles both halves together.
+- The large center house includes pass-through village utility aliases for crafting table, furnace, and chest so villagers/players can move through the interior.
 - `VillageState` stores the village center/radius, the main house raid-banner trigger area, and villager spawn points.
 - Villagers spawn only when the player approaches the village, so they do not appear near initial spawn and walk across the map.
 - Villager professions implemented for trading are `UNEMPLOYED`, `FARMER`, and `BLACKSMITH`.
@@ -129,6 +132,7 @@
   - `core/src/main/java/com/main/game/worldgen/village/VillageState.java`
   - `core/src/main/java/com/main/game/worldgen/village/VillageSpawnPoint.java`
   - `core/src/main/java/com/main/game/worldgen/village/VillageVillagerSpawner.java`
+  - `core/src/main/java/com/main/game/utilityblock/door/DoorInteractionController.java`
   - `core/src/main/java/com/main/game/entities/mob/VillagerProfession.java`
   - `core/src/main/java/com/main/game/entities/mob/MobAssetPack.java`
   - `core/src/main/java/com/main/game/trading/TradingController.java`
@@ -211,6 +215,7 @@
 - The player can perform left-click melee attacks.
 - Combat includes cooldown, reach checks, falling critical hits, and tool-based damage.
 - Sword left-click also triggers a visible held-item swing animation. No slash smoke/white arc effect is rendered.
+- Skeleton keeps its normal collision/AI profile, but its large sprite asset is rendered at `0.7x` scale through the mob profile render pixels-per-tile setting.
 - Biome spawn behavior:
   - Forest and cherry are passive-only.
   - Plains supports passive mobs and hostile mobs at night.
@@ -232,6 +237,7 @@
   - `core/src/main/java/com/main/game/entities/player/PlayerRenderer.java`
   - `core/src/main/java/com/main/game/worldgen/BiomeSpawnTable.java`
   - `core/src/main/java/com/main/game/worldgen/BiomeMobSpawner.java`
+  - `core/src/test/java/com/main/game/entities/mob/MobProfileTest.java`
 
 ### Raid V1
 - `raid_banner` is a placeable block and starter test item.
@@ -302,7 +308,8 @@
 - Left/right click supports pick, place, swap, stack, and split-stack behavior.
 - Item textures and stack counts render in the hotbar/inventory.
 - Tool and armor stack size is `1`; block and food stack size defaults to `64`.
-- Starter inventory currently grants one `netherite_sword`, one full netherite armor set, one `raid_banner`, `64` emeralds, and every registered food item, `8` of each, for gameplay/testing.
+- Starter inventory currently grants one `netherite_sword`, one full netherite armor set, one `raid_banner`, one `jukebox`, one each of the registered music discs, `64` emeralds, and every registered food item, `8` of each, for gameplay/testing.
+- Music discs are registered as inventory items with stack size `1` and disc-specific textures/audio paths.
 - Related files:
   - `core/src/main/java/com/main/game/inventory/Inventory.java`
   - `core/src/main/java/com/main/game/inventory/InventoryController.java`
@@ -310,6 +317,7 @@
   - `core/src/main/java/com/main/game/inventory/InventoryLayout.java`
   - `core/src/main/java/com/main/game/inventory/InventoryRenderer.java`
   - `core/src/main/java/com/main/game/inventory/ItemRegistry.java`
+  - `core/src/main/java/com/main/game/inventory/MusicDiscRegistry.java`
   - `core/src/main/java/com/main/game/inventory/ItemStack.java`
   - `core/src/main/java/com/main/game/inventory/StarterInventoryKit.java`
   - `assets/images/gui_invrow/inventory.png`
@@ -444,11 +452,12 @@
 - Gameplay music is wired through `GameplayMusicController`.
 - Normal gameplay music plays a random full track from `assets/audio/ui_menu/ingame_music/` after a random cooldown from `30s` to `100s`; the next cooldown starts only after the current track has finished.
 - Raid music overrides normal gameplay music: starting a raid stops the current track, waits about `5s`, then plays `assets/audio/ui_menu/rubedo.ogg`; normal gameplay music resumes after the raid ends.
-- SFX are implemented for UI clicks/toggles, player hurt/death/eating/sword swing, block breaking, utility block open/close, furnace crackle-on-start, chest open/close, item pickup, and mob hit/death behavior.
+- SFX are implemented for UI clicks/toggles, player hurt/death/eating/sword swing, block breaking/placement, utility block open/close, furnace crackle-on-start, chest open/close, item pickup, and mob hit/death behavior.
 - Player death reuses the player hurt sound for V1.
 - Mob death uses dedicated death assets where available and otherwise falls back to hurt audio.
-- Block breaking uses material-specific asset groups for stone, deepslate, sand, snow, and wood.
-- Block placement audio assets exist under `assets/audio/placing_block/`; placement playback should be verified before treating this as complete gameplay behavior.
+- Block breaking uses material-specific asset groups for stone, deepslate, sand, snow, grass/dirt, wood, utility blocks, and metal-like ores.
+- Successful block placement reuses the same material-specific sound routing as block breaking.
+- Jukebox disc playback uses path-based music playback; inserting a disc stops the current gameplay track, and ejecting/breaking the jukebox stops the disc track.
 - Missing audio assets are skipped safely with a log message instead of crashing gameplay.
 - Related files:
   - `core/src/main/java/com/main/game/audio/AudioId.java`
@@ -456,6 +465,9 @@
   - `core/src/main/java/com/main/game/audio/AudioManager.java`
   - `core/src/main/java/com/main/game/audio/GameplayMusicController.java`
   - `core/src/main/java/com/main/game/audio/MobAmbientAudioController.java`
+  - `core/src/main/java/com/main/game/inventory/MusicDiscRegistry.java`
+  - `core/src/main/java/com/main/game/utilityblock/jukebox/JukeboxInteractionController.java`
+  - `core/src/main/java/com/main/game/utilityblock/jukebox/JukeboxManager.java`
   - `core/src/main/java/com/main/game/MainGame.java`
   - `core/src/main/java/com/main/game/screens/MenuScreen.java`
   - `core/src/main/java/com/main/game/screens/ModeSelectScreen.java`
@@ -487,15 +499,24 @@
 - Utility block interaction is grouped under the `utilityblock` package.
 - `UtilityBlockInteractionController` provides shared reachable-hover checks for utility blocks.
 - Crafting table, furnace, and chest each keep their own focused subpackage.
+- Doors keep their own focused subpackage and support two-block open/closed village doors.
+- Jukebox keeps its own focused subpackage and has no GUI; right-clicking with a music disc inserts it, shows `Now playing: ...`, and starts disc music.
+- Right-clicking a jukebox that already contains a disc ejects the disc as a dropped item and stops the disc music.
+- Breaking a jukebox with a stored disc drops the stored disc and stops its music.
+- Village-only crafting table, furnace, and chest aliases are non-solid but map back to the normal utility item drops/interaction behavior.
 - `GameScreen` wires utility blocks through short calls for open, update, render, drop, clear, and dispose behavior.
-- Crafting table and furnace open/close now use utility block door audio.
+- Crafting table and furnace open/close now use the normal UI click sound.
+- Door toggles use the door open/close audio.
 - Chest open/close uses dedicated chest audio.
 - Furnace plays a random fire crackle sound when it starts burning fuel.
 - Related files:
   - `core/src/main/java/com/main/game/utilityblock/UtilityBlockInteractionController.java`
   - `core/src/main/java/com/main/game/utilityblock/craftingtable/CraftingTableInteractionController.java`
+  - `core/src/main/java/com/main/game/utilityblock/door/DoorInteractionController.java`
   - `core/src/main/java/com/main/game/utilityblock/furnace/FurnaceInteractionController.java`
   - `core/src/main/java/com/main/game/utilityblock/chest/ChestInteractionController.java`
+  - `core/src/main/java/com/main/game/utilityblock/jukebox/JukeboxInteractionController.java`
+  - `core/src/main/java/com/main/game/utilityblock/jukebox/JukeboxManager.java`
   - `core/src/main/java/com/main/game/screens/GameScreen.java`
   - `core/src/main/java/com/main/game/ui/GameHudRenderer.java`
 
@@ -552,6 +573,7 @@
 - `WorldBlockFactory`, `BlockHarvestRules`, `BlockDropFactory`, and `ItemRegistry` read block behavior from the registry instead of maintaining separate if-chains.
 - Registered drops include `stone -> cobblestone`, direct ore resources, and raw metal ore drops.
 - Registered biome/vegetation blocks include cherry, plains flower, desert vegetation, snow vegetation, cactus flower, apple-in-tree, natural logs, and biome-specific leaves.
+- Registered utility/village decoration blocks include jukebox, village door halves, and pass-through village aliases for crafting table, furnace, and chest.
 - Related files:
   - `core/src/main/java/com/main/game/blocks/metadata/BlockDefinition.java`
   - `core/src/main/java/com/main/game/blocks/metadata/BlockRegistry.java`
@@ -568,6 +590,7 @@
 - Only normal 1x1 placeable blocks are supported.
 - Tools, bedrock, out-of-reach blocks, player-overlapping blocks, occupied tiles, and floating unsupported blocks cannot be placed.
 - Successful placement creates the block through `WorldBlockFactory`, writes it into the world, decrements the stack, and clears the slot when the stack reaches zero.
+- Successful placement plays the block's material-specific break sound as the placement sound for V1.
 - Related files:
   - `core/src/main/java/com/main/game/interaction/BlockPlacementController.java`
   - `core/src/main/java/com/main/game/interaction/BlockBreakOverlay.java`
@@ -610,6 +633,8 @@
 - `.\gradlew.bat --no-daemon classes` passed.
 - `.\gradlew.bat --no-daemon test` passed.
 - `.\gradlew.bat --no-daemon core:test` passed after merging `feat/village` into `main`.
+- `.\gradlew.bat --no-daemon core:test --tests com.main.game.audio.AudioCatalogTest --tests com.main.game.inventory.MusicDiscRegistryTest --tests com.main.game.inventory.StarterInventoryKitTest --tests com.main.game.utilityblock.jukebox.JukeboxInteractionControllerTest` passed after the jukebox/disc/audio updates.
+- `.\gradlew.bat --no-daemon core:test --tests com.main.game.entities.mob.MobProfileTest --tests com.main.game.entities.mob.MobRendererTest` passed after the skeleton render scale update.
 - `.\gradlew.bat --no-daemon lwjgl3:processResources lwjgl3:classes` passed.
 - `git diff --check` passed.
 - `.\gradlew.bat --no-daemon lwjgl3:run` no longer exited with missing `stage/sky.png`; the command was stopped by timeout after the game stayed running.
@@ -617,6 +642,6 @@
 
 ## Known Gaps
 - XP system has not been implemented yet.
-- Audio V1 has no volume sliders, full footstep system, ambient biome/cave sounds, positional audio, or complete block placement sound routing yet.
+- Audio V1 has no volume sliders, full footstep system, ambient biome/cave sounds, positional audio, or dedicated placement-only sound table yet.
 - Food V1 has no potion/debuff effects yet, so rotten flesh is currently just food.
 - Food and day/night state are runtime-only and do not persist after leaving `GameScreen`.
