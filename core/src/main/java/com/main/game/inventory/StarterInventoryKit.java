@@ -50,6 +50,7 @@ public final class StarterInventoryKit {
             grantSet(inventory, IRON_TOOLS);
             grantSet(inventory, IRON_ARMOR);
             inventory.add("cooked_beef", 8);
+            inventory.add("raid_banner", 1);
             return;
         }
 
@@ -57,6 +58,7 @@ public final class StarterInventoryKit {
             grantSet(inventory, NETHERITE_TOOLS);
             grantSet(inventory, NETHERITE_ARMOR);
             inventory.add("golden_apple", 64);
+            inventory.add("raid_banner", 1);
         }
     }
 

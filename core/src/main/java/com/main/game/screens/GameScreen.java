@@ -138,6 +138,7 @@ public class GameScreen extends BaseScreen {
     private RaidState lastRaidAudioState;
     private String jukeboxToastMessage;
     private float jukeboxToastTimer;
+    private boolean raidVictoryRewardGranted;
 
     private float deathBtnX, deathBtnY, deathBtnW, deathBtnH;
 
@@ -334,6 +335,7 @@ public class GameScreen extends BaseScreen {
             if (raidController != null) {
                 int spawnedRaidMobs = raidController.update(delta, world, player, physics, entityManager);
                 handleRaidAudio(spawnedRaidMobs);
+                grantRaidVictoryReward();
                 if (spawnedRaidMobs > 0) {
                     Gdx.app.log(PERF_LOG_TAG, "spawnedRaidMobs=" + spawnedRaidMobs
                         + ", raidWave=" + raidController.getCurrentWave()
@@ -688,6 +690,19 @@ public class GameScreen extends BaseScreen {
             game.getAudioManager().play(AudioId.RAID_CELEBRATE);
         }
         lastRaidAudioState = state;
+    }
+
+    private void grantRaidVictoryReward() {
+        if (raidVictoryRewardGranted || raidController == null || inventory == null
+            || raidController.getState() != RaidState.VICTORY) {
+            return;
+        }
+        raidVictoryRewardGranted = true;
+        inventory.add("jukebox", 1);
+        inventory.add("pigstep", 1);
+        inventory.add("lava_chicken", 1);
+        jukeboxToastMessage = "Raid reward: Jukebox + 2 music discs";
+        jukeboxToastTimer = JUKEBOX_TOAST_SECONDS;
     }
 
     private void handleBlockPlaced(String blockId, int tileX, int tileY) {
