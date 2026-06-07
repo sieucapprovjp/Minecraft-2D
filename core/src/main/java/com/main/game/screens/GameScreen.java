@@ -230,7 +230,7 @@ public class GameScreen extends BaseScreen {
         droppedItemManager.setPickupListener(() -> game.getAudioManager().play(AudioId.ITEM_PICKUP));
         mobDropRandom = new Random(currentSeed + 7717L);
         inventory = new Inventory();
-        StarterInventoryKit.grant(inventory);
+        StarterInventoryKit.grant(inventory, game.getGameState().bonusChest);
         player.setArmorLoadout(inventory.getArmorLoadout());
         inventoryController = new InventoryController();
         inventoryRenderer = new InventoryRenderer();
