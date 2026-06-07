@@ -191,7 +191,7 @@ public class CraftingRecipe {
             return actual == null;
         }
         if ("planks".equals(expected)) {
-            return PLANK_INGREDIENTS.contains(actual);
+            return actual != null && PLANK_INGREDIENTS.contains(actual);
         }
         return expected.equals(actual);
     }
