@@ -2,6 +2,7 @@ package com.main.game.crafting;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import com.main.game.blocks.metadata.BlockRegistry;
@@ -62,6 +63,14 @@ public class RecipeRegistryTest {
         assertRecipeWithPlanks("spruce_planks", new int[] {0, 1, 3, 4}, "crafting_table", 1);
         assertRecipeWithPlanks("spruce_planks", new int[] {0, 1, 2}, "wood_pickaxe", 1);
         assertRecipeWithPlanks("spruce_planks", new int[] {0, 1, 2, 3, 5, 6, 7, 8}, "chest", 1);
+    }
+
+    @Test
+    public void partialPlankRecipeDoesNotCrashWhenMatchedAgainstEmptySlots() {
+        CraftingGrid grid = new CraftingGrid(CraftingMode.TABLE_3X3);
+        grid.setSlot(0, new ItemStack("cherry_planks", 1));
+
+        assertNull(RecipeRegistry.findMatch(grid));
     }
 
     private void assertRecipeWithPlanks(String plankItemId, int[] plankSlots, String outputItemId, int outputCount) {
