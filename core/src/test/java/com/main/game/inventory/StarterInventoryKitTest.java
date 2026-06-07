@@ -35,6 +35,8 @@ public class StarterInventoryKitTest {
         assertArmor(inventory, "iron_leggings", ArmorSlot.LEGGINGS);
         assertArmor(inventory, "iron_boots", ArmorSlot.BOOTS);
         assertEquals(8, inventory.countItem("cooked_beef"));
+        assertEquals(1, inventory.countItem("raid_banner"));
+        assertTrue(ItemRegistry.isPlaceableBlock("raid_banner"));
     }
 
     @Test
@@ -52,6 +54,8 @@ public class StarterInventoryKitTest {
         assertArmor(inventory, "netherite_leggings", ArmorSlot.LEGGINGS);
         assertArmor(inventory, "netherite_boots", ArmorSlot.BOOTS);
         assertEquals(64, inventory.countItem("golden_apple"));
+        assertEquals(1, inventory.countItem("raid_banner"));
+        assertTrue(ItemRegistry.isPlaceableBlock("raid_banner"));
     }
 
     @Test
