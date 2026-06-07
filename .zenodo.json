@@ -1,0 +1,34 @@
+{
+  "title": "Minecraft 2D",
+  "upload_type": "software",
+  "description": "Minecraft 2D is an object-oriented programming course project built with Java and libGDX. The game implements a 2D block-based sandbox world with player movement, world generation, inventory, crafting, utility blocks, mobs, combat, raid, trading, and audio systems.",
+  "creators": [
+    {
+      "name": "Trần Quang Huy"
+    },
+    {
+      "name": "LamQuangHung"
+    },
+    {
+      "name": "Abcxyzcmnl2006"
+    },
+    {
+      "name": "kiennnnnnnn"
+    },
+    {
+      "name": "VietHung"
+    },
+    {
+      "name": "DuocHocLapTrinh"
+    }
+  ],
+  "keywords": [
+    "Java",
+    "libGDX",
+    "LWJGL3",
+    "OOP",
+    "game development",
+    "Minecraft 2D"
+  ],
+  "language": "eng"
+}
